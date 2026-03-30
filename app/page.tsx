@@ -149,55 +149,166 @@ export default function Home() {
 
   <div className="max-w-4xl mx-auto flex justify-center">
 
+    <a
+      href="https://www.xn--mjdehairbeauty-gsb.com/"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="w-full md:w-[600px]"
+    >
+      <div className="bg-white/5 backdrop-blur-xl p-12 rounded-3xl border border-white/10 
+      hover:-translate-y-2 hover:shadow-[0_20px_60px_rgba(139,92,246,0.25)] 
+      transition-all duration-300 cursor-pointer">
 
-    <div className="w-full md:w-[600px] bg-white/5 backdrop-blur-xl p-12 rounded-3xl border border-white/10 hover:-translate-y-2 hover:shadow-[0_20px_60px_rgba(139,92,246,0.25)] transition-all duration-300">
+        <p className="text-gray-300 text-lg mb-6">
+          İşletmemiz için modern, hızlı ve mobil uyumlu bir web sitesi hazırlandı. 
+          Müşteri dönüşlerimiz gözle görülür şekilde arttı.
+        </p>
 
-      <p className="text-gray-300 text-lg mb-6">
+        <p className="font-semibold text-purple-400 mb-1">
+          Müjde Hair Beauty
+        </p>
 
-        İlk pilot işletme için görüşmeler devam ediyor.
-      </p>
-      <p className="font-semibold text-purple-400">
-        Yakında burada yer alacak
-      </p>
-    </div>
+        <p className="text-sm text-gray-400 mb-4">
+          Güzellik Salonu • Antalya
+        </p>
+
+        {/* GÖRÜNEN DOMAIN */}
+        <p className="text-sm text-gray-400">
+          www.müjdehairbeauty.com
+        </p>
+
+        {/* CTA */}
+        <p className="text-sm text-purple-400 underline mt-2">
+          Siteyi İncele →
+        </p>
+
+      </div>
+    </a>
 
   </div>
 </section>
 
-      {/* PRICING */}
-      
-      <section id="pricing" className="relative z-10 px-6 py-24 text-center border-t border-white/10">
-        <h3 className="text-3xl font-semibold mb-10">
-          Başlangıç Paketi
-        </h3>
+{/* PRICING */}
+<section id="pricing" className="relative z-10 px-6 py-28 text-center border-t border-white/10">
 
-        <div className="bg-white/5 backdrop-blur-md p-10 rounded-3xl max-w-md mx-auto border border-white/10 hover:scale-105 hover:shadow-[0_20px_50px_rgba(139,92,246,0.3)] smooth-section">
-          <p className="text-4xl font-bold text-purple-400 mb-4">
-            4.500 TL
-          </p>
+  <h3 className="text-3xl font-semibold mb-4">
+    Paketler
+  </h3>
 
-          <p className="text-gray-400 mb-4">
-            Tek seferlik kurulum
-          </p>
+  <p className="text-gray-400 mb-16">
+    Piyasa fiyatlarının çok altında lansman teklifleri
+  </p>
 
-          <p className="text-gray-400 mb-6">
-            Aylık teknik destek: 750 TL
-          </p>
+  <div className="max-w-7xl mx-auto grid md:grid-cols-2 lg:grid-cols-4 gap-8">
 
-          <p className="text-sm text-gray-500 mb-6">
-            İlk 5 işletmeye özel lansman fiyatı
-          </p>
+    {/* 1 - SADECE WEB */}
+    <div className="bg-white/5 p-8 rounded-3xl border border-white/10">
+      <p className="text-sm text-gray-400 mb-2">Web Site</p>
 
-          <a
-            href="https://wa.me/905515550302"
-            className="inline-block bg-gradient-to-r from-purple-500 to-blue-500 px-8 py-4 rounded-full font-semibold hover:scale-105 transition"
-          >
-           Hemen Başlamak İçin İletişime Geç
+      <p className="text-gray-500 line-through">6.000 TL</p>
+      <p className="text-3xl font-bold text-white mb-4">2.000 TL + KDV</p>
 
-          </a>
+      <div className="text-gray-400 text-sm space-y-2 mb-6">
+        <p>✔ Tanıtım sitesi</p>
+        <p>✔ Mobil uyumlu</p>
+        <p>✔ Hızlı kurulum</p>
+      </div>
+
+      <p className="text-xs text-gray-500 mb-6">Aylık yok</p>
+
+      <a href="https://wa.me/905515550302"
+        className="block bg-white text-black py-3 rounded-full">
+        Satın Al
+      </a>
+    </div>
+
+
+    {/* 2 - RANDEVU SİSTEMİ */}
+    <div className="bg-white/5 p-8 rounded-3xl border border-white/10">
+      <p className="text-sm text-gray-400 mb-2">Randevu Sistemli</p>
+
+      <p className="text-gray-500 line-through">6.000 TL</p>
+      <p className="text-3xl font-bold text-purple-400 mb-4">4.000 TL + KDV</p>
+
+      <div className="text-gray-400 text-sm space-y-2 mb-6">
+        <p>✔ Web site</p>
+        <p>✔ Online randevu</p>
+        <p>✔ Yönetim paneli</p>
+      </div>
+
+      <p className="text-sm text-gray-400 mb-6">
+        Aylık: <span className="text-white">450 TL + KDV</span>
+      </p>
+
+      <a href="https://wa.me/905515550302"
+        className="block bg-gradient-to-r from-purple-500 to-blue-500 py-3 rounded-full">
+        Başla
+      </a>
+    </div>
+
+
+
+    {/* 3 - PREMIUM */}
+    <div className="bg-gradient-to-b from-purple-500/20 to-blue-500/20 p-[1px] rounded-3xl">
+      <div className="bg-black p-8 rounded-3xl h-full relative">
+
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-purple-500 text-xs px-3 py-1 rounded-full">
+          EN ÇOK SATAN
         </div>
-      </section>
 
+        <p className="text-sm text-gray-400 mb-2 mt-4">Premium</p>
+
+        <p className="text-gray-500 line-through">8.000 TL</p>
+        <p className="text-3xl font-bold text-white mb-4">6.000 TL+ KDV</p>
+
+        <div className="text-gray-300 text-sm space-y-2 mb-6">
+          <p>✔ Özel tasarım</p>
+          <p>✔ SEO başlangıç</p>
+          <p>✔ Hız optimizasyonu</p>
+        </div>
+
+        <p className="text-sm text-gray-400 mb-6">
+          Aylık: <span className="text-white">650 TL + KDV</span>
+        </p>
+
+        <a href="https://wa.me/905515550302"
+          className="block bg-white text-black py-3 rounded-full">
+          Premium Al
+        </a>
+      </div>
+    </div>
+
+
+    {/* 4 - ELİT (anchor fiyat) */}
+    <div className="bg-white/5 p-8 rounded-3xl border border-white/10 opacity-90">
+      <p className="text-sm text-gray-400 mb-2">Elite</p>
+
+      <p className="text-gray-500 line-through">12.000 TL</p>
+      <p className="text-3xl font-bold text-white mb-4">8.000 TL + KDV</p>
+
+      <div className="text-gray-400 text-sm space-y-2 mb-6">
+        <p>✔ Premium + ekstra hız</p>
+        <p>✔ Gelişmiş SEO</p>
+        <p>✔ Öncelikli destek</p>
+      </div>
+
+      <p className="text-sm text-gray-400 mb-6">
+        Aylık: <span className="text-white">900 TL + KDV</span>
+      </p>
+
+      <a href="https://wa.me/905515550302"
+        className="block border border-white py-3 rounded-full">
+        Teklif Al
+      </a>
+    </div>
+
+  </div>
+
+  <p className="text-xs text-gray-500 mt-10">
+    Bu fiyatlar lansmana özel olup sınırlı sayıda müşteri için geçerlidir.
+  </p>
+
+</section>
       {/* FINAL CTA */}
       <section className="relative z-10 px-6 py-32 text-center border-t border-white/10">
         <h3 className="text-4xl font-bold mb-6">
