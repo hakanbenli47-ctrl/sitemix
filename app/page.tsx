@@ -83,7 +83,7 @@ useEffect(() => {
 </motion.h1>
 
       <a
-        href="https://wa.me/905515550302"
+        href="https://wa.me/905515550302?text=Merhaba,%20işletmem%20için%20web%20sitesi%20ve%20müşteri%20getirme%20sistemi%20hakkında%20bilgi%20alabilir%20miyim?"
         className="text-sm bg-blue-500 px-4 py-2 rounded-full hover:scale-105 transition"
       >
         WhatsApp
@@ -234,7 +234,7 @@ dijital müşteri sistemi
           <motion.a
             whileHover={!isMobile ? { scale: 1.1 } : {}}
             whileTap={{ scale: 0.95 }}
-            href="https://wa.me/905515550302"
+            href="https://wa.me/905515550302?text=Merhaba,%20işletmem%20için%20web%20sitesi%20ve%20müşteri%20getirme%20sistemi%20hakkında%20bilgi%20alabilir%20miyim?"
             className="inline-block mt-10 px-8 py-4 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 font-semibold shadow-xl"
           >
             Başla
@@ -630,7 +630,7 @@ hover:border-purple-400/40 hover:shadow-[0_0_40px_rgba(168,85,247,0.2)] transiti
           <motion.a
             whileTap={{ scale: 0.95 }}
             whileHover={!isMobile ? { scale: 1.15 } : {}}
-            href="https://wa.me/905515550302"
+           href="https://wa.me/905515550302?text=Merhaba,%20işletmem%20için%20web%20sitesi%20ve%20müşteri%20getirme%20sistemi%20hakkında%20bilgi%20alabilir%20miyim?"
             className="bg-white text-black px-8 py-4 rounded-full font-semibold"
           >
            Hemen WhatsApp’tan Yaz
