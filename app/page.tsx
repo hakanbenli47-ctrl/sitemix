@@ -376,6 +376,110 @@ hover:border-purple-400/40 hover:shadow-[0_0_40px_rgba(168,85,247,0.2)] transiti
   </div>
 
 </section>
+<motion.section
+  variants={fadeUp}
+  initial="hidden"
+  whileInView="show"
+  className="py-24 border-t border-white/10 text-center"
+>
+  <h2 className="text-3xl mb-12">
+    Referans
+  </h2>
+
+  <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-10">
+
+  {/* Müjde Hair Beauty */}
+  <div className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:scale-105 transition">
+    <h3 className="mb-2 font-semibold">
+      Müjde Hair Beauty
+    </h3>
+
+    <p className="text-gray-400 text-sm mb-4">
+      Google üzerinden müşteri almaya başladı
+    </p>
+
+    <a
+      href="https://www.mujdehairbeauty.com.tr/"
+      target="_blank"
+      className="text-purple-400 text-sm underline"
+    >
+      Siteyi incele →
+    </a>
+  </div>
+
+  <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+    <p className="text-gray-300 text-sm">
+      “Site sonrası WhatsApp mesajları ciddi şekilde arttı.”
+    </p>
+
+    <p className="text-gray-500 text-xs mt-4">
+      Antalya • Güzellik Salonu
+    </p>
+  </div>
+
+
+  {/* Beyza Nails */}
+  <div className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:scale-105 transition">
+    <h3 className="mb-2 font-semibold">
+      Beyza Nails
+    </h3>
+
+    <p className="text-gray-400 text-sm mb-4">
+      Web sitesiyle yeni müşteriler kazanmaya başladı
+    </p>
+
+    <a
+      href="https://www.beyzanails.com.tr"
+      target="_blank"
+      className="text-purple-400 text-sm underline"
+    >
+      Siteyi incele →
+    </a>
+  </div>
+
+  <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+    <p className="text-gray-300 text-sm">
+      “Randevu taleplerimiz gözle görülür şekilde arttı.”
+    </p>
+
+    <p className="text-gray-500 text-xs mt-4">
+      İstanbul • Nail Studio
+    </p>
+  </div>
+
+
+  {/* By Willy Belek Kuaför */}
+  <div className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:scale-105 transition">
+    <h3 className="mb-2 font-semibold">
+      By Willy Belek Kuaför
+    </h3>
+
+    <p className="text-gray-400 text-sm mb-4">
+      Google’da görünürlük ve müşteri trafiği arttı
+    </p>
+
+    <a
+      href="https://www.bywillybelekkuafor.com.tr/"
+      target="_blank"
+      className="text-purple-400 text-sm underline"
+    >
+      Siteyi incele →
+    </a>
+  </div>
+
+  <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+    <p className="text-gray-300 text-sm">
+      “Web sitemiz sayesinde daha profesyonel görünmeye başladık.”
+    </p>
+
+    <p className="text-gray-500 text-xs mt-4">
+      Belek • Kuaför
+    </p>
+  </div>
+
+</div>
+
+</motion.section>  
 <section className="py-24 border-t border-white/10 text-center">
 
   <h2 className="text-3xl mb-10">
@@ -493,49 +597,7 @@ hover:border-purple-400/40 hover:shadow-[0_0_40px_rgba(168,85,247,0.2)] transiti
           </div>
 
         </section>
-<motion.section
-  variants={fadeUp}
-  initial="hidden"
-  whileInView="show"
-  className="py-24 border-t border-white/10 text-center"
->
-  <h2 className="text-3xl mb-12">
-    Referans
-  </h2>
 
-  <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-10">
-
-    <div className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:scale-105 transition">
-      <h3 className="mb-2 font-semibold">
-        Müjde Hair Beauty
-      </h3>
-
-      <p className="text-gray-400 text-sm mb-4">
-        Google üzerinden müşteri almaya başladı
-      </p>
-
-      <a
-        href="https://www.mujdehairbeauty.com.tr/"
-        target="_blank"
-        className="text-purple-400 text-sm underline"
-      >
-        Siteyi incele →
-      </a>
-    </div>
-
-    <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-      <p className="text-gray-300 text-sm">
-        “Site sonrası WhatsApp mesajları ciddi şekilde arttı.”
-      </p>
-
-      <p className="text-gray-500 text-xs mt-4">
-        Antalya • Güzellik Salonu
-      </p>
-    </div>
-
-  </div>
-
-</motion.section>  
 <motion.div
   initial={{ opacity: 0, y: 20 }}
   whileInView={{ opacity: 1, y: 0 }}
