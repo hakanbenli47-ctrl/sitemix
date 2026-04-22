@@ -9,6 +9,7 @@
 .animate-fadeIn {
   animation: fadeIn 1s ease-out forwards;
 }
+
 @keyframes fadeUp {
   from {
     opacity: 0;

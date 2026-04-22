@@ -131,116 +131,94 @@ useEffect(() => {
 
         {/* HERO */}
         
-      <section className="pt-40 pb-28 relative overflow-hidden">
-          <motion.h1
-  initial={{ opacity: 0, y: 40 }}
-  animate={{ opacity: 1, y: 0 }}
-  transition={{ duration: 0.6 }}
-  whileInView={{ y: [0, -10, 0] }}
-            className="text-4xl md:text-7xl font-bold leading-tight max-w-3xl mx-auto md:mx-0"
-          >
-            Web sitesi değil
-            <br />
-            <span className="bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
-             İşletmeniz için
-dijital müşteri sistemi
-            </span>
-          </motion.h1>
-           <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="text-gray-400 mt-6 max-w-xl text-sm md:text-base"
-          >
-            Google’da görünür ol.
-            İnsanlar seni bulsun.
-            WhatsApp’tan yazsın.
-          </motion.p>
-{/* 🔥 ARKA PLAN SİSTEM AKIŞI */}
-<motion.div
- className="absolute inset-0 pointer-events-none overflow-hidden"
-  initial={{ opacity: 0 }}
-  animate={{ opacity: 1 }}
->
+     <section className="pt-36 pb-28 relative overflow-hidden">
 
-  {/* Akış çizgileri */}
+  {/* 🔥 ARKA PLAN */}
   <motion.div
-    className="absolute inset-0 opacity-[0.02]"
-    style={{
-      backgroundImage: `
-        linear-gradient(to right, transparent 0%, rgba(255,255,255,0.15) 50%, transparent 100%),
-        linear-gradient(to bottom, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%)
-      `,
-      backgroundSize: "200px 200px",
-    }}
-    animate={{
-      backgroundPosition: ["0px 0px", "200px 200px"],
-    }}
-    transition={{
-      duration: 20,
-      repeat: Infinity,
-      ease: "linear",
-    }}
-  />
+    className="absolute inset-0 pointer-events-none overflow-hidden"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+  >
+    <motion.div
+      className="absolute inset-0 opacity-[0.02]"
+      style={{
+        backgroundImage: `
+          linear-gradient(to right, transparent 0%, rgba(255,255,255,0.15) 50%, transparent 100%),
+          linear-gradient(to bottom, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%)
+        `,
+        backgroundSize: "200px 200px",
+      }}
+      animate={{
+        backgroundPosition: ["0px 0px", "200px 200px"],
+      }}
+      transition={{
+        duration: 20,
+        repeat: Infinity,
+        ease: "linear",
+      }}
+    />
 
-  {/* Veri noktaları */}
-  <motion.div
-    className="absolute w-1 h-1 bg-blue-400/60 rounded-full"
-    animate={{
-      x: [0, 300, 600],
-      y: [100, 200, 100],
-      opacity: [0, 1, 0],
-    }}
-    transition={{
-      duration: 6,
-      repeat: Infinity,
-      ease: "linear",
-    }}
-  />
+    <motion.div
+      className="absolute w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[140px]"
+      animate={{
+        x: [0, 120, -60, 0],
+        y: [0, -60, 60, 0],
+      }}
+      transition={{
+        duration: 16,
+        repeat: Infinity,
+        ease: "linear",
+      }}
+    />
+  </motion.div>
 
-  <motion.div
-    className="absolute w-2 h-2 bg-blue-500 rounded-full"
-    animate={{
-      x: [600, 300, 0],
-      y: [200, 100, 200],
-      opacity: [0, 1, 0],
-    }}
-    transition={{
-      duration: 7,
-      repeat: Infinity,
-      ease: "linear",
-    }}
-  />
+  {/* 🔥 CONTENT WRAPPER (FULL WIDTH) */}
+  <div className="w-full max-w-7xl mx-auto px-4 md:px-10">
 
-  {/* Yumuşak glow */}
-  <motion.div
-    className="absolute w-[400px] h-[400px] bg-blue-500/10 rounded-full blur-[120px]"
-    animate={{
-      x: [0, 100, -50, 0],
-      y: [0, -50, 50, 0],
-    }}
-    transition={{
-      duration: 14,
-      repeat: Infinity,
-      ease: "linear",
-    }}
-  />
+    <div className="flex flex-col items-center md:items-start text-center md:text-left">
 
-</motion.div>
+      {/* BAŞLIK */}
+      <motion.h1
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        whileInView={{ y: [0, -10, 0] }}
+        className="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight max-w-4xl"
+      >
+        Web sitesi değil
+        <br />
+        <span className="bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
+          Google’dan müşteri getiren sistem
+        </span>
+      </motion.h1>
+
+      {/* ALT METİN */}
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3 }}
+        className="text-gray-400 mt-6 max-w-xl text-sm md:text-base"
+      >
+        Seni arayan müşteriler rakiplerine gitmesin.  
+        Google’da seni bulsun, direkt sana yazsın.
+      </motion.p>
+
+      {/* CTA */}
+      <motion.a
+        whileHover={!isMobile ? { scale: 1.08 } : {}}
+        whileTap={{ scale: 0.95 }}
+        href="https://wa.me/905515550302?text=Merhaba,%20işletmem%20için%20müşteri%20getiren%20sistem%20hakkında%20bilgi%20almak%20istiyorum"
+        className="mt-10 px-8 py-4 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 font-semibold shadow-xl"
+      >
+        Bana müşteri getirecek sistemi kur
+      </motion.a>
+
+    </div>
+
+  </div>
+
+</section>
         
-
-         
-
-          <motion.a
-            whileHover={!isMobile ? { scale: 1.1 } : {}}
-            whileTap={{ scale: 0.95 }}
-            href="https://wa.me/905515550302?text=Merhaba,%20işletmem%20için%20web%20sitesi%20ve%20müşteri%20getirme%20sistemi%20hakkında%20bilgi%20alabilir%20miyim?"
-            className="inline-block mt-10 px-8 py-4 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 font-semibold shadow-xl"
-          >
-            Başla
-          </motion.a>
-
-        </section>
         <p className="text-green-400 text-sm mt-4">
   ✔ Son 7 günde 12 işletme müşteri almaya başladı
 </p>
@@ -253,6 +231,114 @@ dijital müşteri sistemi
     {messages[index]}
   </div>
 </motion.div>
+<motion.section
+  variants={fadeUp}
+  initial="hidden"
+  whileInView="show"
+  className="py-24 border-t border-white/10 text-center"
+>
+  <h2 className="text-3xl mb-12">
+    Referans
+  </h2>
+
+  <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-10">
+
+  {/* Müjde Hair Beauty */}
+  <div className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:scale-105 transition">
+    <h3 className="mb-2 font-semibold">
+      Müjde Hair Beauty
+    </h3>
+
+    <p className="text-gray-400 text-sm mb-4">
+      Google üzerinden müşteri almaya başladı
+    </p>
+
+    <a
+      href="https://www.mujdehairbeauty.com.tr/"
+      target="_blank"
+      className="text-purple-400 text-sm underline"
+    >
+      Siteyi incele →
+    </a>
+  </div>
+    
+  {/* Beyza Nails */}
+  <div className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:scale-105 transition">
+    <h3 className="mb-2 font-semibold">
+      Beyza Nails
+    </h3>
+
+    <p className="text-gray-400 text-sm mb-4">
+      Web sitesiyle yeni müşteriler kazanmaya başladı
+    </p>
+
+    <a
+      href="https://www.beyzanails.com.tr"
+      target="_blank"
+      className="text-purple-400 text-sm underline"
+    >
+      Siteyi incele →
+    </a>
+  </div>
+
+  
+<div className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:scale-105 transition">
+  <h3 className="mb-2 font-semibold">
+    İncek Ender Perde
+  </h3>
+
+  <p className="text-gray-400 text-sm mb-4">
+    Google aramalarında üst sıralara çıkarak müşteri taleplerinde artış sağlandı
+  </p>
+
+  <a
+    href="https://www.incekenderperde.com"
+    target="_blank"
+    className="text-purple-400 text-sm underline"
+  >
+    Siteyi incele →
+  </a>
+</div>
+<div className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:scale-105 transition">
+  <h3 className="mb-2 font-semibold">
+    Naturel Peruk
+  </h3>
+
+  <p className="text-gray-400 text-sm mb-4">
+    Dijital görünürlük artırılarak yeni müşteri kazanımı ve dönüşüm oranı yükseltildi
+  </p>
+
+  <a
+    href="https://www.naturelperuk.com"
+    target="_blank"
+    className="text-purple-400 text-sm underline"
+  >
+    Siteyi incele →
+  </a>
+</div>
+  {/* By Willy Belek Kuaför */}
+  <div className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:scale-105 transition">
+    <h3 className="mb-2 font-semibold">
+      By Willy Belek Kuaför
+    </h3>
+
+    <p className="text-gray-400 text-sm mb-4">
+      Google’da görünürlük ve müşteri trafiği arttı
+    </p>
+
+    <a
+      href="https://www.bywillybelekkuafor.com.tr/"
+      target="_blank"
+      className="text-purple-400 text-sm underline"
+    >
+      Siteyi incele →
+    </a>
+  </div>
+
+
+</div>
+
+</motion.section>  
 <motion.section
   variants={fadeUp}
   initial="hidden"
@@ -376,125 +462,74 @@ hover:border-purple-400/40 hover:shadow-[0_0_40px_rgba(168,85,247,0.2)] transiti
   </div>
 
 </section>
-<motion.section
-  variants={fadeUp}
-  initial="hidden"
-  whileInView="show"
-  className="py-24 border-t border-white/10 text-center"
->
-  <h2 className="text-3xl mb-12">
-    Referans
-  </h2>
 
-  <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-10">
-
-  {/* Müjde Hair Beauty */}
-  <div className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:scale-105 transition">
-    <h3 className="mb-2 font-semibold">
-      Müjde Hair Beauty
-    </h3>
-
-    <p className="text-gray-400 text-sm mb-4">
-      Google üzerinden müşteri almaya başladı
-    </p>
-
-    <a
-      href="https://www.mujdehairbeauty.com.tr/"
-      target="_blank"
-      className="text-purple-400 text-sm underline"
-    >
-      Siteyi incele →
-    </a>
-  </div>
-
-  <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-    <p className="text-gray-300 text-sm">
-      “Site sonrası WhatsApp mesajları ciddi şekilde arttı.”
-    </p>
-
-    <p className="text-gray-500 text-xs mt-4">
-      Antalya • Güzellik Salonu
-    </p>
-  </div>
-
-
-  {/* Beyza Nails */}
-  <div className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:scale-105 transition">
-    <h3 className="mb-2 font-semibold">
-      Beyza Nails
-    </h3>
-
-    <p className="text-gray-400 text-sm mb-4">
-      Web sitesiyle yeni müşteriler kazanmaya başladı
-    </p>
-
-    <a
-      href="https://www.beyzanails.com.tr"
-      target="_blank"
-      className="text-purple-400 text-sm underline"
-    >
-      Siteyi incele →
-    </a>
-  </div>
-
-  <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-    <p className="text-gray-300 text-sm">
-      “Randevu taleplerimiz gözle görülür şekilde arttı.”
-    </p>
-
-    <p className="text-gray-500 text-xs mt-4">
-      İstanbul • Nail Studio
-    </p>
-  </div>
-
-
-  {/* By Willy Belek Kuaför */}
-  <div className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:scale-105 transition">
-    <h3 className="mb-2 font-semibold">
-      By Willy Belek Kuaför
-    </h3>
-
-    <p className="text-gray-400 text-sm mb-4">
-      Google’da görünürlük ve müşteri trafiği arttı
-    </p>
-
-    <a
-      href="https://www.bywillybelekkuafor.com.tr/"
-      target="_blank"
-      className="text-purple-400 text-sm underline"
-    >
-      Siteyi incele →
-    </a>
-  </div>
-
-  <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-    <p className="text-gray-300 text-sm">
-      “Web sitemiz sayesinde daha profesyonel görünmeye başladık.”
-    </p>
-
-    <p className="text-gray-500 text-xs mt-4">
-      Belek • Kuaför
-    </p>
-  </div>
-
-</div>
-
-</motion.section>  
 <section className="py-24 border-t border-white/10 text-center">
 
-  <h2 className="text-3xl mb-10">
-    İşletmeler ne diyor?
+  <h2 className="text-3xl mb-12">
+    Müşterilerimiz Ne Diyor?
   </h2>
 
-  <div className="max-w-2xl mx-auto bg-white/5 border border-white/10 p-8 rounded-2xl">
+  <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-6">
 
-    <p className="text-gray-300">
-      “İlk defa Google’dan müşteri geldi. Bu sistem gerçekten çalışıyor.”
-    </p>
+    {/* Müjde Hair Beauty */}
+    <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-left">
+      <p className="text-gray-300 text-sm leading-relaxed">
+        “Web sitesi açıldıktan sonra Google’dan direkt müşteri gelmeye başladı. Önceden hiç yoktu.”
+      </p>
+      <p className="text-gray-500 text-xs mt-4">
+        Müjde Hair Beauty • Güzellik Salonu
+      </p>
+    </div>
 
-    <p className="text-gray-500 text-sm mt-4">
-      Antalya • Güzellik Salonu
-    </p>
+    {/* Beyza Nails */}
+    <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-left">
+      <p className="text-gray-300 text-sm leading-relaxed">
+        “Instagram vardı ama yetmiyordu. Siteyle birlikte müşteri sayısı ciddi arttı.”
+      </p>
+      <p className="text-gray-500 text-xs mt-4">
+        Beyza Nails • Nail Studio
+      </p>
+    </div>
+
+    {/* İncek Ender Perde */}
+    <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-left">
+      <p className="text-gray-300 text-sm leading-relaxed">
+        “Perde arayan müşteriler artık bizi Google’dan buluyor. Telefonlar gözle görülür şekilde arttı.”
+      </p>
+      <p className="text-gray-500 text-xs mt-4">
+        İncek Ender Perde • Perde Mağazası
+      </p>
+    </div>
+
+    {/* Naturel Peruk */}
+    <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-left">
+      <p className="text-gray-300 text-sm leading-relaxed">
+        “Daha önce sadece çevreden müşteri geliyordu. Şimdi farklı şehirlerden bile sipariş alıyoruz.”
+      </p>
+      <p className="text-gray-500 text-xs mt-4">
+        Naturel Peruk • Peruk & Saç Sistemleri
+      </p>
+    </div>
+
+    {/* By Willy */}
+    <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-left">
+      <p className="text-gray-300 text-sm leading-relaxed">
+        “Google’da görünmeye başladıktan sonra müşteri akışı ciddi şekilde arttı.”
+      </p>
+      <p className="text-gray-500 text-xs mt-4">
+        By Willy Belek Kuaför • Kuaför
+      </p>
+    </div>
+
+    {/* GENEL GÜVEN KARTI */}
+    <div className="bg-purple-500/10 border border-purple-500/20 rounded-2xl p-6 text-left">
+      <p className="text-white text-sm leading-relaxed">
+        “Web sitesi sadece görünmek değil, müşteri getirmek için yapılmalı. Biz bunu sağlıyoruz.”
+      </p>
+      <p className="text-purple-300 text-xs mt-4">
+        Sitemix
+      </p>
+    </div>
 
   </div>
 
@@ -568,35 +603,63 @@ hover:border-purple-400/40 hover:shadow-[0_0_40px_rgba(168,85,247,0.2)] transiti
         </section>
 
         {/* FLOW */}
-        <section className="py-20 border-t border-white/10 text-center">
+        <section className="py-24 border-t border-white/10 text-center">
 
-          <motion.h2
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            className="text-2xl md:text-3xl mb-12"
-          >
-            Sistem nasıl çalışır?
-          </motion.h2>
+  <motion.h2
+    initial={{ opacity: 0 }}
+    whileInView={{ opacity: 1 }}
+    className="text-2xl md:text-3xl mb-12"
+  >
+    Sistem Nasıl Çalışır?
+  </motion.h2>
 
-          <div className="flex flex-col md:flex-row justify-center gap-6">
+  <div className="max-w-6xl mx-auto grid md:grid-cols-4 gap-6">
 
-            {["Site", "Google", "Müşteri", "Mesaj"].map((step, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.2 }}
-                whileHover={!isMobile ? { y: -10 } : {}}
-                whileTap={{ scale: 0.95 }}
-                className="px-6 py-4 border border-white/10 rounded-xl bg-white/5"
-              >
-                {step}
-              </motion.div>
-            ))}
+    {[
+      {
+        title: "Web Sitesi",
+        desc: "İşletmen için profesyonel ve hızlı bir web sitesi kurulur"
+      },
+      {
+        title: "Google Görünürlüğü",
+        desc: "Site Google’da üst sıralara çıkacak şekilde optimize edilir"
+      },
+      {
+        title: "Müşteri Trafiği",
+        desc: "Seni arayan ve hizmet isteyen kişiler siteye gelir"
+      },
+      {
+        title: "Mesaj & Arama",
+        desc: "Müşteriler direkt sana ulaşır ve satış başlar"
+      }
+    ].map((step, i) => (
+      <motion.div
+        key={i}
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ delay: i * 0.2 }}
+        whileHover={!isMobile ? { y: -10 } : {}}
+        className="p-6 border border-white/10 rounded-2xl bg-white/5 text-left"
+      >
 
-          </div>
+        <div className="text-purple-400 font-semibold mb-2">
+          0{i + 1}
+        </div>
 
-        </section>
+        <h3 className="font-semibold mb-2">
+          {step.title}
+        </h3>
+
+        <p className="text-gray-400 text-sm leading-relaxed">
+          {step.desc}
+        </p>
+
+      </motion.div>
+    ))}
+
+  </div>
+
+</section>
 
 <motion.div
   initial={{ opacity: 0, y: 20 }}
