@@ -204,14 +204,20 @@ useEffect(() => {
       </motion.p>
 
       {/* CTA */}
-      <motion.a
-        whileHover={!isMobile ? { scale: 1.08 } : {}}
-        whileTap={{ scale: 0.95 }}
-        href="https://wa.me/905515550302?text=Merhaba,%20işletmem%20için%20müşteri%20getiren%20sistem%20hakkında%20bilgi%20almak%20istiyorum"
-        className="mt-10 px-8 py-4 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 font-semibold shadow-xl"
-      >
-        Bana müşteri getirecek sistemi kur
-      </motion.a>
+   <div className="flex flex-col items-center">
+  <motion.a
+    whileHover={!isMobile ? { scale: 1.08 } : {}}
+    whileTap={{ scale: 0.95 }}
+    href="https://wa.me/905515550302?text=Merhaba,%20işletmem%20için%20ücretsiz%20demo%20hazırlatmak%20istiyorum."
+    className="mt-10 px-8 py-4 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 font-semibold shadow-xl"
+  >
+    İşletmem İçin Demo İste
+  </motion.a>
+
+  <p className="mt-3 text-center text-sm text-white/60">
+    Ücretsiz demo hazırlanır, beğenirsen yayına alınır.
+  </p>
+</div>
 
     </div>
 
@@ -220,7 +226,7 @@ useEffect(() => {
 </section>
         
         <p className="text-green-400 text-sm mt-4">
-  ✔ Son 7 günde 12 işletme müşteri almaya başladı
+  ✔ Son 7 günde 12 işletmeye özel demo hazırlandı
 </p>
 <motion.div
   initial={{ opacity: 0 }}
