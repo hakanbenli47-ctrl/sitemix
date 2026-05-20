@@ -52,6 +52,10 @@ export const metadata: Metadata = {
   creator: "Sitemix",
   publisher: "Sitemix",
 
+  verification: {
+    google: "unGw4gq1-Xi7UAWpsZrcaJCEevzBcb5GLozv6o8Xqxs",
+  },
+
   alternates: {
     canonical: siteUrl,
   },
