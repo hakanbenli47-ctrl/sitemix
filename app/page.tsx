@@ -102,6 +102,30 @@ const references = [
     text: "Google görünürlüğü ve randevu taleplerine odaklanan profesyonel kurulum.",
     url: "https://www.bywillybelekkuafor.com.tr/",
   },
+  {
+    name: "Özdurmuş Hidrolik",
+    sector: "Teknik Servis",
+    text: "Havalı kriko, transpalet ve hidrolik sistem servisleri için güven veren yerel hizmet sayfası.",
+    url: "https://www.ozdurmushidrolik.com.tr/",
+  },
+  {
+    name: "Dekorasyoncum",
+    sector: "Duvar Kağıdı & Dekorasyon",
+    text: "Duvar kağıdı satışı, uygulama hizmeti ve katalog inceleme akışını netleştiren profesyonel web yapısı.",
+    url: "https://www.dekorasyoncum.com.tr/",
+  },
+  {
+    name: "Kervan Döner",
+    sector: "Restoran & Paket Servis",
+    text: "Menü, öne çıkan lezzetler, konum ve WhatsApp sipariş akışını hızlı gösteren restoran sayfası.",
+    url: "https://www.kervandoner.com/",
+  },
+  {
+    name: "Engelli Taşıma",
+    sector: "Engelli Araç Kiralama",
+    text: "Engelli araç kiralama, engelli taksi ve randevulu ulaşım hizmetleri için güven odaklı web sayfası.",
+    url: "https://www.engellitasima.com/",
+  },
 ];
 
 const steps = [
