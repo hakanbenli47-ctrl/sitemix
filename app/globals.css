@@ -1,53 +1,19 @@
 @import "tailwindcss";
 
-/* Fade Animation */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fadeIn {
-  animation: fadeIn 1s ease-out forwards;
-}
-
-@keyframes fadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(40px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.fade-up {
-  animation: fadeUp 0.8s ease-out both;
-}
-
-.smooth-section {
-  transition: all 0.4s ease;
-}
-
 * {
   box-sizing: border-box;
 }
 
 html {
   scroll-behavior: smooth;
+  background: #0a0706;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
-  background: #020617;
-  color: #ffffff;
+  background: #0a0706;
+  color: #fff7ed;
   font-family: Arial, Helvetica, sans-serif;
   overflow-x: hidden;
 }
