@@ -19,33 +19,36 @@ export const metadata: Metadata = {
 
   title: {
     default:
-      "Sitemix | İşletmelere Özel Web Sitesi, Google Uyumlu Dijital Çözümler",
+      "Sitemix | İşletmelere Özel Web Sitesi ve Müşteri Getiren Dijital Sistemler",
     template: "%s | Sitemix",
   },
 
   description:
-    "Sitemix; işletmeler için modern, mobil uyumlu, Google görünürlüğü güçlü ve WhatsApp dönüşüm odaklı web siteleri hazırlar. 1 saat içinde demo, 3 gün içinde yayına hazır profesyonel web çözümleri.",
+    "Sitemix; işletmeler için modern, mobil uyumlu, Google görünürlüğü güçlü ve WhatsApp dönüşüm odaklı web siteleri hazırlar. İşletmenizi internette daha güvenilir gösteren, müşteri talebi almaya odaklı profesyonel web çözümleri sunar.",
 
   keywords: [
     "Sitemix",
     "web sitesi tasarımı",
     "işletme web sitesi",
     "kurumsal web sitesi",
+    "müşteri getiren web sitesi",
     "Google uyumlu web sitesi",
     "SEO uyumlu web sitesi",
     "WhatsApp entegre web sitesi",
     "mobil uyumlu web sitesi",
     "küçük işletme web sitesi",
     "esnaf web sitesi",
+    "yerel işletme web sitesi",
     "kuaför web sitesi",
     "güzellik salonu web sitesi",
     "restoran web sitesi",
     "butik web sitesi",
     "ürün satış sitesi",
-    "e ticaret sitesi",
-    "reklam destekli web sitesi",
+    "WhatsApp sipariş sitesi",
     "dijital tanıtım",
     "web tasarım Türkiye",
+    "Google görünürlük",
+    "işletme tanıtım sitesi",
   ],
 
   authors: [{ name: "Sitemix" }],
@@ -66,15 +69,15 @@ export const metadata: Metadata = {
     url: siteUrl,
     siteName: "Sitemix",
     title:
-      "Sitemix | İşletmelere Özel Web Sitesi ve Dijital Tanıtım Çözümleri",
+      "Sitemix | İşletmelere Özel Web Sitesi ve Müşteri Getiren Dijital Sistemler",
     description:
-      "İşletmeniz için modern, mobil uyumlu, Google odaklı ve WhatsApp dönüşümlü web sitesi çözümleri. Demo hızlı hazırlanır, site kısa sürede yayına alınır.",
+      "İşletmeniz için modern, mobil uyumlu, Google odaklı ve WhatsApp dönüşümlü web sitesi çözümleri. Sitemix, işletmenizi internette daha güvenilir gösteren profesyonel web sistemleri hazırlar.",
     images: [
       {
         url: "/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "Sitemix Web Sitesi ve Dijital Tanıtım Çözümleri",
+        alt: "Sitemix İşletmelere Özel Web Sitesi ve Dijital Tanıtım Çözümleri",
       },
     ],
   },
@@ -82,7 +85,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title:
-      "Sitemix | İşletmelere Özel Web Sitesi ve Dijital Tanıtım Çözümleri",
+      "Sitemix | İşletmelere Özel Web Sitesi ve Müşteri Getiren Dijital Sistemler",
     description:
       "Google uyumlu, mobil uyumlu ve WhatsApp dönüşüm odaklı profesyonel web siteleri.",
     images: ["/og-image.jpg"],
@@ -107,7 +110,7 @@ export const metadata: Metadata = {
     apple: "/apple-touch-icon.png",
   },
 
-  category: "technology",
+  category: "business",
 };
 
 export default function RootLayout({
