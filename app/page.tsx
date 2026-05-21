@@ -252,181 +252,171 @@ export default function Home() {
         </div>
       </header>
 
-      <section className="relative z-10 px-4 pb-16 pt-32 md:px-8 md:pb-24 md:pt-40">
-        <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[1.02fr_0.98fr]">
-          <motion.div
-            variants={group}
-            initial="hidden"
-            animate="show"
-            className="text-center lg:text-left"
-          >
-            <motion.div
-              variants={rise}
-              className="mx-auto mb-6 inline-flex items-center gap-3 rounded-full border border-orange-200/18 bg-orange-300/10 px-4 py-2 text-xs font-black text-orange-100 lg:mx-0"
-            >
-              <span className="h-2 w-2 rounded-full bg-lime-300" />
-              İşletmeni internette daha güçlü gösteren sistem
-            </motion.div>
+   <section className="relative z-10 px-4 pb-16 pt-32 md:px-8 md:pb-24 md:pt-40">
+  <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[1.02fr_0.98fr]">
+    <motion.div
+      variants={group}
+      initial="hidden"
+      animate="show"
+      className="text-center lg:text-left"
+    >
+      <motion.div
+        variants={rise}
+        className="mx-auto mb-6 inline-flex items-center gap-3 rounded-full border border-lime-300/20 bg-lime-300/10 px-4 py-2 text-xs font-black text-lime-100 lg:mx-0"
+      >
+        <span className="h-2 w-2 rounded-full bg-lime-300" />
+        Web sitesi olmayan işletmeler müşteri kaybediyor
+      </motion.div>
 
-            <motion.h1
-              variants={rise}
-              className="mx-auto max-w-5xl text-4xl font-black leading-[1.02] tracking-[-0.06em] md:text-6xl lg:mx-0 lg:text-7xl"
-            >
-              Müşteri seni görmeden karar veriyor.
-              <span className="block bg-gradient-to-r from-orange-200 via-rose-100 to-lime-200 bg-clip-text text-transparent">
-                O ilk izlenimi biz kuruyoruz.
-              </span>
-            </motion.h1>
+      <motion.h1
+        variants={rise}
+        className="mx-auto max-w-5xl text-4xl font-black leading-[1.02] tracking-[-0.06em] md:text-6xl lg:mx-0 lg:text-7xl"
+      >
+        Müşteriler seni Google’da bulamazsa
+        <span className="block bg-gradient-to-r from-orange-200 via-rose-100 to-lime-200 bg-clip-text text-transparent">
+          rakibine gider.
+        </span>
+      </motion.h1>
 
-            <motion.p
-              variants={rise}
-              className="mx-auto mt-7 max-w-2xl text-base leading-8 text-white/64 md:text-lg lg:mx-0"
-            >
-              Sitemix; işletmen için sadece güzel bir sayfa değil, Google’da
-              güven veren ve müşteriyi WhatsApp’a taşıyan profesyonel bir
-              dijital vitrin hazırlar.
-            </motion.p>
+      <motion.p
+        variants={rise}
+        className="mx-auto mt-7 max-w-2xl text-base leading-8 text-white/68 md:text-lg lg:mx-0"
+      >
+        Sitemix; işletmen için mobil uyumlu, güven veren ve müşteriyi doğrudan
+        WhatsApp’a yönlendiren profesyonel web sitesi hazırlar.
+      </motion.p>
 
-            <motion.div
-              variants={rise}
-              className="mt-9 flex flex-col items-center gap-4 sm:flex-row sm:justify-center lg:justify-start"
-            >
-              <a
-                href={wp.demo}
-                className="w-full rounded-2xl border border-orange-200/25 bg-orange-400/12 px-7 py-4 text-center text-sm font-black text-orange-50 transition hover:-translate-y-1 hover:bg-orange-400/20 sm:w-auto"
-              >
-                Ücretsiz Demo Gör
-              </a>
+      <motion.div
+        variants={rise}
+        className="mt-9 flex flex-col items-center gap-4 sm:flex-row sm:justify-center lg:justify-start"
+      >
+        <a
+          href={wp.teklif}
+          className="w-full rounded-2xl border border-lime-300/25 bg-lime-300/14 px-7 py-4 text-center text-sm font-black text-lime-50 transition hover:-translate-y-1 hover:bg-lime-300/22 sm:w-auto"
+        >
+          WhatsApp’tan Teklif Al
+        </a>
 
-              <a
-                href={wp.google}
-                className="w-full rounded-2xl border border-rose-200/20 bg-rose-400/10 px-7 py-4 text-center text-sm font-black text-rose-50 transition hover:-translate-y-1 hover:bg-rose-400/18 sm:w-auto"
-              >
-                Google İçin Bilgi Al
-              </a>
-            </motion.div>
+        <a
+          href={wp.demo}
+          className="w-full rounded-2xl border border-orange-200/25 bg-orange-400/12 px-7 py-4 text-center text-sm font-black text-orange-50 transition hover:-translate-y-1 hover:bg-orange-400/20 sm:w-auto"
+        >
+          Ücretsiz Demo Gör
+        </a>
+      </motion.div>
 
-            <motion.div
-              variants={rise}
-              className="mt-8 grid grid-cols-1 gap-3 text-xs font-semibold text-white/56 sm:grid-cols-3 lg:max-w-xl"
-            >
-              <div className="rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3">
-                Hazır şablon değil
+      <motion.div
+        variants={rise}
+        className="mt-8 grid grid-cols-1 gap-3 text-xs font-semibold text-white/60 sm:grid-cols-3 lg:max-w-xl"
+      >
+        <div className="rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3">
+          1 saatte demo
+        </div>
+        <div className="rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3">
+          3 günde teslim
+        </div>
+        <div className="rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3">
+          WhatsApp odaklı
+        </div>
+      </motion.div>
+    </motion.div>
+
+    <motion.div
+      variants={rise}
+      initial="hidden"
+      animate="show"
+      className="relative"
+    >
+      <div className="absolute -inset-4 rounded-[42px] bg-gradient-to-br from-orange-400/16 via-rose-500/8 to-lime-400/10 blur-2xl" />
+
+      <div className="relative overflow-hidden rounded-[34px] border border-white/12 bg-white/[0.055] p-3 shadow-2xl shadow-black/30 md:p-5">
+        <div
+          className="relative min-h-[440px] overflow-hidden rounded-[28px] bg-cover bg-center md:min-h-[520px]"
+          style={{ backgroundImage: `url(${img.hero})` }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-black/88 via-black/62 to-black/30" />
+
+          <div className="relative flex min-h-[440px] flex-col justify-between p-5 md:min-h-[520px] md:p-7">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold text-white/50">
+                  Müşteri akışı
+                </p>
+                <p className="mt-1 text-sm font-black">
+                  Görünürlük → Güven → WhatsApp
+                </p>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3">
-                Google mantıklı
+
+              <div className="rounded-full border border-lime-300/25 bg-lime-300/10 px-3 py-1 text-[11px] font-black text-lime-100">
+                Aktif
               </div>
-              <div className="rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3">
-                WhatsApp odaklı
+            </div>
+
+            <div>
+              <div className="mb-4 max-w-md rounded-[24px] border border-white/12 bg-black/52 p-5">
+                <p className="text-xs font-semibold text-orange-100/65">
+                  İşletmen için hedef
+                </p>
+                <h3 className="mt-3 text-2xl font-black tracking-[-0.04em]">
+                  Google’da ciddi görün. Müşteri güven duysun. WhatsApp’tan yazsın.
+                </h3>
               </div>
-            </motion.div>
-          </motion.div>
 
-          <motion.div
-            variants={rise}
-            initial="hidden"
-            animate="show"
-            className="relative"
-          >
-            <div className="absolute -inset-4 rounded-[42px] bg-gradient-to-br from-orange-400/16 via-rose-500/8 to-lime-400/10 blur-2xl" />
-
-            <div className="relative overflow-hidden rounded-[34px] border border-white/12 bg-white/[0.055] p-3 shadow-2xl shadow-black/30 md:p-5">
-              <div
-                className="relative min-h-[440px] overflow-hidden rounded-[28px] bg-cover bg-center md:min-h-[520px]"
-                style={{ backgroundImage: `url(${img.hero})` }}
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-black/88 via-black/58 to-black/25" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(251,146,60,0.20),transparent_36%),radial-gradient(circle_at_bottom_right,rgba(190,242,100,0.10),transparent_34%)]" />
-
-                <div className="relative flex min-h-[440px] flex-col justify-between p-5 md:min-h-[520px] md:p-7">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-xs font-semibold text-white/50">
-                        Canlı kurgu
-                      </p>
-                      <p className="mt-1 text-sm font-black">
-                        Sitemix müşteri yolu
-                      </p>
-                    </div>
-
-                    <div className="rounded-full border border-lime-300/25 bg-lime-300/10 px-3 py-1 text-[11px] font-black text-lime-100">
-                      Aktif
-                    </div>
+              <div className="grid gap-3">
+                {[
+                  "Google’da daha güvenilir görünüm",
+                  "Mobilde profesyonel ilk izlenim",
+                  "Tek dokunuşla WhatsApp iletişimi",
+                ].map((item, index) => (
+                  <div
+                    key={item}
+                    className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/42 p-3"
+                  >
+                    <span className="grid h-9 w-9 place-items-center rounded-xl bg-orange-300/15 text-xs font-black text-orange-100">
+                      0{index + 1}
+                    </span>
+                    <span className="text-sm font-semibold text-white/82">
+                      {item}
+                    </span>
                   </div>
+                ))}
+              </div>
 
-                  <div>
-                    <div className="mb-4 max-w-md rounded-[24px] border border-white/12 bg-black/48 p-5">
-                      <p className="text-xs font-semibold text-orange-100/65">
-                        Müşteri rotası
-                      </p>
-                      <h3 className="mt-3 text-2xl font-black tracking-[-0.04em]">
-                        Google’da görür. Sayfaya girer. Güven duyar. Sana yazar.
-                      </h3>
-                    </div>
+              <div className="mt-4 rounded-[24px] border border-lime-300/18 bg-lime-300/10 p-4">
+                <p className="text-xs font-semibold text-lime-100/55">
+                  Net teklif
+                </p>
 
-                    <div className="grid gap-3">
-                      {[
-                        "Google araması",
-                        "Güven veren web sitesi",
-                        "WhatsApp mesajı",
-                      ].map((item, index) => (
-                        <div
-                          key={item}
-                          className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/42 p-3"
-                        >
-                          <span className="grid h-9 w-9 place-items-center rounded-xl bg-orange-300/15 text-xs font-black text-orange-100">
-                            0{index + 1}
-                          </span>
-                          <span className="text-sm font-semibold text-white/82">
-                            {item}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-
-                 <div className="mt-4 min-h-[86px] rounded-[24px] border border-lime-300/18 bg-lime-300/10 p-4">
-  <div className="flex min-h-[54px] items-center gap-4">
-    <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-lime-300/25 bg-lime-300/10">
-      <span className="relative h-3 w-3 rounded-full bg-lime-200" />
-    </div>
-
-    <div className="min-w-0 flex-1">
-      <p className="text-xs font-semibold text-lime-100/55">
-        Canlı bildirim
-      </p>
-
-     <p className="mt-1 min-h-[40px] max-w-full text-sm font-black leading-5 text-lime-100 line-clamp-2">
-        {live[liveIndex]}
-      </p>
-    </div>
+                <p className="mt-1 text-sm font-black leading-6 text-lime-100">
+                  Önce demo hazırlanır. Beğenirsen yayına alma süreci başlar.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
   </div>
-</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
 
-        <div className="mx-auto mt-14 grid max-w-7xl grid-cols-2 gap-3 md:grid-cols-4 md:gap-5">
-          {[
-            ["1 Saat", "Demo önizleme"],
-            ["3 Gün", "Yayına alma hedefi"],
-            ["Mobil", "Her ekrana uyumlu"],
-            ["WhatsApp", "Direkt müşteri akışı"],
-          ].map(([value, label]) => (
-            <div
-              key={label}
-              className="rounded-[26px] border border-white/10 bg-white/[0.045] p-5 text-center transition hover:-translate-y-1 hover:bg-white/[0.075] md:p-6"
-            >
-              <p className="text-xl font-black md:text-2xl">{value}</p>
-              <p className="mt-2 text-xs leading-5 text-white/45 md:text-sm">
-                {label}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
+  <div className="mx-auto mt-14 grid max-w-7xl grid-cols-2 gap-3 md:grid-cols-4 md:gap-5">
+    {[
+      ["1 Saat", "Demo önizleme"],
+      ["3 Gün", "Yayına alma hedefi"],
+      ["Mobil", "Her ekrana uyumlu"],
+      ["WhatsApp", "Direkt müşteri akışı"],
+    ].map(([value, label]) => (
+      <div
+        key={label}
+        className="rounded-[26px] border border-white/10 bg-white/[0.045] p-5 text-center transition hover:-translate-y-1 hover:bg-white/[0.075] md:p-6"
+      >
+        <p className="text-xl font-black md:text-2xl">{value}</p>
+        <p className="mt-2 text-xs leading-5 text-white/45 md:text-sm">
+          {label}
+        </p>
+      </div>
+    ))}
+  </div>
+</section>
 
       <section id="fark" className="relative z-10 px-4 py-20 md:px-8 md:py-28">
         <div className="mx-auto max-w-7xl">
