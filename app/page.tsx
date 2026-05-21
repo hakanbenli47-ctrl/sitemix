@@ -384,22 +384,23 @@ export default function Home() {
                       ))}
                     </div>
 
-                    <div className="mt-4 rounded-[24px] border border-lime-300/18 bg-lime-300/10 p-4">
-                      <div className="flex items-center gap-4">
-                        <div className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-lime-300/25 bg-lime-300/10">
-                          <span className="relative h-3 w-3 rounded-full bg-lime-200" />
-                        </div>
+                 <div className="mt-4 min-h-[86px] rounded-[24px] border border-lime-300/18 bg-lime-300/10 p-4">
+  <div className="flex min-h-[54px] items-center gap-4">
+    <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-lime-300/25 bg-lime-300/10">
+      <span className="relative h-3 w-3 rounded-full bg-lime-200" />
+    </div>
 
-                        <div>
-                          <p className="text-xs font-semibold text-lime-100/55">
-                            Canlı bildirim
-                          </p>
-                          <p className="mt-1 text-sm font-black text-lime-100">
-                            {live[liveIndex]}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
+    <div className="min-w-0 flex-1">
+      <p className="text-xs font-semibold text-lime-100/55">
+        Canlı bildirim
+      </p>
+
+     <p className="mt-1 min-h-[40px] max-w-full text-sm font-black leading-5 text-lime-100 line-clamp-2">
+        {live[liveIndex]}
+      </p>
+    </div>
+  </div>
+</div>
                   </div>
                 </div>
               </div>
