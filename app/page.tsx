@@ -73,9 +73,9 @@ const group: Variants = {
     transition: { staggerChildren: 0.055 },
   },
 };
-
 const homeProof = [
-  "Türkiye genelinde online çalışma",
+  "İşletmeye özel özgün tasarım",
+  "Hazır şablon mantığıyla ilerlenmez",
   "WhatsApp üzerinden yazılı süreç",
   "Kapsam ve teslim baştan net",
   "Yayın sonrası temel destek",
@@ -453,11 +453,12 @@ export default function Home() {
                   İşletmeni internette daha güvenilir gösteren web yapısı.
                 </h1>
 
-                <p className="mt-6 max-w-2xl text-sm leading-7 text-[#102018]/64 md:text-lg md:leading-8">
-                  Sitemix; web sitesi, ürün vitrini ve WhatsApp odaklı iletişim
-                  yapıları hazırlar. Ziyaretçi ne yaptığını hızlı anlar, sana
-                  güvenerek ulaşır.
-                </p>
+               <p className="mt-6 max-w-2xl text-sm leading-7 text-[#102018]/64 md:text-lg md:leading-8">
+  Sitemix; web sitesi, ürün vitrini ve WhatsApp odaklı iletişim
+  yapıları hazırlar. Her çalışma işletmenin sektörüne, hizmet yapısına
+  ve müşteri beklentisine göre özgün tasarlanır; hazır şablon mantığıyla
+  ilerlenmez.
+</p>
 
                 <div className="mt-7 flex flex-col gap-3 sm:flex-row">
                   <GreenButton href={wp.genel}>WhatsApp’tan Bilgi Al</GreenButton>
