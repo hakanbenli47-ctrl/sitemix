@@ -30,8 +30,6 @@ const wp = {
 };
 
 const img = {
-  hero:
-    "https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=1900&q=78",
   about:
     "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1700&q=78",
   ecommerce:
@@ -76,19 +74,11 @@ const group: Variants = {
   },
 };
 
-const openingProof = [
-  {
-    title: "Kiminle çalıştığını bilirsin",
-    text: "Süreç WhatsApp üzerinden yazılı ve takip edilebilir şekilde ilerler.",
-  },
-  {
-    title: "Kapsam baştan netleşir",
-    text: "Sayfa, teslim, domain, hosting ve destek detayları çalışma öncesinde konuşulur.",
-  },
-  {
-    title: "Site müşteri için hazırlanır",
-    text: "Amaç yalnızca görünmek değil, ziyaretçinin sana güvenerek ulaşmasını kolaylaştırmaktır.",
-  },
+const homeProof = [
+  "Türkiye genelinde online çalışma",
+  "WhatsApp üzerinden yazılı süreç",
+  "Kapsam ve teslim baştan net",
+  "Yayın sonrası temel destek",
 ];
 
 const companyFacts = [
@@ -320,7 +310,7 @@ function PrimaryButton({
   return (
     <a
       href={href}
-      className="inline-flex min-h-[52px] items-center justify-center rounded-full bg-[#102018] px-6 text-center text-[14px] font-black leading-none text-white shadow-xl shadow-black/15 transition hover:-translate-y-0.5 hover:bg-[#1d342a] md:min-h-[56px] md:px-8"
+      className="inline-flex min-h-[50px] items-center justify-center rounded-full bg-[#102018] px-6 text-center text-[14px] font-black leading-none text-white shadow-xl shadow-black/15 transition hover:-translate-y-0.5 hover:bg-[#1d342a] md:min-h-[56px] md:px-8"
     >
       <span className="block whitespace-nowrap text-white">{children}</span>
     </a>
@@ -337,26 +327,9 @@ function GreenButton({
   return (
     <a
       href={href}
-      className="inline-flex min-h-[52px] items-center justify-center rounded-full bg-[#1f6b43] px-6 text-center text-[14px] font-black leading-none text-white shadow-xl shadow-[#1f6b43]/20 transition hover:-translate-y-0.5 hover:bg-[#185735] md:min-h-[56px] md:px-8"
+      className="inline-flex min-h-[50px] items-center justify-center rounded-full bg-[#1f6b43] px-6 text-center text-[14px] font-black leading-none text-white shadow-xl shadow-[#1f6b43]/20 transition hover:-translate-y-0.5 hover:bg-[#185735] md:min-h-[56px] md:px-8"
     >
       <span className="block whitespace-nowrap text-white">{children}</span>
-    </a>
-  );
-}
-
-function LightButton({
-  href,
-  children,
-}: {
-  href: string;
-  children: ReactNode;
-}) {
-  return (
-    <a
-      href={href}
-      className="inline-flex min-h-[52px] items-center justify-center rounded-full bg-white px-6 text-center text-[14px] font-black leading-none text-[#102018] shadow-xl shadow-black/10 transition hover:-translate-y-0.5 hover:bg-[#f4f4f0] md:min-h-[56px] md:px-8"
-    >
-      <span className="block whitespace-nowrap text-[#102018]">{children}</span>
     </a>
   );
 }
@@ -377,7 +350,7 @@ function PageShell({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -14 }}
       transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-      className="relative z-10 min-h-screen px-4 pb-28 pt-28 md:px-8 md:pb-16 md:pt-32"
+      className="relative z-10 min-h-screen px-4 pb-24 pt-28 md:px-8 md:pb-16 md:pt-32"
     >
       <div className="mx-auto max-w-7xl">
         <div className="mb-10 border-b border-[#102018]/10 pb-8">
@@ -462,135 +435,79 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -14 }}
           transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-          className="relative z-10 flex min-h-[100svh] items-center overflow-hidden px-4 pb-[84px] pt-[78px] md:px-8 md:pb-8 md:pt-28"
+          className="relative z-10 flex min-h-[100svh] items-center px-4 pb-4 pt-[88px] md:px-8 md:pb-8 md:pt-28"
         >
           <div className="mx-auto w-full max-w-7xl">
             <motion.div
               variants={group}
               initial="hidden"
               animate="show"
-              className="grid gap-6 lg:grid-cols-[0.7fr_1.3fr] lg:items-stretch"
+              className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-end"
             >
-              <motion.aside
-                variants={rise}
-                className="hidden flex-col justify-between border-y border-[#102018]/10 py-7 lg:flex"
-              >
-                <div>
-                  <p className="text-xs font-black uppercase tracking-[0.28em] text-[#1f6b43]">
-                    Sitemix nedir?
-                  </p>
+              <motion.div variants={rise}>
+                <p className="text-xs font-black uppercase tracking-[0.28em] text-[#1f6b43]">
+                  Sitemix
+                </p>
 
-                  <h2 className="mt-4 text-4xl font-black leading-tight tracking-[-0.055em] text-[#102018]">
-                    İşletmenin internette güven veren yüzünü kuran web hizmet
-                    markası.
-                  </h2>
+                <h1 className="mt-4 max-w-5xl text-[clamp(38px,10vw,92px)] font-black leading-[0.92] tracking-[-0.08em] text-[#102018]">
+                  İşletmeni internette daha güvenilir gösteren web yapısı.
+                </h1>
 
-                  <p className="mt-5 text-base leading-7 text-[#102018]/62">
-                    Web sitesi, ürün vitrini, WhatsApp yönlendirmesi, temel
-                    Google uyumu ve yayın sonrası destek tek bir çalışma
-                    sürecinde planlanır.
-                  </p>
+                <p className="mt-6 max-w-2xl text-sm leading-7 text-[#102018]/64 md:text-lg md:leading-8">
+                  Sitemix; web sitesi, ürün vitrini ve WhatsApp odaklı iletişim
+                  yapıları hazırlar. Ziyaretçi ne yaptığını hızlı anlar, sana
+                  güvenerek ulaşır.
+                </p>
+
+                <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+                  <GreenButton href={wp.genel}>WhatsApp’tan Bilgi Al</GreenButton>
+                  <PrimaryButton href={wp.demo}>Ücretsiz Ön Çalışma İste</PrimaryButton>
                 </div>
+              </motion.div>
 
-                <div className="mt-8 divide-y divide-[#102018]/10 border-y border-[#102018]/10">
-                  {openingProof.map((item, index) => (
-                    <div key={item.title} className="grid gap-3 py-5">
-                      <span className="text-sm font-black text-[#1f6b43]">
-                        0{index + 1}
-                      </span>
-
-                      <div>
-                        <h3 className="text-xl font-black tracking-[-0.035em] text-[#102018]">
-                          {item.title}
-                        </h3>
-                        <p className="mt-2 text-sm leading-6 text-[#102018]/58">
-                          {item.text}
-                        </p>
-                      </div>
+              <motion.div
+                variants={rise}
+                className="border-y border-[#102018]/10 py-5 md:py-7"
+              >
+                <div className="grid grid-cols-3 gap-3 border-b border-[#102018]/10 pb-5">
+                  {[
+                    ["3.999 TL", "web sitesi"],
+                    ["5.999 TL", "ürün vitrini"],
+                    ["7.999 TL", "büyüme sistemi"],
+                  ].map(([value, label]) => (
+                    <div key={value}>
+                      <p className="text-lg font-black tracking-[-0.05em] text-[#102018] md:text-3xl">
+                        {value}
+                      </p>
+                      <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#102018]/45 md:text-xs">
+                        {label}
+                      </p>
                     </div>
                   ))}
                 </div>
-              </motion.aside>
 
-              <motion.div variants={rise}>
-                <div className="relative overflow-hidden rounded-[30px] bg-[#102018] shadow-2xl shadow-black/20 md:rounded-[42px]">
-                  <div
-                    className="absolute inset-0 bg-cover bg-center opacity-24 md:opacity-32"
-                    style={{ backgroundImage: `url(${img.hero})` }}
-                  />
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,rgba(199,237,144,0.22),transparent_32%),linear-gradient(135deg,rgba(16,32,24,0.98)_0%,rgba(16,32,24,0.92)_50%,rgba(16,32,24,0.72)_100%)]" />
-
-                  <div className="relative flex min-h-[calc(100svh-176px)] flex-col justify-between gap-5 p-5 text-white sm:p-7 md:min-h-[620px] md:p-10 lg:p-12">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-full bg-[#c7ed90] px-3 py-2 text-[10px] font-black uppercase tracking-[0.15em] text-[#102018] sm:px-4 sm:text-xs">
-                        Profesyonel web çözümü
-                      </span>
-
-                      <span className="rounded-full border border-white/18 px-3 py-2 text-[10px] font-black uppercase tracking-[0.15em] text-white/72 sm:px-4 sm:text-xs">
-                        Online çalışma
-                      </span>
-                    </div>
-
-                    <div>
-                      <p className="text-[11px] font-black uppercase tracking-[0.24em] text-[#c7ed90] sm:text-sm">
-                        İşletmeler için dijital güven noktası
+                <div className="divide-y divide-[#102018]/10">
+                  {homeProof.map((item) => (
+                    <div key={item} className="flex items-center gap-3 py-4">
+                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#1f6b43]" />
+                      <p className="text-sm font-bold leading-6 text-[#102018]/64">
+                        {item}
                       </p>
-
-                      <h1 className="mt-4 max-w-5xl text-[clamp(32px,9vw,58px)] font-black leading-[0.96] tracking-[-0.07em] text-white md:text-[86px]">
-                        Müşteri seni aradığında, karşısına güven veren bir
-                        işletme çıkmalı.
-                      </h1>
-
-                      <p className="mt-5 max-w-3xl text-sm leading-7 text-white/70 md:text-lg md:leading-8">
-                        Sitemix; işletmeler için kurumsal web sitesi, ürün
-                        vitrini ve WhatsApp odaklı iletişim yapıları hazırlar.
-                        Amaç, müşterinin seni daha ciddi görmesi ve sana kolayca
-                        ulaşmasıdır.
-                      </p>
-
-                      <div className="mt-5 grid grid-cols-2 gap-2 text-[11px] font-bold text-white/72 sm:flex sm:flex-wrap sm:text-sm">
-                        {[
-                          "3.999 TL’den başlayan",
-                          "WhatsApp yönlendirmesi",
-                          "Kapsam baştan net",
-                          "Yayın sonrası destek",
-                        ].map((item) => (
-                          <span
-                            key={item}
-                            className="rounded-full border border-white/12 bg-white/7 px-3 py-2"
-                          >
-                            {item}
-                          </span>
-                        ))}
-                      </div>
-
-                      <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-                        <LightButton href={wp.demo}>
-                          Ücretsiz Ön Çalışma İste
-                        </LightButton>
-                        <GreenButton href={wp.genel}>
-                          WhatsApp’tan Bilgi Al
-                        </GreenButton>
-                      </div>
                     </div>
+                  ))}
+                </div>
 
-                    <div className="grid grid-cols-3 gap-3 border-t border-white/14 pt-4">
-                      {[
-                        ["3.999 TL", "web"],
-                        ["5.999 TL", "e-ticaret"],
-                        ["7.999 TL", "büyüme"],
-                      ].map(([value, label]) => (
-                        <div key={value}>
-                          <p className="text-lg font-black tracking-[-0.04em] text-white sm:text-2xl md:text-3xl">
-                            {value}
-                          </p>
-                          <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/45 sm:text-xs">
-                            {label}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                <div className="mt-5 grid grid-cols-2 gap-2">
+                  {menuItems.slice(0, 4).map((item) => (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => goToPage(item.key)}
+                      className="min-h-[42px] rounded-full border border-[#102018]/10 bg-white/55 px-4 text-sm font-black text-[#102018]/64 transition hover:bg-[#102018] hover:text-white"
+                    >
+                      {item.label}
+                    </button>
+                  ))}
                 </div>
               </motion.div>
             </motion.div>
@@ -616,7 +533,7 @@ export default function Home() {
 
             <div className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
               <div
-                className="min-h-[430px] rounded-[36px] bg-cover bg-center shadow-2xl shadow-black/14"
+                className="min-h-[430px] bg-cover bg-center shadow-2xl shadow-black/14"
                 style={{ backgroundImage: `url(${img.about})` }}
               />
 
@@ -696,7 +613,7 @@ export default function Home() {
         >
           <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
             <div
-              className="min-h-[460px] rounded-[36px] bg-cover bg-center shadow-2xl shadow-black/14"
+              className="min-h-[460px] bg-cover bg-center shadow-2xl shadow-black/14"
               style={{ backgroundImage: `url(${img.process})` }}
             />
 
@@ -742,7 +659,7 @@ export default function Home() {
         >
           <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
             <div
-              className="min-h-[460px] rounded-[36px] bg-cover bg-center shadow-2xl shadow-black/14"
+              className="min-h-[460px] bg-cover bg-center shadow-2xl shadow-black/14"
               style={{ backgroundImage: `url(${img.ecommerce})` }}
             />
 
@@ -882,11 +799,11 @@ export default function Home() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#f4efe4] text-[#102018]">
       <div className="pointer-events-none fixed inset-0 z-0">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,rgba(31,107,67,0.16),transparent_28%),radial-gradient(circle_at_100%_0%,rgba(214,150,76,0.18),transparent_30%),linear-gradient(180deg,#fbf7ee_0%,#eee0ca_48%,#f7f1e7_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,rgba(31,107,67,0.12),transparent_28%),radial-gradient(circle_at_100%_0%,rgba(214,150,76,0.13),transparent_30%),linear-gradient(180deg,#fbf7ee_0%,#eee0ca_48%,#f7f1e7_100%)]" />
         <div className="absolute inset-x-0 top-0 h-[580px] bg-gradient-to-b from-white/72 to-transparent" />
       </div>
 
-      <header className="fixed left-0 top-0 z-50 w-full border-b border-[#102018]/10 bg-[#fbf7ee]/92 backdrop-blur-xl">
+      <header className="fixed left-0 top-0 z-50 w-full border-b border-[#102018]/10 bg-[#fbf7ee]/94 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:px-8">
           <button
             type="button"
@@ -984,18 +901,6 @@ export default function Home() {
       </header>
 
       <AnimatePresence mode="wait">{renderPage()}</AnimatePresence>
-
-      <a
-        href={wp.demo}
-        className="fixed left-4 right-4 z-50 inline-flex min-h-[58px] items-center justify-center rounded-full bg-[#1f6b43] px-5 text-center text-sm font-black leading-none text-white shadow-2xl shadow-[#1f6b43]/25 transition hover:bg-[#185735] md:left-auto md:right-6 md:min-h-[52px] md:w-auto md:px-7"
-        style={{
-          bottom: "calc(16px + env(safe-area-inset-bottom))",
-        }}
-      >
-        <span className="whitespace-nowrap text-white">
-          Ücretsiz Ön Çalışma İste
-        </span>
-      </a>
     </main>
   );
 }
