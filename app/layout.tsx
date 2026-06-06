@@ -123,7 +123,7 @@ export default function RootLayout({
     <html lang="tr">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <Script
-          src="https://www.googletagmanager.com/gtag/js?id=AW-1817004518"
+          src="https://www.googletagmanager.com/gtag/js?id=AW-18187004518"
           strategy="afterInteractive"
         />
 
@@ -133,7 +133,7 @@ export default function RootLayout({
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
 
-            gtag('config', 'AW-1817004518');
+            gtag('config', 'AW-18187004518');
           `}
         </Script>
 
