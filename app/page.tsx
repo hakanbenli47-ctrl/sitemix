@@ -4,7 +4,7 @@ import { useState, type ReactNode } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 
 const phone = "905515550302";
-
+const instagramUrl = "https://www.instagram.com/stmxx2026/";
 const wp = {
   genel: `https://wa.me/${phone}?text=${encodeURIComponent(
     "Merhaba, Sitemix üzerinden geldim. İşletmem için web sitesi hakkında bilgi almak istiyorum."
@@ -1007,15 +1007,50 @@ title="Ürünlerini kendi markana ait WhatsApp siparişli vitrinde göster."
             ))}
           </nav>
 
-          <div className="flex items-center gap-2">
-            <a
-              href={wp.demo}
-              className="hidden min-h-[46px] items-center justify-center rounded-full bg-[#102018] px-6 text-center text-sm font-black leading-none text-white shadow-lg shadow-black/10 transition hover:bg-[#1d342a] sm:inline-flex"
-            >
-             <span className="whitespace-nowrap text-white">
-  Ücretsiz Demo İste
-</span>
-            </a>
+         <div className="flex items-center gap-2">
+  <a
+    href={instagramUrl}
+    target="_blank"
+    rel="noopener noreferrer"
+    aria-label="Sitemix Instagram"
+    className="hidden min-h-[46px] items-center justify-center gap-2 rounded-full border border-[#102018]/12 bg-white px-4 text-center text-sm font-black leading-none text-[#102018] shadow-lg shadow-black/5 transition hover:-translate-y-0.5 hover:bg-[#102018] hover:text-white sm:inline-flex"
+  >
+    <svg
+      viewBox="0 0 24 24"
+      className="h-4 w-4"
+      fill="none"
+      aria-hidden="true"
+    >
+      <rect
+        x="3"
+        y="3"
+        width="18"
+        height="18"
+        rx="5"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <circle
+        cx="12"
+        cy="12"
+        r="4"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" />
+    </svg>
+
+    <span className="whitespace-nowrap">Instagram</span>
+  </a>
+
+  <a
+    href={wp.demo}
+    className="hidden min-h-[46px] items-center justify-center rounded-full bg-[#102018] px-6 text-center text-sm font-black leading-none text-white shadow-lg shadow-black/10 transition hover:bg-[#1d342a] sm:inline-flex"
+  >
+    <span className="whitespace-nowrap text-white">
+      Ücretsiz Demo İste
+    </span>
+  </a>
 
             <button
               type="button"
@@ -1053,12 +1088,39 @@ title="Ürünlerini kendi markana ait WhatsApp siparişli vitrinde göster."
                   </button>
                 ))}
 
-                <a
-                  href={wp.genel}
-                  className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-[#1f6b43] px-5 text-sm font-black text-white shadow-sm"
-                >
-               <span className="text-white">WhatsApp’tan Teklif Al</span>
-                </a>
+               <a
+  href={instagramUrl}
+  target="_blank"
+  rel="noopener noreferrer"
+  className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full border border-[#102018]/10 bg-white px-5 text-sm font-black text-[#102018] shadow-sm"
+>
+  <svg
+    viewBox="0 0 24 24"
+    className="h-4 w-4"
+    fill="none"
+    aria-hidden="true"
+  >
+    <rect
+      x="3"
+      y="3"
+      width="18"
+      height="18"
+      rx="5"
+      stroke="currentColor"
+      strokeWidth="2"
+    />
+    <circle
+      cx="12"
+      cy="12"
+      r="4"
+      stroke="currentColor"
+      strokeWidth="2"
+    />
+    <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" />
+  </svg>
+
+  <span>Sitemix Instagram</span>
+</a>
               </div>
             </motion.div>
           )}
