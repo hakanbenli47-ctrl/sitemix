@@ -15,9 +15,9 @@ const wp = {
   web: `https://wa.me/${phone}?text=${encodeURIComponent(
     "Merhaba, Sitemix üzerinden geldim. İşletmem için profesyonel web sitesi yaptırmak istiyorum."
   )}`,
-  ecommerce: `https://wa.me/${phone}?text=${encodeURIComponent(
-    "Merhaba, Sitemix üzerinden geldim. Kendi markama ait e-ticaret sitesi hakkında bilgi almak istiyorum."
-  )}`,
+ ecommerce: `https://wa.me/${phone}?text=${encodeURIComponent(
+  "Merhaba, Sitemix üzerinden geldim. Kendi markama ait ürün katalog sitesi hakkında bilgi almak istiyorum."
+)}`,
   destek: `https://wa.me/${phone}?text=${encodeURIComponent(
     "Merhaba, Sitemix üzerinden geldim. Yayından sonraki destek süreci hakkında bilgi almak istiyorum."
   )}`,
@@ -52,7 +52,7 @@ const menuItems: { label: string; key: Exclude<PageKey, "home"> }[] = [
   { label: "Hakkımızda", key: "hakkimizda" },
   { label: "Kapsam", key: "kapsam" },
   { label: "Süreç", key: "surec" },
-  { label: "E-Ticaret", key: "eticaret" },
+ { label: "Ürün Katalog", key: "eticaret" },
   { label: "Referanslar", key: "referanslar" },
   { label: "Paketler", key: "paketler" },
   { label: "SSS", key: "sss" },
@@ -76,8 +76,8 @@ const group: Variants = {
 const homeProof = [
   "İşletmeye özel özgün tasarım",
   "Hazır şablon mantığıyla ilerlenmez",
-  "WhatsApp üzerinden yazılı süreç",
-  "Kapsam ve teslim baştan net",
+  "WhatsApp odaklı müşteri akışı",
+  "Fiyat ve kapsam baştan net",
   "Yayın sonrası temel destek",
 ];
 
@@ -143,7 +143,7 @@ const process = [
   "Sayfanın dili, müşterinin karar verme sürecine göre hazırlanır.",
   "İlk ekran güven, açıklık ve iletişim aksiyonu üzerine kurulur.",
   "Hizmet, süreç, fiyat başlangıcı, referans ve sık sorulanlar netleştirilir.",
-  "WhatsApp, arama, konum ve sipariş yönlendirmeleri bağlanır.",
+ "WhatsApp, konum ve teklif/sipariş yönlendirmeleri bağlanır.",
   "Mobil görünüm özel olarak kontrol edilir.",
   "Yayın sonrası temel düzenleme ve yönlendirme desteği verilir.",
 ];
@@ -210,19 +210,35 @@ const references = [
     sector: "Ulaşım Hizmeti",
     text: "Hizmeti güvenli, net ve randevulu iletişime uygun anlatan yapı.",
     url: "https://www.engellitasima.com/",
-  },
+  },{
+  name: "Hasköy Shell Araç Bakım",
+  sector: "Araç Bakım Servisi",
+  text: "Yağ, filtre, antifriz ve genel kontrol hizmetlerini güven veren şekilde anlatan yapı.",
+  url: "https://www.haskoyshellaracbakim.com.tr/",
+},
+{
+  name: "Güven Temizlik Alanya",
+  sector: "Temizlik Hizmeti",
+  text: "Alanya’da temizlik hizmetlerini sade, hızlı ve iletişim odaklı gösteren yapı.",
+  url: "https://www.guventemizlikalanya.com.tr/",
+},{
+  name: "Neva Shop",
+  sector: "Online Mağaza",
+  text: "Ürünleri kendi markasına ait sitede sergileyen, alışveriş ve iletişim akışını net gösteren yapı.",
+  url: "https://www.nevashop.tr/",
+},
 ];
 
 const packages = [
   {
-    title: "Kurumsal Web Sitesi",
+    title: "İşletme Web Sitesi",
     price: "3.999 TL’den başlayan",
     desc: "İşletmenin internette güvenilir görünmesi, hizmetlerini net anlatması ve müşteriyi hızlıca iletişime taşıması için hazırlanır.",
     href: wp.web,
     features: [
       "Sektöre özel ana sayfa",
       "Mobil uyumlu profesyonel yapı",
-      "WhatsApp, arama ve konum bağlantıları",
+      "WhatsApp ve konum bağlantıları",
       "Hizmet ve güven bölümleri",
       "Temel Google uyumlu yapı",
       "Yayından sonra temel destek",
@@ -234,9 +250,9 @@ const packages = [
     ],
   },
   {
-    title: "Kişiye Özel E-Ticaret",
+   title: "Ürün Katalog Sitesi",
     price: "5.999 TL’den başlayan",
-    desc: "Ürünlerini kendi markana ait sitede göstermek, müşteriyle doğrudan iletişim kurmak ve siparişi WhatsApp üzerinden almak için hazırlanır.",
+    desc: "Ürünlerini kendi markana ait sitede göstermek, müşteriyi doğrudan WhatsApp siparişine yönlendirmek ve daha güvenilir görünmek için hazırlanır.",
     href: wp.ecommerce,
     features: [
       "Ürün vitrin sistemi",
@@ -253,9 +269,9 @@ const packages = [
     ],
   },
   {
-    title: "Web + Büyüme Sistemi",
+  title: "Web Sitesi + Tanıtım Desteği",
     price: "7.999 TL’den başlayan",
-    desc: "Reklam, sosyal medya ve Google’dan gelen müşteriyi karşılayacak daha güçlü bir dijital yapı isteyen işletmeler için hazırlanır.",
+   desc: "Google reklamı, sosyal medya ve WhatsApp mesajlarından gelen müşteriyi daha güvenli karşılamak isteyen işletmeler için hazırlanır.",
     href: wp.demo,
     features: [
       "Dönüşüm odaklı ilk ekran",
@@ -449,21 +465,19 @@ export default function Home() {
                   Sitemix
                 </p>
 
-                <h1 className="mt-4 max-w-5xl text-[clamp(38px,10vw,92px)] font-black leading-[0.92] tracking-[-0.08em] text-[#102018]">
-                  İşletmeni internette daha güvenilir gösteren web yapısı.
-                </h1>
-
-               <p className="mt-6 max-w-2xl text-sm leading-7 text-[#102018]/64 md:text-lg md:leading-8">
-  Sitemix; web sitesi, ürün vitrini ve WhatsApp odaklı iletişim
-  yapıları hazırlar. Her çalışma işletmenin sektörüne, hizmet yapısına
-  ve müşteri beklentisine göre özgün tasarlanır; hazır şablon mantığıyla
-  ilerlenmez.
+               <h1 className="mt-4 max-w-5xl text-[clamp(38px,10vw,92px)] font-black leading-[0.92] tracking-[-0.08em] text-[#102018]">
+  İşletmenize özel profesyonel web sitesi.
+</h1>
+<p className="mt-6 max-w-2xl text-sm leading-7 text-[#102018]/64 md:text-lg md:leading-8">
+  Sitemix; işletmeniz için mobil uyumlu, Google’a uygun ve müşteriyi
+  doğrudan WhatsApp’a yönlendiren web sitesi hazırlar. Önce işletmenize
+  uygun ön çalışma oluşturulur, beğenirseniz yayın sürecine geçilir.
 </p>
 
                 <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-                  <GreenButton href={wp.genel}>WhatsApp’tan Bilgi Al</GreenButton>
-                  <PrimaryButton href={wp.demo}>Ücretsiz Ön Çalışma İste</PrimaryButton>
-                </div>
+  <GreenButton href={wp.genel}>WhatsApp’tan Teklif Al</GreenButton>
+  <PrimaryButton href={wp.demo}>Ücretsiz Demo İste</PrimaryButton>
+</div>
               </motion.div>
 
               <motion.div
@@ -471,11 +485,11 @@ export default function Home() {
                 className="border-y border-[#102018]/10 py-5 md:py-7"
               >
                 <div className="grid grid-cols-3 gap-3 border-b border-[#102018]/10 pb-5">
-                  {[
-                    ["3.999 TL", "web sitesi"],
-                    ["5.999 TL", "ürün vitrini"],
-                    ["7.999 TL", "büyüme sistemi"],
-                  ].map(([value, label]) => (
+               {[
+  ["3.999 TL", "web sitesi"],
+  ["5.999 TL", "ürün katalog"],
+  ["7.999 TL", "tanıtım desteği"],
+].map(([value, label]) => (
                     <div key={value}>
                       <p className="text-lg font-black tracking-[-0.05em] text-[#102018] md:text-3xl">
                         {value}
@@ -655,8 +669,8 @@ export default function Home() {
     if (page === "eticaret") {
       return (
         <PageShell
-          eyebrow="E-Ticaret"
-          title="Ürünlerini kendi markana ait bir vitrinde göster."
+         eyebrow="Ürün Katalog Sitesi"
+title="Ürünlerini kendi markana ait WhatsApp siparişli vitrinde göster."
         >
           <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
             <div
@@ -676,9 +690,9 @@ export default function Home() {
               </div>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <GreenButton href={wp.ecommerce}>
-                  E-Ticaret İçin Bilgi Al
-                </GreenButton>
+            <GreenButton href={wp.ecommerce}>
+  Ürün Katalog İçin Bilgi Al
+</GreenButton>
                 <PrimaryButton href={wp.demo}>Ön Çalışma İste</PrimaryButton>
               </div>
             </div>
@@ -820,9 +834,9 @@ export default function Home() {
               <p className="text-sm font-black tracking-wide text-[#102018]">
                 Sitemix
               </p>
-              <p className="text-[11px] font-bold text-[#102018]/52">
-                Dijital varlık ve web çözümleri
-              </p>
+             <p className="text-[11px] font-bold text-[#102018]/52">
+  İşletmelere özel web sitesi
+</p>
             </div>
           </button>
 
@@ -848,9 +862,9 @@ export default function Home() {
               href={wp.demo}
               className="hidden min-h-[46px] items-center justify-center rounded-full bg-[#102018] px-6 text-center text-sm font-black leading-none text-white shadow-lg shadow-black/10 transition hover:bg-[#1d342a] sm:inline-flex"
             >
-              <span className="whitespace-nowrap text-white">
-                Ön Çalışma İste
-              </span>
+             <span className="whitespace-nowrap text-white">
+  Ücretsiz Demo İste
+</span>
             </a>
 
             <button
@@ -893,7 +907,7 @@ export default function Home() {
                   href={wp.genel}
                   className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-[#1f6b43] px-5 text-sm font-black text-white shadow-sm"
                 >
-                  <span className="text-white">WhatsApp’tan Yaz</span>
+               <span className="text-white">WhatsApp’tan Teklif Al</span>
                 </a>
               </div>
             </motion.div>
