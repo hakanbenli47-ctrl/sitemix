@@ -446,123 +446,230 @@ export default function Home() {
   };
 
   const renderPage = () => {
-    if (page === "home") {
-      return (
-        <motion.section
-          key="home"
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -14 }}
-          transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-          className="relative z-10 flex min-h-[100svh] items-center px-4 pb-4 pt-[88px] md:px-8 md:pb-8 md:pt-28"
+   if (page === "home") {
+  return (
+    <motion.section
+      key="home"
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -14 }}
+      transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+      className="relative z-10 min-h-[100svh] px-4 pb-10 pt-[92px] md:px-8 md:pb-16 md:pt-32"
+    >
+      <div className="mx-auto w-full max-w-7xl">
+        <motion.div
+          variants={group}
+          initial="hidden"
+          animate="show"
+          className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center"
         >
-          <div className="mx-auto w-full max-w-7xl">
-            <motion.div
-              variants={group}
-              initial="hidden"
-              animate="show"
-              className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-end"
-            >
-              <motion.div variants={rise}>
-                <p className="text-xs font-black uppercase tracking-[0.28em] text-[#1f6b43]">
-                  Sitemix
-                </p>
+          <motion.div variants={rise}>
+            <div className="inline-flex rounded-full bg-[#102018] px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-[#c7ed90] shadow-xl shadow-black/10 md:text-xs">
+              1 Temmuz’a kadar %30 indirim
+            </div>
 
-               <h1 className="mt-4 max-w-5xl text-[clamp(38px,10vw,92px)] font-black leading-[0.92] tracking-[-0.08em] text-[#102018]">
-  İşletmenize özel profesyonel web sitesi.
-</h1>
-<p className="mt-6 max-w-2xl text-sm leading-7 text-[#102018]/64 md:text-lg md:leading-8">
-  Sitemix; işletmeniz için mobil uyumlu, Google’a uygun ve müşteriyi
-  doğrudan WhatsApp’a yönlendiren web sitesi hazırlar. Önce işletmenize
-  uygun ön çalışma oluşturulur, beğenirseniz yayın sürecine geçilir.
-</p>
+            <p className="mt-6 text-xs font-black uppercase tracking-[0.28em] text-[#1f6b43]">
+              Sitemix Web Hizmeti
+            </p>
 
-                <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-  <GreenButton href={wp.genel}>WhatsApp’tan Teklif Al</GreenButton>
-  <PrimaryButton href={wp.demo}>Ücretsiz Demo İste</PrimaryButton>
-</div>
-              </motion.div>
+            <h1 className="mt-4 max-w-5xl text-[clamp(38px,9vw,88px)] font-black leading-[0.94] tracking-[-0.08em] text-[#102018]">
+              İşletmenize profesyonel web sitesi kuruyoruz.
+            </h1>
+
+            <p className="mt-6 max-w-2xl text-sm leading-7 text-[#102018]/66 md:text-lg md:leading-8">
+              Müşterileriniz sizi Google’da daha güvenilir görsün, hizmetlerinizi
+              incelesin ve tek tıkla WhatsApp’tan size ulaşsın. Önce işletmenize
+              uygun ücretsiz demo hazırlanır, beğenirseniz yayın sürecine geçilir.
+            </p>
+
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+              <GreenButton href={wp.genel}>WhatsApp’tan Teklif Al</GreenButton>
+              <PrimaryButton href={wp.demo}>Ücretsiz Demo İste</PrimaryButton>
+            </div>
+
+            <div className="mt-7 grid gap-3 border-y border-[#102018]/10 py-5 sm:grid-cols-3">
+              {[
+                "Hazır şablon değil",
+                "WhatsApp odaklı",
+                "Fiyat ve süreç net",
+              ].map((item) => (
+                <div key={item} className="flex items-center gap-2">
+                  <span className="h-2 w-2 shrink-0 rounded-full bg-[#1f6b43]" />
+                  <p className="text-sm font-black text-[#102018]/66">
+                    {item}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </motion.div>
 
           <motion.div
-  variants={rise}
-  className="rounded-[32px] border border-[#1f6b43]/18 bg-white/62 p-4 shadow-2xl shadow-black/8 md:p-5"
->
-  <div className="mb-4 rounded-[24px] bg-[#102018] p-4 text-center shadow-xl shadow-black/15">
-    <p className="animate-pulse text-[11px] font-black uppercase tracking-[0.2em] text-[#c7ed90] md:text-xs">
-      Sınırlı Kampanya
-    </p>
+            variants={rise}
+            className="relative overflow-hidden rounded-[34px] border border-[#102018]/10 bg-[#102018] p-4 text-white shadow-2xl shadow-black/25 md:p-6"
+          >
+            <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-[#c7ed90]/24 blur-2xl" />
+            <div className="pointer-events-none absolute -bottom-24 -left-20 h-64 w-64 rounded-full bg-[#1f6b43]/40 blur-2xl" />
 
-    <h2 className="mt-2 text-2xl font-black tracking-[-0.06em] text-white md:text-4xl">
-      %30 İndirim
-    </h2>
+            <div className="relative">
+              <div className="mb-5 flex items-center justify-between gap-3">
+                <div className="animate-pulse rounded-full bg-[#c7ed90] px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-[#102018] shadow-lg shadow-[#c7ed90]/20">
+                  Kampanya
+                </div>
 
-    <p className="mt-2 text-xs font-bold text-white/62 md:text-sm">
-      1 Temmuz’a kadar tüm web sitesi paketlerinde geçerli
-    </p>
-  </div>
+                <div className="rounded-full border border-white/12 bg-white/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.14em] text-white/80">
+                  1 Temmuz’a kadar
+                </div>
+              </div>
 
-  <div className="grid grid-cols-1 gap-3 border-b border-[#102018]/10 pb-5 sm:grid-cols-3">
-    {[
-      ["3.999 TL", "2.799 TL", "Web Sitesi"],
-      ["5.999 TL", "4.199 TL", "Ürün Katalog"],
-      ["7.999 TL", "5.599 TL", "Tanıtım Desteği"],
-    ].map(([oldPrice, newPrice, label]) => (
-      <div
-        key={label}
-        className="rounded-[22px] border border-[#102018]/10 bg-[#fbf7ee] p-4 text-center"
-      >
-        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#102018]/42">
-          Normal fiyat
-        </p>
+              <div className="border-y border-white/12 py-6 text-center">
+                <p className="text-xs font-black uppercase tracking-[0.22em] text-[#c7ed90]">
+                  Tüm web sitesi paketlerinde
+                </p>
 
-        <p className="mt-1 text-sm font-black text-[#102018]/38 line-through md:text-base">
-          {oldPrice}
-        </p>
+                <h2 className="mt-2 text-[clamp(54px,10vw,96px)] font-black leading-none tracking-[-0.1em] text-white">
+                  %30
+                </h2>
 
-        <p className="mt-2 text-[10px] font-black uppercase tracking-[0.14em] text-[#1f6b43]">
-          Kampanyalı
-        </p>
+                <p className="mt-2 text-3xl font-black tracking-[-0.06em] text-[#c7ed90] md:text-5xl">
+                  İndirim
+                </p>
 
-        <p className="mt-1 text-2xl font-black tracking-[-0.06em] text-[#1f6b43] md:text-3xl">
-          {newPrice}
-        </p>
+                <p className="mx-auto mt-4 max-w-sm text-sm font-bold leading-6 text-white/62">
+                  İşletmenize özel web sitesi, ürün katalog ve tanıtım desteği
+                  paketlerinde kampanyalı fiyat.
+                </p>
+              </div>
 
-        <p className="mt-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#102018]/55">
-          {label}
-        </p>
-      </div>
-    ))}
-  </div>
+              <div className="mt-5 grid gap-3">
+                {[
+                  {
+                    label: "Web Sitesi",
+                    oldPrice: "3.999 TL",
+                    newPrice: "2.799 TL",
+                    save: "1.200 TL avantaj",
+                  },
+                  {
+                    label: "Ürün Katalog",
+                    oldPrice: "5.999 TL",
+                    newPrice: "4.199 TL",
+                    save: "1.800 TL avantaj",
+                  },
+                  {
+                    label: "Web + Tanıtım",
+                    oldPrice: "7.999 TL",
+                    newPrice: "5.599 TL",
+                    save: "2.400 TL avantaj",
+                  },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="grid grid-cols-[1fr_auto] items-center gap-4 rounded-[22px] border border-white/10 bg-white/[0.08] p-4"
+                  >
+                    <div>
+                      <h3 className="text-base font-black tracking-[-0.03em] text-white">
+                        {item.label}
+                      </h3>
 
-                <div className="divide-y divide-[#102018]/10">
-                  {homeProof.map((item) => (
-                    <div key={item} className="flex items-center gap-3 py-4">
-                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#1f6b43]" />
-                      <p className="text-sm font-bold leading-6 text-[#102018]/64">
-                        {item}
+                      <p className="mt-1 text-xs font-bold text-[#c7ed90]/80">
+                        {item.save}
                       </p>
                     </div>
-                  ))}
-                </div>
 
-                <div className="mt-5 grid grid-cols-2 gap-2">
-                  {menuItems.slice(0, 4).map((item) => (
-                    <button
-                      key={item.key}
-                      type="button"
-                      onClick={() => goToPage(item.key)}
-                      className="min-h-[42px] rounded-full border border-[#102018]/10 bg-white/55 px-4 text-sm font-black text-[#102018]/64 transition hover:bg-[#102018] hover:text-white"
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-            </motion.div>
-          </div>
-        </motion.section>
-      );
-    }
+                    <div className="text-right">
+                      <p className="text-xs font-black text-white/34 line-through">
+                        {item.oldPrice}
+                      </p>
+
+                      <p className="mt-1 text-2xl font-black tracking-[-0.06em] text-[#c7ed90] md:text-3xl">
+                        {item.newPrice}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+             <div className="mt-5">
+  <a
+    href={wp.genel}
+    className="inline-flex min-h-[56px] w-full items-center justify-center rounded-full bg-[#c7ed90] px-5 text-center text-sm font-black leading-none shadow-xl shadow-[#c7ed90]/20 transition hover:-translate-y-0.5 hover:bg-white md:px-6"
+  >
+    <span className="block text-[#102018]">
+      Kampanyalı Fiyat İçin Yaz
+    </span>
+  </a>
+</div>
+
+              <p className="mt-4 text-center text-[11px] font-bold leading-5 text-white/45">
+                Fiyatlar başlangıç paketleri için geçerlidir. Kapsam işletmenin
+                ihtiyacına göre netleştirilir.
+              </p>
+            </div>
+          </motion.div>
+        </motion.div>
+
+        <motion.div
+          variants={rise}
+          initial="hidden"
+          animate="show"
+          className="mt-8 grid gap-3 border-y border-[#102018]/10 py-5 md:grid-cols-3"
+        >
+          {[
+            [
+              "01",
+              "İşletmeni yaz",
+              "Hizmetini ve istediğin site yapısını WhatsApp’tan gönder.",
+            ],
+            [
+              "02",
+              "Demo görelim",
+              "İşletmene uygun örnek web yapısı hazırlanır.",
+            ],
+            [
+              "03",
+              "Beğenirsen başlayalım",
+              "Kapsam ve ödeme netleşir, yayın sürecine geçilir.",
+            ],
+          ].map(([number, title, text]) => (
+            <div
+              key={number}
+              className="grid gap-2 md:border-r md:border-[#102018]/10 md:pr-5 last:md:border-r-0"
+            >
+              <span className="text-sm font-black text-[#1f6b43]">
+                {number}
+              </span>
+
+              <h3 className="text-xl font-black tracking-[-0.04em] text-[#102018]">
+                {title}
+              </h3>
+
+              <p className="text-sm font-bold leading-6 text-[#102018]/55">
+                {text}
+              </p>
+            </div>
+          ))}
+        </motion.div>
+
+        <motion.div
+          variants={rise}
+          initial="hidden"
+          animate="show"
+          className="mt-6 flex flex-wrap gap-2"
+        >
+          {menuItems.slice(0, 4).map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              onClick={() => goToPage(item.key)}
+              className="min-h-[42px] rounded-full border border-[#102018]/10 bg-white/60 px-4 text-sm font-black text-[#102018]/64 transition hover:bg-[#102018] hover:text-white"
+            >
+              {item.label}
+            </button>
+          ))}
+        </motion.div>
+      </div>
+    </motion.section>
+  );
+}
 
     if (page === "hakkimizda") {
       return (
