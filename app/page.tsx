@@ -230,9 +230,10 @@ const references = [
 ];
 
 const packages = [
-  {
-    title: "İşletme Web Sitesi",
-    price: "3.999 TL’den başlayan",
+ {
+  title: "İşletme Web Sitesi",
+  oldPrice: "3.999 TL",
+  price: "2.799 TL’den başlayan",
     desc: "İşletmenin internette güvenilir görünmesi, hizmetlerini net anlatması ve müşteriyi hızlıca iletişime taşıması için hazırlanır.",
     href: wp.web,
     features: [
@@ -249,9 +250,10 @@ const packages = [
       "Kapsam çalışma öncesinde netleştirilir.",
     ],
   },
-  {
-   title: "Ürün Katalog Sitesi",
-    price: "5.999 TL’den başlayan",
+ {
+  title: "Ürün Katalog Sitesi",
+  oldPrice: "5.999 TL",
+  price: "4.199 TL’den başlayan",
     desc: "Ürünlerini kendi markana ait sitede göstermek, müşteriyi doğrudan WhatsApp siparişine yönlendirmek ve daha güvenilir görünmek için hazırlanır.",
     href: wp.ecommerce,
     features: [
@@ -270,7 +272,8 @@ const packages = [
   },
   {
   title: "Web Sitesi + Tanıtım Desteği",
-    price: "7.999 TL’den başlayan",
+  oldPrice: "7.999 TL",
+  price: "5.599 TL’den başlayan",
    desc: "Google reklamı, sosyal medya ve WhatsApp mesajlarından gelen müşteriyi daha güvenli karşılamak isteyen işletmeler için hazırlanır.",
     href: wp.demo,
     features: [
@@ -480,26 +483,56 @@ export default function Home() {
 </div>
               </motion.div>
 
-              <motion.div
-                variants={rise}
-                className="border-y border-[#102018]/10 py-5 md:py-7"
-              >
-                <div className="grid grid-cols-3 gap-3 border-b border-[#102018]/10 pb-5">
-               {[
-  ["3.999 TL", "web sitesi"],
-  ["5.999 TL", "ürün katalog"],
-  ["7.999 TL", "tanıtım desteği"],
-].map(([value, label]) => (
-                    <div key={value}>
-                      <p className="text-lg font-black tracking-[-0.05em] text-[#102018] md:text-3xl">
-                        {value}
-                      </p>
-                      <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#102018]/45 md:text-xs">
-                        {label}
-                      </p>
-                    </div>
-                  ))}
-                </div>
+          <motion.div
+  variants={rise}
+  className="rounded-[32px] border border-[#1f6b43]/18 bg-white/62 p-4 shadow-2xl shadow-black/8 md:p-5"
+>
+  <div className="mb-4 rounded-[24px] bg-[#102018] p-4 text-center shadow-xl shadow-black/15">
+    <p className="animate-pulse text-[11px] font-black uppercase tracking-[0.2em] text-[#c7ed90] md:text-xs">
+      Sınırlı Kampanya
+    </p>
+
+    <h2 className="mt-2 text-2xl font-black tracking-[-0.06em] text-white md:text-4xl">
+      %30 İndirim
+    </h2>
+
+    <p className="mt-2 text-xs font-bold text-white/62 md:text-sm">
+      1 Temmuz’a kadar tüm web sitesi paketlerinde geçerli
+    </p>
+  </div>
+
+  <div className="grid grid-cols-1 gap-3 border-b border-[#102018]/10 pb-5 sm:grid-cols-3">
+    {[
+      ["3.999 TL", "2.799 TL", "Web Sitesi"],
+      ["5.999 TL", "4.199 TL", "Ürün Katalog"],
+      ["7.999 TL", "5.599 TL", "Tanıtım Desteği"],
+    ].map(([oldPrice, newPrice, label]) => (
+      <div
+        key={label}
+        className="rounded-[22px] border border-[#102018]/10 bg-[#fbf7ee] p-4 text-center"
+      >
+        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#102018]/42">
+          Normal fiyat
+        </p>
+
+        <p className="mt-1 text-sm font-black text-[#102018]/38 line-through md:text-base">
+          {oldPrice}
+        </p>
+
+        <p className="mt-2 text-[10px] font-black uppercase tracking-[0.14em] text-[#1f6b43]">
+          Kampanyalı
+        </p>
+
+        <p className="mt-1 text-2xl font-black tracking-[-0.06em] text-[#1f6b43] md:text-3xl">
+          {newPrice}
+        </p>
+
+        <p className="mt-2 text-[11px] font-black uppercase tracking-[0.12em] text-[#102018]/55">
+          {label}
+        </p>
+      </div>
+    ))}
+  </div>
 
                 <div className="divide-y divide-[#102018]/10">
                   {homeProof.map((item) => (
@@ -753,9 +786,19 @@ title="Ürünlerini kendi markana ait WhatsApp siparişli vitrinde göster."
                   </span>
 
                   <div>
-                    <p className="text-lg font-black text-[#1f6b43]">
-                      {item.price}
-                    </p>
+                  <div>
+  <p className="text-sm font-black text-[#102018]/38 line-through">
+    {item.oldPrice}
+  </p>
+
+  <p className="mt-1 text-lg font-black text-[#1f6b43]">
+    {item.price}
+  </p>
+
+  <p className="mt-1 text-xs font-black uppercase tracking-[0.14em] text-[#102018]/45">
+    1 Temmuz’a kadar %30 indirim
+  </p>
+</div>
 
                     <h2 className="mt-2 text-3xl font-black leading-tight tracking-[-0.05em] text-[#102018] md:text-5xl">
                       {item.title}
