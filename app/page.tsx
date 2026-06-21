@@ -7,25 +7,31 @@ const phone = "905515550302";
 const instagramUrl = "https://www.instagram.com/stmxx2026/";
 const wp = {
   genel: `https://wa.me/${phone}?text=${encodeURIComponent(
-    "Merhaba, Sitemix üzerinden geldim. İşletmem için web sitesi hakkında bilgi almak istiyorum."
+    "Merhaba, sitemix.com.tr sitesinden geldim. İşletmem için web sitesi yaptırmak istiyorum. Ücretsiz demo ve kampanyalı fiyat hakkında bilgi alabilir miyim?"
   )}`,
+
   demo: `https://wa.me/${phone}?text=${encodeURIComponent(
-    "Merhaba, Sitemix üzerinden geldim. İşletmem için ücretsiz ön çalışma görmek istiyorum."
+    "Merhaba, sitemix.com.tr sitesinden geldim. İşletmem için ücretsiz ön çalışma görmek istiyorum. İşletme adımı ve sektörümü göndersem demo hazırlıyor musunuz?"
   )}`,
+
   web: `https://wa.me/${phone}?text=${encodeURIComponent(
-    "Merhaba, Sitemix üzerinden geldim. İşletmem için profesyonel web sitesi yaptırmak istiyorum."
+    "Merhaba, sitemix.com.tr sitesinden geldim. İşletmem için profesyonel web sitesi yaptırmak istiyorum. Kampanyalı web sitesi paketi hakkında bilgi alabilir miyim?"
   )}`,
- ecommerce: `https://wa.me/${phone}?text=${encodeURIComponent(
-  "Merhaba, Sitemix üzerinden geldim. Kendi markama ait ürün katalog sitesi hakkında bilgi almak istiyorum."
-)}`,
+
+  ecommerce: `https://wa.me/${phone}?text=${encodeURIComponent(
+    "Merhaba, sitemix.com.tr sitesinden geldim. Ürünlerimi kendi markama ait katalog sitesinde göstermek istiyorum. Ürün katalog sitesi hakkında bilgi alabilir miyim?"
+  )}`,
+
   destek: `https://wa.me/${phone}?text=${encodeURIComponent(
-    "Merhaba, Sitemix üzerinden geldim. Yayından sonraki destek süreci hakkında bilgi almak istiyorum."
+    "Merhaba, sitemix.com.tr sitesinden geldim. Web sitesi yayına alındıktan sonraki destek ve düzenleme süreci hakkında bilgi almak istiyorum."
   )}`,
+
   guven: `https://wa.me/${phone}?text=${encodeURIComponent(
-    "Merhaba, Sitemix üzerinden geldim. Çalışma süreci, işletme bilgileri ve güven detayları hakkında bilgi almak istiyorum."
+    "Merhaba, sitemix.com.tr sitesinden geldim. Çalışma süreci, ödeme, teslim ve güven detayları hakkında bilgi almak istiyorum."
   )}`,
+
   kapsam: `https://wa.me/${phone}?text=${encodeURIComponent(
-    "Merhaba, Sitemix üzerinden geldim. Web sitesi paket kapsamı, teslim süresi, domain ve hosting detaylarını öğrenmek istiyorum."
+    "Merhaba, sitemix.com.tr sitesinden geldim. Web sitesi paket kapsamı, teslim süresi, domain, hosting ve kampanyalı fiyat detaylarını öğrenmek istiyorum."
   )}`,
 };
 
