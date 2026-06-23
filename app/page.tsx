@@ -4,10 +4,11 @@ import { useState, type ReactNode } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 
 const phone = "905515550302";
-const instagramUrl = "https://www.instagram.com/stmxx2026/";
+const instagramUrl = "https://www.instagram.com/siteyap.site/";
+
 const wp = {
   genel: `https://wa.me/${phone}?text=${encodeURIComponent(
-    "Merhaba, sitemix.com.tr sitesinden geldim. İşletmem için web sitesi yaptırmak istiyorum. Ücretsiz demo ve kampanyalı fiyat hakkında bilgi alabilir miyim?"
+    "Merhaba, sitemix.com.tr sitesinden geldim. İşletmem için web sitesi yaptırmak istiyorum. Ücretsiz demo ve ön çalışma hakkında bilgi alabilir miyim?"
   )}`,
 
   demo: `https://wa.me/${phone}?text=${encodeURIComponent(
@@ -15,7 +16,7 @@ const wp = {
   )}`,
 
   web: `https://wa.me/${phone}?text=${encodeURIComponent(
-    "Merhaba, sitemix.com.tr sitesinden geldim. İşletmem için profesyonel web sitesi yaptırmak istiyorum. Kampanyalı web sitesi paketi hakkında bilgi alabilir miyim?"
+    "Merhaba, sitemix.com.tr sitesinden geldim. İşletmem için profesyonel web sitesi yaptırmak istiyorum. Çalışma süreci hakkında bilgi alabilir miyim?"
   )}`,
 
   ecommerce: `https://wa.me/${phone}?text=${encodeURIComponent(
@@ -31,7 +32,7 @@ const wp = {
   )}`,
 
   kapsam: `https://wa.me/${phone}?text=${encodeURIComponent(
-    "Merhaba, sitemix.com.tr sitesinden geldim. Web sitesi paket kapsamı, teslim süresi, domain, hosting ve kampanyalı fiyat detaylarını öğrenmek istiyorum."
+    "Merhaba, sitemix.com.tr sitesinden geldim. Web sitesi paket kapsamı, teslim süresi, domain, hosting ve çalışma detaylarını öğrenmek istiyorum."
   )}`,
 };
 
@@ -58,7 +59,7 @@ const menuItems: { label: string; key: Exclude<PageKey, "home"> }[] = [
   { label: "Hakkımızda", key: "hakkimizda" },
   { label: "Kapsam", key: "kapsam" },
   { label: "Süreç", key: "surec" },
- { label: "Ürün Katalog", key: "eticaret" },
+  { label: "Ürün Katalog", key: "eticaret" },
   { label: "Referanslar", key: "referanslar" },
   { label: "Paketler", key: "paketler" },
   { label: "SSS", key: "sss" },
@@ -79,6 +80,7 @@ const group: Variants = {
     transition: { staggerChildren: 0.055 },
   },
 };
+
 const homeProof = [
   "İşletmeye özel özgün tasarım",
   "Hazır şablon mantığıyla ilerlenmez",
@@ -149,7 +151,7 @@ const process = [
   "Sayfanın dili, müşterinin karar verme sürecine göre hazırlanır.",
   "İlk ekran güven, açıklık ve iletişim aksiyonu üzerine kurulur.",
   "Hizmet, süreç, fiyat başlangıcı, referans ve sık sorulanlar netleştirilir.",
- "WhatsApp, konum ve teklif/sipariş yönlendirmeleri bağlanır.",
+  "WhatsApp, konum ve teklif/sipariş yönlendirmeleri bağlanır.",
   "Mobil görünüm özel olarak kontrol edilir.",
   "Yayın sonrası temel düzenleme ve yönlendirme desteği verilir.",
 ];
@@ -216,30 +218,32 @@ const references = [
     sector: "Ulaşım Hizmeti",
     text: "Hizmeti güvenli, net ve randevulu iletişime uygun anlatan yapı.",
     url: "https://www.engellitasima.com/",
-  },{
-  name: "Hasköy Shell Araç Bakım",
-  sector: "Araç Bakım Servisi",
-  text: "Yağ, filtre, antifriz ve genel kontrol hizmetlerini güven veren şekilde anlatan yapı.",
-  url: "https://www.haskoyshellaracbakim.com.tr/",
-},
-{
-  name: "Güven Temizlik Alanya",
-  sector: "Temizlik Hizmeti",
-  text: "Alanya’da temizlik hizmetlerini sade, hızlı ve iletişim odaklı gösteren yapı.",
-  url: "https://www.guventemizlikalanya.com.tr/",
-},{
-  name: "Neva Shop",
-  sector: "Online Mağaza",
-  text: "Ürünleri kendi markasına ait sitede sergileyen, alışveriş ve iletişim akışını net gösteren yapı.",
-  url: "https://www.nevashop.tr/",
-},
+  },
+  {
+    name: "Hasköy Shell Araç Bakım",
+    sector: "Araç Bakım Servisi",
+    text: "Yağ, filtre, antifriz ve genel kontrol hizmetlerini güven veren şekilde anlatan yapı.",
+    url: "https://www.haskoyshellaracbakim.com.tr/",
+  },
+  {
+    name: "Güven Temizlik Alanya",
+    sector: "Temizlik Hizmeti",
+    text: "Alanya’da temizlik hizmetlerini sade, hızlı ve iletişim odaklı gösteren yapı.",
+    url: "https://www.guventemizlikalanya.com.tr/",
+  },
+  {
+    name: "Neva Shop",
+    sector: "Online Mağaza",
+    text: "Ürünleri kendi markasına ait sitede sergileyen, alışveriş ve iletişim akışını net gösteren yapı.",
+    url: "https://www.nevashop.tr/",
+  },
 ];
 
 const packages = [
- {
-  title: "İşletme Web Sitesi",
-  oldPrice: "3.999 TL",
-  price: "2.799 TL’den başlayan",
+  {
+    title: "İşletme Web Sitesi",
+    oldPrice: "3.999 TL",
+    price: "2.799 TL’den başlayan",
     desc: "İşletmenin internette güvenilir görünmesi, hizmetlerini net anlatması ve müşteriyi hızlıca iletişime taşıması için hazırlanır.",
     href: wp.web,
     features: [
@@ -256,10 +260,10 @@ const packages = [
       "Kapsam çalışma öncesinde netleştirilir.",
     ],
   },
- {
-  title: "Ürün Katalog Sitesi",
-  oldPrice: "5.999 TL",
-  price: "4.199 TL’den başlayan",
+  {
+    title: "Ürün Katalog Sitesi",
+    oldPrice: "5.999 TL",
+    price: "4.199 TL’den başlayan",
     desc: "Ürünlerini kendi markana ait sitede göstermek, müşteriyi doğrudan WhatsApp siparişine yönlendirmek ve daha güvenilir görünmek için hazırlanır.",
     href: wp.ecommerce,
     features: [
@@ -277,10 +281,10 @@ const packages = [
     ],
   },
   {
-  title: "Web Sitesi + Tanıtım Desteği",
-  oldPrice: "7.999 TL",
-  price: "5.599 TL’den başlayan",
-   desc: "Google reklamı, sosyal medya ve WhatsApp mesajlarından gelen müşteriyi daha güvenli karşılamak isteyen işletmeler için hazırlanır.",
+    title: "Web Sitesi + Tanıtım Desteği",
+    oldPrice: "7.999 TL",
+    price: "5.599 TL’den başlayan",
+    desc: "Google reklamı, sosyal medya ve WhatsApp mesajlarından gelen müşteriyi daha güvenli karşılamak isteyen işletmeler için hazırlanır.",
     href: wp.demo,
     features: [
       "Dönüşüm odaklı ilk ekran",
@@ -452,291 +456,304 @@ export default function Home() {
   };
 
   const renderPage = () => {
-   if (page === "home") {
-  return (
-    <motion.section
-      key="home"
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -14 }}
-      transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-      className="relative z-10 min-h-[100svh] px-4 pb-10 pt-[92px] md:px-8 md:pb-16 md:pt-32"
-    >
-      <div className="mx-auto w-full max-w-7xl">
-        <motion.div
-          variants={group}
-          initial="hidden"
-          animate="show"
-          className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center"
+    if (page === "home") {
+      return (
+        <motion.section
+          key="home"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -14 }}
+          transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+          className="relative z-10 min-h-[100svh] px-4 pb-10 pt-[92px] md:px-8 md:pb-16 md:pt-32"
         >
-          <motion.div variants={rise}>
-            <div className="inline-flex rounded-full bg-[#102018] px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-[#c7ed90] shadow-xl shadow-black/10 md:text-xs">
-              1 Temmuz’a kadar %30 indirim
-            </div>
+          <div className="mx-auto w-full max-w-7xl">
+            <motion.div
+              variants={group}
+              initial="hidden"
+              animate="show"
+              className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center"
+            >
+              <motion.div variants={rise}>
+                <div className="inline-flex rounded-full bg-[#102018] px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-[#c7ed90] shadow-xl shadow-black/10 md:text-xs">
+                  Ücretsiz ön çalışma hazırlanır
+                </div>
 
-            <p className="mt-6 text-xs font-black uppercase tracking-[0.28em] text-[#1f6b43]">
-              Sitemix Web Hizmeti
-            </p>
+                <p className="mt-6 text-xs font-black uppercase tracking-[0.28em] text-[#1f6b43]">
+                  Sitemix Web Hizmeti
+                </p>
 
-            <h1 className="mt-4 max-w-5xl text-[clamp(38px,9vw,88px)] font-black leading-[0.94] tracking-[-0.08em] text-[#102018]">
-              İşletmenize profesyonel web sitesi kuruyoruz.
-            </h1>
+                <h1 className="mt-4 max-w-5xl text-[clamp(38px,9vw,88px)] font-black leading-[0.94] tracking-[-0.08em] text-[#102018]">
+                  İşletmeniz için güven veren web sitesi hazırlıyoruz.
+                </h1>
 
-            <p className="mt-6 max-w-2xl text-sm leading-7 text-[#102018]/66 md:text-lg md:leading-8">
-              Müşterileriniz sizi Google’da daha güvenilir görsün, hizmetlerinizi
-              incelesin ve tek tıkla WhatsApp’tan size ulaşsın. Önce işletmenize
-              uygun ücretsiz demo hazırlanır, beğenirseniz yayın sürecine geçilir.
-            </p>
+                <p className="mt-6 max-w-2xl text-sm leading-7 text-[#102018]/66 md:text-lg md:leading-8">
+                  Müşterileriniz sizi Google’da daha profesyonel görsün,
+                  hizmetlerinizi hızlıca incelesin ve tek tıkla WhatsApp’tan
+                  size ulaşsın. Önce işletmenize uygun ücretsiz ön çalışma
+                  hazırlanır, beğenirseniz kapsam ve teslim süreci netleştirilir.
+                </p>
 
-            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-              <GreenButton href={wp.genel}>WhatsApp’tan Teklif Al</GreenButton>
-              <PrimaryButton href={wp.demo}>Ücretsiz Demo İste</PrimaryButton>
-            </div>
+                <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+                  <GreenButton href={wp.demo}>Ücretsiz Demo İste</GreenButton>
+                  <PrimaryButton href={wp.genel}>
+                    WhatsApp’tan Bilgi Al
+                  </PrimaryButton>
+                </div>
 
-            <div className="mt-7 grid gap-3 border-y border-[#102018]/10 py-5 sm:grid-cols-3">
-              {[
-                "Hazır şablon değil",
-                "WhatsApp odaklı",
-                "Fiyat ve süreç net",
-              ].map((item) => (
-                <div key={item} className="flex items-center gap-2">
-                  <span className="h-2 w-2 shrink-0 rounded-full bg-[#1f6b43]" />
-                  <p className="text-sm font-black text-[#102018]/66">
+                <div className="mt-7 grid gap-3 border-y border-[#102018]/10 py-5 sm:grid-cols-3">
+                  {[
+                    "Hazır şablon değil",
+                    "WhatsApp odaklı",
+                    "Kapsam baştan net",
+                  ].map((item) => (
+                    <div key={item} className="flex items-center gap-2">
+                      <span className="h-2 w-2 shrink-0 rounded-full bg-[#1f6b43]" />
+                      <p className="text-sm font-black text-[#102018]/66">
+                        {item}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                <p className="mt-5 max-w-xl text-sm font-bold leading-7 text-[#102018]/52">
+                  Fiyat bilgisi işletmenin ihtiyacına göre netleşir. Önce
+                  demo ve çalışma kapsamı konuşulur, sonra karar verilir.
+                </p>
+              </motion.div>
+
+              <motion.div
+                variants={rise}
+                className="relative overflow-hidden rounded-[34px] border border-[#102018]/10 bg-[#102018] p-4 text-white shadow-2xl shadow-black/25 md:p-6"
+              >
+                <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-[#c7ed90]/24 blur-2xl" />
+                <div className="pointer-events-none absolute -bottom-24 -left-20 h-64 w-64 rounded-full bg-[#1f6b43]/40 blur-2xl" />
+
+                <div className="relative">
+                  <div className="mb-5 flex items-center justify-between gap-3">
+                    <div className="rounded-full bg-[#c7ed90] px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-[#102018] shadow-lg shadow-[#c7ed90]/20">
+                      İlk adım
+                    </div>
+
+                    <div className="rounded-full border border-white/12 bg-white/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.14em] text-white/80">
+                      WhatsApp ile başlar
+                    </div>
+                  </div>
+
+                  <div className="border-y border-white/12 py-6">
+                    <p className="text-xs font-black uppercase tracking-[0.22em] text-[#c7ed90]">
+                      Ücretsiz ön çalışma
+                    </p>
+
+                    <h2 className="mt-3 text-[clamp(34px,6vw,64px)] font-black leading-[0.98] tracking-[-0.08em] text-white">
+                      İşletmeni gönder, sana uygun web yapısını çıkaralım.
+                    </h2>
+
+                    <p className="mt-5 max-w-md text-sm font-bold leading-7 text-white/62">
+                      İşletme adı, sektör, şehir ve sunduğun hizmetleri
+                      gönderdiğinde; sitenin nasıl görünmesi gerektiği,
+                      hangi alanlara ihtiyaç olduğu ve nasıl ilerleyeceğimiz
+                      netleşir.
+                    </p>
+                  </div>
+
+                  <div className="mt-5 divide-y divide-white/10 border-y border-white/10">
+                    {[
+                      {
+                        number: "01",
+                        title: "İşletmeni anlat",
+                        text: "Sektörünü, hizmetlerini ve varsa mevcut sosyal medya ya da web adresini gönder.",
+                      },
+                      {
+                        number: "02",
+                        title: "Ön çalışma hazırlansın",
+                        text: "Sana uygun sayfa dili, ilk ekran ve iletişim akışı planlanır.",
+                      },
+                      {
+                        number: "03",
+                        title: "Beğenirsen ilerleyelim",
+                        text: "Kapsam, teslim süresi ve ödeme adımları netleşir.",
+                      },
+                    ].map((item) => (
+                      <div
+                        key={item.number}
+                        className="grid gap-3 py-4 md:grid-cols-[54px_1fr]"
+                      >
+                        <span className="text-sm font-black text-[#c7ed90]">
+                          {item.number}
+                        </span>
+
+                        <div>
+                          <h3 className="text-lg font-black tracking-[-0.04em] text-white">
+                            {item.title}
+                          </h3>
+
+                          <p className="mt-1 text-sm font-bold leading-6 text-white/55">
+                            {item.text}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-5">
+                    <a
+                      href={wp.demo}
+                      className="inline-flex min-h-[56px] w-full items-center justify-center rounded-full bg-[#c7ed90] px-5 text-center text-sm font-black leading-none shadow-xl shadow-[#c7ed90]/20 transition hover:-translate-y-0.5 hover:bg-white md:px-6"
+                    >
+                      <span className="block text-[#102018]">
+                        İşletmem İçin Demo İste
+                      </span>
+                    </a>
+                  </div>
+
+                  <p className="mt-4 text-center text-[11px] font-bold leading-5 text-white/45">
+                    Demo talebi ücretsizdir. Çalışmaya başlama kararı müşteriye
+                    aittir.
+                  </p>
+                </div>
+              </motion.div>
+            </motion.div>
+
+            <motion.div
+              variants={rise}
+              initial="hidden"
+              animate="show"
+              className="mt-8 grid gap-3 border-y border-[#102018]/10 py-5 md:grid-cols-5"
+            >
+              {homeProof.map((item) => (
+                <div key={item} className="flex items-start gap-2">
+                  <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[#1f6b43]" />
+                  <p className="text-sm font-black leading-6 text-[#102018]/62">
                     {item}
                   </p>
                 </div>
               ))}
-            </div>
-          </motion.div>
+            </motion.div>
 
-          <motion.div
-            variants={rise}
-            className="relative overflow-hidden rounded-[34px] border border-[#102018]/10 bg-[#102018] p-4 text-white shadow-2xl shadow-black/25 md:p-6"
-          >
-            <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-[#c7ed90]/24 blur-2xl" />
-            <div className="pointer-events-none absolute -bottom-24 -left-20 h-64 w-64 rounded-full bg-[#1f6b43]/40 blur-2xl" />
-
-            <div className="relative">
-              <div className="mb-5 flex items-center justify-between gap-3">
-                <div className="animate-pulse rounded-full bg-[#c7ed90] px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-[#102018] shadow-lg shadow-[#c7ed90]/20">
-                  Kampanya
-                </div>
-
-                <div className="rounded-full border border-white/12 bg-white/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.14em] text-white/80">
-                  1 Temmuz’a kadar
-                </div>
-              </div>
-
-              <div className="border-y border-white/12 py-6 text-center">
-                <p className="text-xs font-black uppercase tracking-[0.22em] text-[#c7ed90]">
-                  Tüm web sitesi paketlerinde
-                </p>
-
-                <h2 className="mt-2 text-[clamp(54px,10vw,96px)] font-black leading-none tracking-[-0.1em] text-white">
-                  %30
-                </h2>
-
-                <p className="mt-2 text-3xl font-black tracking-[-0.06em] text-[#c7ed90] md:text-5xl">
-                  İndirim
-                </p>
-
-                <p className="mx-auto mt-4 max-w-sm text-sm font-bold leading-6 text-white/62">
-                  İşletmenize özel web sitesi, ürün katalog ve tanıtım desteği
-                  paketlerinde kampanyalı fiyat.
-                </p>
-              </div>
-
-              <div className="mt-5 grid gap-3">
-                {[
-                  {
-                    label: "Web Sitesi",
-                    oldPrice: "3.999 TL",
-                    newPrice: "2.799 TL",
-                    save: "1.200 TL avantaj",
-                  },
-                  {
-                    label: "Ürün Katalog",
-                    oldPrice: "5.999 TL",
-                    newPrice: "4.199 TL",
-                    save: "1.800 TL avantaj",
-                  },
-                  {
-                    label: "Web + Tanıtım",
-                    oldPrice: "7.999 TL",
-                    newPrice: "5.599 TL",
-                    save: "2.400 TL avantaj",
-                  },
-                ].map((item) => (
-                  <div
-                    key={item.label}
-                    className="grid grid-cols-[1fr_auto] items-center gap-4 rounded-[22px] border border-white/10 bg-white/[0.08] p-4"
-                  >
-                    <div>
-                      <h3 className="text-base font-black tracking-[-0.03em] text-white">
-                        {item.label}
-                      </h3>
-
-                      <p className="mt-1 text-xs font-bold text-[#c7ed90]/80">
-                        {item.save}
-                      </p>
-                    </div>
-
-                    <div className="text-right">
-                      <p className="text-xs font-black text-white/34 line-through">
-                        {item.oldPrice}
-                      </p>
-
-                      <p className="mt-1 text-2xl font-black tracking-[-0.06em] text-[#c7ed90] md:text-3xl">
-                        {item.newPrice}
-                      </p>
-                    </div>
+            <motion.div
+              variants={rise}
+              initial="hidden"
+              animate="show"
+              className="mt-7 overflow-hidden rounded-[28px] border border-[#102018]/10 bg-white/62 shadow-xl shadow-black/5"
+            >
+              <a
+                href={instagramUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-col gap-4 px-5 py-5 transition hover:bg-white md:flex-row md:items-center md:justify-between md:px-7"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#102018] text-white shadow-lg shadow-black/10">
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="h-5 w-5"
+                      fill="none"
+                      aria-hidden="true"
+                    >
+                      <rect
+                        x="3"
+                        y="3"
+                        width="18"
+                        height="18"
+                        rx="5"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      />
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="4"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      />
+                      <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" />
+                    </svg>
                   </div>
-                ))}
-              </div>
 
-             <div className="mt-5">
-  <a
-    href={wp.genel}
-    className="inline-flex min-h-[56px] w-full items-center justify-center rounded-full bg-[#c7ed90] px-5 text-center text-sm font-black leading-none shadow-xl shadow-[#c7ed90]/20 transition hover:-translate-y-0.5 hover:bg-white md:px-6"
-  >
-    <span className="block text-[#102018]">
-      Kampanyalı Fiyat İçin Yaz
-    </span>
-  </a>
-</div>
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-[#1f6b43]">
+                      Sitemix Instagram
+                    </p>
 
-              <p className="mt-4 text-center text-[11px] font-bold leading-5 text-white/45">
-                Fiyatlar başlangıç paketleri için geçerlidir. Kapsam işletmenin
-                ihtiyacına göre netleştirilir.
-              </p>
-            </div>
-          </motion.div>
-                </motion.div>
+                    <p className="mt-1 text-lg font-black tracking-[-0.04em] text-[#102018]">
+                      Güncel işlerimizi Instagram’dan da takip edin.
+                    </p>
 
-        <motion.div
-          variants={rise}
-          initial="hidden"
-          animate="show"
-          className="mt-7 overflow-hidden rounded-[28px] border border-[#102018]/10 bg-white/62 shadow-xl shadow-black/5"
-        >
-          <a
-            href={instagramUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex flex-col gap-4 px-5 py-5 transition hover:bg-white md:flex-row md:items-center md:justify-between md:px-7"
-          >
-            <div className="flex items-center gap-4">
-              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#102018] text-white shadow-lg shadow-black/10">
-                <svg
-                  viewBox="0 0 24 24"
-                  className="h-5 w-5"
-                  fill="none"
-                  aria-hidden="true"
+                    <p className="mt-1 text-sm font-bold text-[#102018]/52">
+                      @stmxx2026
+                    </p>
+                  </div>
+                </div>
+
+                <div className="inline-flex min-h-[46px] items-center justify-center rounded-full bg-[#102018] px-5 text-sm font-black text-white">
+                  <span className="text-white">Instagram’a Git</span>
+                </div>
+              </a>
+            </motion.div>
+
+            <motion.div
+              variants={rise}
+              initial="hidden"
+              animate="show"
+              className="mt-8 grid gap-3 border-y border-[#102018]/10 py-5 md:grid-cols-3"
+            >
+              {[
+                [
+                  "01",
+                  "İşletmeni yaz",
+                  "Hizmetini ve istediğin site yapısını WhatsApp’tan gönder.",
+                ],
+                [
+                  "02",
+                  "Demo görelim",
+                  "İşletmene uygun örnek web yapısı hazırlanır.",
+                ],
+                [
+                  "03",
+                  "Beğenirsen başlayalım",
+                  "Kapsam ve ödeme netleşir, yayın sürecine geçilir.",
+                ],
+              ].map(([number, title, text]) => (
+                <div
+                  key={number}
+                  className="grid gap-2 md:border-r md:border-[#102018]/10 md:pr-5 last:md:border-r-0"
                 >
-                  <rect
-                    x="3"
-                    y="3"
-                    width="18"
-                    height="18"
-                    rx="5"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  />
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="4"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  />
-                  <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" />
-                </svg>
-              </div>
+                  <span className="text-sm font-black text-[#1f6b43]">
+                    {number}
+                  </span>
 
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#1f6b43]">
-                  Sitemix Instagram
-                </p>
+                  <h3 className="text-xl font-black tracking-[-0.04em] text-[#102018]">
+                    {title}
+                  </h3>
 
-                <p className="mt-1 text-lg font-black tracking-[-0.04em] text-[#102018]">
-                  Güncel işlerimizi Instagram’dan da takip edin.
-                </p>
+                  <p className="text-sm font-bold leading-6 text-[#102018]/55">
+                    {text}
+                  </p>
+                </div>
+              ))}
+            </motion.div>
 
-                <p className="mt-1 text-sm font-bold text-[#102018]/52">
-                  @stmxx2026
-                </p>
-              </div>
-            </div>
-
-            <div className="inline-flex min-h-[46px] items-center justify-center rounded-full bg-[#102018] px-5 text-sm font-black text-white">
-              <span className="text-white">Instagram’a Git</span>
-            </div>
-          </a>
-        </motion.div>
-
-        <motion.div
-          variants={rise}
-          initial="hidden"
-          animate="show"
-          className="mt-8 grid gap-3 border-y border-[#102018]/10 py-5 md:grid-cols-3"
-        >
-          {[
-            [
-              "01",
-              "İşletmeni yaz",
-              "Hizmetini ve istediğin site yapısını WhatsApp’tan gönder.",
-            ],
-            [
-              "02",
-              "Demo görelim",
-              "İşletmene uygun örnek web yapısı hazırlanır.",
-            ],
-            [
-              "03",
-              "Beğenirsen başlayalım",
-              "Kapsam ve ödeme netleşir, yayın sürecine geçilir.",
-            ],
-          ].map(([number, title, text]) => (
-            <div
-              key={number}
-              className="grid gap-2 md:border-r md:border-[#102018]/10 md:pr-5 last:md:border-r-0"
+            <motion.div
+              variants={rise}
+              initial="hidden"
+              animate="show"
+              className="mt-6 flex flex-wrap gap-2"
             >
-              <span className="text-sm font-black text-[#1f6b43]">
-                {number}
-              </span>
-
-              <h3 className="text-xl font-black tracking-[-0.04em] text-[#102018]">
-                {title}
-              </h3>
-
-              <p className="text-sm font-bold leading-6 text-[#102018]/55">
-                {text}
-              </p>
-            </div>
-          ))}
-        </motion.div>
-
-        <motion.div
-          variants={rise}
-          initial="hidden"
-          animate="show"
-          className="mt-6 flex flex-wrap gap-2"
-        >
-          {menuItems.slice(0, 4).map((item) => (
-            <button
-              key={item.key}
-              type="button"
-              onClick={() => goToPage(item.key)}
-              className="min-h-[42px] rounded-full border border-[#102018]/10 bg-white/60 px-4 text-sm font-black text-[#102018]/64 transition hover:bg-[#102018] hover:text-white"
-            >
-              {item.label}
-            </button>
-          ))}
-        </motion.div>
-      </div>
-    </motion.section>
-  );
-}
+              {menuItems.slice(0, 4).map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => goToPage(item.key)}
+                  className="min-h-[42px] rounded-full border border-[#102018]/10 bg-white/60 px-4 text-sm font-black text-[#102018]/64 transition hover:bg-[#102018] hover:text-white"
+                >
+                  {item.label}
+                </button>
+              ))}
+            </motion.div>
+          </div>
+        </motion.section>
+      );
+    }
 
     if (page === "hakkimizda") {
       return (
@@ -876,8 +893,8 @@ export default function Home() {
     if (page === "eticaret") {
       return (
         <PageShell
-         eyebrow="Ürün Katalog Sitesi"
-title="Ürünlerini kendi markana ait WhatsApp siparişli vitrinde göster."
+          eyebrow="Ürün Katalog Sitesi"
+          title="Ürünlerini kendi markana ait WhatsApp siparişli vitrinde göster."
         >
           <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
             <div
@@ -897,9 +914,9 @@ title="Ürünlerini kendi markana ait WhatsApp siparişli vitrinde göster."
               </div>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <GreenButton href={wp.ecommerce}>
-  Ürün Katalog İçin Bilgi Al
-</GreenButton>
+                <GreenButton href={wp.ecommerce}>
+                  Ürün Katalog İçin Bilgi Al
+                </GreenButton>
                 <PrimaryButton href={wp.demo}>Ön Çalışma İste</PrimaryButton>
               </div>
             </div>
@@ -960,19 +977,19 @@ title="Ürünlerini kendi markana ait WhatsApp siparişli vitrinde göster."
                   </span>
 
                   <div>
-                  <div>
-  <p className="text-sm font-black text-[#102018]/38 line-through">
-    {item.oldPrice}
-  </p>
+                    <div>
+                      <p className="text-sm font-black text-[#102018]/38 line-through">
+                        {item.oldPrice}
+                      </p>
 
-  <p className="mt-1 text-lg font-black text-[#1f6b43]">
-    {item.price}
-  </p>
+                      <p className="mt-1 text-lg font-black text-[#1f6b43]">
+                        {item.price}
+                      </p>
 
-  <p className="mt-1 text-xs font-black uppercase tracking-[0.14em] text-[#102018]/45">
-    1 Temmuz’a kadar %30 indirim
-  </p>
-</div>
+                      <p className="mt-1 text-xs font-black uppercase tracking-[0.14em] text-[#102018]/45">
+                        1 Temmuz’a kadar %30 indirim
+                      </p>
+                    </div>
 
                     <h2 className="mt-2 text-3xl font-black leading-tight tracking-[-0.05em] text-[#102018] md:text-5xl">
                       {item.title}
@@ -1051,9 +1068,10 @@ title="Ürünlerini kendi markana ait WhatsApp siparişli vitrinde göster."
               <p className="text-sm font-black tracking-wide text-[#102018]">
                 Sitemix
               </p>
-             <p className="text-[11px] font-bold text-[#102018]/52">
-  İşletmelere özel web sitesi
-</p>
+
+              <p className="text-[11px] font-bold text-[#102018]/52">
+                İşletmelere özel web sitesi
+              </p>
             </div>
           </button>
 
@@ -1079,9 +1097,9 @@ title="Ürünlerini kendi markana ait WhatsApp siparişli vitrinde göster."
               href={wp.demo}
               className="hidden min-h-[46px] items-center justify-center rounded-full bg-[#102018] px-6 text-center text-sm font-black leading-none text-white shadow-lg shadow-black/10 transition hover:bg-[#1d342a] sm:inline-flex"
             >
-             <span className="whitespace-nowrap text-white">
-  Ücretsiz Demo İste
-</span>
+              <span className="whitespace-nowrap text-white">
+                Ücretsiz Demo İste
+              </span>
             </a>
 
             <button
@@ -1124,7 +1142,7 @@ title="Ürünlerini kendi markana ait WhatsApp siparişli vitrinde göster."
                   href={wp.genel}
                   className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-[#1f6b43] px-5 text-sm font-black text-white shadow-sm"
                 >
-               <span className="text-white">WhatsApp’tan Teklif Al</span>
+                  <span className="text-white">WhatsApp’tan Bilgi Al</span>
                 </a>
               </div>
             </motion.div>
