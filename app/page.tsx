@@ -242,8 +242,7 @@ const references = [
 const packages = [
   {
     title: "İşletme Web Sitesi",
-    oldPrice: "3.999 TL",
-    price: "2.799 TL’den başlayan",
+    price: "3.999 TL’den başlayan",
     desc: "İşletmenin internette güvenilir görünmesi, hizmetlerini net anlatması ve müşteriyi hızlıca iletişime taşıması için hazırlanır.",
     href: wp.web,
     features: [
@@ -262,8 +261,7 @@ const packages = [
   },
   {
     title: "Ürün Katalog Sitesi",
-    oldPrice: "5.999 TL",
-    price: "4.199 TL’den başlayan",
+    price: "5.999 TL’den başlayan",
     desc: "Ürünlerini kendi markana ait sitede göstermek, müşteriyi doğrudan WhatsApp siparişine yönlendirmek ve daha güvenilir görünmek için hazırlanır.",
     href: wp.ecommerce,
     features: [
@@ -282,8 +280,7 @@ const packages = [
   },
   {
     title: "Web Sitesi + Tanıtım Desteği",
-    oldPrice: "7.999 TL",
-    price: "5.599 TL’den başlayan",
+    price: "7.999 TL’den başlayan",
     desc: "Google reklamı, sosyal medya ve WhatsApp mesajlarından gelen müşteriyi daha güvenli karşılamak isteyen işletmeler için hazırlanır.",
     href: wp.demo,
     features: [
@@ -978,16 +975,8 @@ export default function Home() {
 
                   <div>
                     <div>
-                      <p className="text-sm font-black text-[#102018]/38 line-through">
-                        {item.oldPrice}
-                      </p>
-
-                      <p className="mt-1 text-lg font-black text-[#1f6b43]">
+                      <p className="text-lg font-black text-[#1f6b43]">
                         {item.price}
-                      </p>
-
-                      <p className="mt-1 text-xs font-black uppercase tracking-[0.14em] text-[#102018]/45">
-                        1 Temmuz’a kadar %30 indirim
                       </p>
                     </div>
 
