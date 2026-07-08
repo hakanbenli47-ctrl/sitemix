@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { OnMuhasebeModuleKey } from "@/lib/onMuhasebe/auth";
+import { buildYearScopedUrl, getBrowserWorkYear } from "@/lib/onMuhasebe/workYear";
 import {
   getOnMuhasebeDaysLeft,
   onMuhasebeStatusLabels,
@@ -89,6 +90,7 @@ type DashboardData = {
   role: "owner" | "staff";
   permissions: Record<OnMuhasebeModuleKey, boolean>;
   isOwner: boolean;
+  workYear: number;
 };
 
 const planLabels: Record<OnMuhasebePlanId, string> = {
@@ -229,6 +231,7 @@ export default function OnMuhasebePanelPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [introOpen, setIntroOpen] = useState(false);
+  const [workYear, setWorkYear] = useState(getBrowserWorkYear());
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -280,7 +283,10 @@ export default function OnMuhasebePanelPage() {
           return;
         }
 
-        const response = await fetch("/api/on-muhasebe/dashboard", {
+        const selectedWorkYear = getBrowserWorkYear();
+        setWorkYear(selectedWorkYear);
+
+        const response = await fetch(buildYearScopedUrl("/api/on-muhasebe/dashboard", selectedWorkYear), {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
           },
@@ -412,6 +418,9 @@ export default function OnMuhasebePanelPage() {
           </div>
 
           <div className="flex items-center gap-3">
+            <div className="hidden rounded-full bg-indigo-50 px-4 py-2 text-xs font-black text-indigo-700 sm:block">
+              {workYear} yılı
+            </div>
             <div className="hidden rounded-full bg-slate-100 px-4 py-2 text-xs font-black text-slate-600 sm:block">
               {company.company_code || "-"}
             </div>
@@ -475,6 +484,7 @@ export default function OnMuhasebePanelPage() {
             <div className="mt-5 grid gap-3">
               {[
                 ["Firma", company.name],
+                ["Çalışma Yılı", String(workYear)],
                 ["Yetkili", profile.full_name || "-"],
                 ["E-posta", data.userEmail || "-"],
                 ["Telefon", profile.phone || company.phone || "-"],
@@ -498,7 +508,7 @@ export default function OnMuhasebePanelPage() {
                       ["Ayarlar", "/on-muhasebe/panel/ayarlar"],
                       ["Yedekleme", "/on-muhasebe/panel/yedekleme"],
                     ]
-                  : []),
+                  : [["Hesap Ayarları", "/on-muhasebe/panel/ayarlar"]]),
                 ...(data.permissions.rapor
                   ? [["Raporlar", "/on-muhasebe/panel/rapor"]]
                   : []),

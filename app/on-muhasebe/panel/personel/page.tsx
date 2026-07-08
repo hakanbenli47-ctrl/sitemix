@@ -55,8 +55,8 @@ const permissionItems: Array<{
 
 const emptyPermissions: OnMuhasebePermissions = {
   dashboard: true,
-  cari: true,
-  stok: true,
+  cari: false,
+  stok: false,
   kasa: false,
   fatura: false,
   rapor: false,
@@ -85,26 +85,13 @@ function applyPermissionDependencies(
     next.stok = true;
   }
 
-  if (next.rapor) {
-    next.cari = true;
-    next.stok = true;
-    next.kasa = true;
-    next.fatura = true;
-  }
-
   if (!next.cari) {
     next.kasa = false;
     next.fatura = false;
-    next.rapor = false;
   }
 
   if (!next.stok) {
     next.fatura = false;
-    next.rapor = false;
-  }
-
-  if (!next.kasa || !next.fatura) {
-    next.rapor = false;
   }
 
   return next;

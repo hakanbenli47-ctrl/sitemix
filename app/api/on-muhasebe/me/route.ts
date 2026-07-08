@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getOnMuhasebeContext } from "@/lib/onMuhasebe/auth";
+import { getWorkYearFromRequest } from "@/lib/onMuhasebe/workYear";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
@@ -14,6 +15,8 @@ export async function GET(request: Request) {
       .eq("id", context.user.id)
       .maybeSingle();
 
+    const workYear = getWorkYearFromRequest(request);
+
     return NextResponse.json({
       user: {
         id: context.user.id,
@@ -24,6 +27,7 @@ export async function GET(request: Request) {
       role: context.role,
       permissions: context.permissions,
       isOwner: context.isOwner,
+      workYear,
     });
   } catch (error) {
     return NextResponse.json(

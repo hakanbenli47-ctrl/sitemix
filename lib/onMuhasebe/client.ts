@@ -4,6 +4,7 @@ import type {
   OnMuhasebePermissions,
   OnMuhasebeUserRole,
 } from "@/lib/onMuhasebe/auth";
+import { buildYearScopedUrl, getBrowserWorkYear } from "@/lib/onMuhasebe/workYear";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 export type OnMuhasebeClientContext = {
@@ -28,6 +29,7 @@ export type OnMuhasebeClientContext = {
   role: OnMuhasebeUserRole;
   permissions: OnMuhasebePermissions;
   isOwner: boolean;
+  workYear: number;
 };
 
 export async function getOnMuhasebeClientContext() {
@@ -41,7 +43,7 @@ export async function getOnMuhasebeClientContext() {
     throw new Error("Oturum bulunamadı.");
   }
 
-  const response = await fetch("/api/on-muhasebe/me", {
+  const response = await fetch(buildYearScopedUrl("/api/on-muhasebe/me", getBrowserWorkYear()), {
     headers: {
       Authorization: `Bearer ${session.access_token}`,
     },

@@ -2,9 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import {
+  getBrowserWorkYear,
+  pickRegisteredWorkYear,
+  setBrowserWorkYear,
+  sortWorkPeriods,
+  type OnMuhasebeWorkPeriod,
+} from "@/lib/onMuhasebe/workYear";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 type GuardState = "checking" | "allowed" | "redirecting" | "error";
+
+type PeriodResponse = {
+  setupRequired?: boolean;
+  periods?: OnMuhasebeWorkPeriod[];
+  message?: string;
+};
 
 const pathPermissions = [
   ["/on-muhasebe/panel/cari", "cari"],
@@ -12,7 +25,6 @@ const pathPermissions = [
   ["/on-muhasebe/panel/kasa", "kasa"],
   ["/on-muhasebe/panel/fatura-fis", "fatura"],
   ["/on-muhasebe/panel/rapor", "rapor"],
-  ["/on-muhasebe/panel/ayarlar", "ayarlar"],
   ["/on-muhasebe/panel/yedekleme", "yedekleme"],
   ["/on-muhasebe/panel/personel", "personel"],
 ] as const;
@@ -25,11 +37,26 @@ export default function OnMuhasebePanelLayout({
   const pathname = usePathname();
   const [state, setState] = useState<GuardState>("checking");
   const [message, setMessage] = useState("");
+  const [workYear, setWorkYear] = useState<number | null>(null);
+  const [periodOptions, setPeriodOptions] = useState<OnMuhasebeWorkPeriod[]>([]);
+
+  function changeWorkYear(nextYear: number) {
+    const exists = periodOptions.some((period) => period.yil === nextYear);
+
+    if (!exists) return;
+
+    setBrowserWorkYear(nextYear);
+    setWorkYear(nextYear);
+    window.location.reload();
+  }
 
   useEffect(() => {
     let isMounted = true;
 
     async function checkAccess() {
+      setState("checking");
+      setMessage("");
+
       try {
         const {
           data: { session },
@@ -41,10 +68,12 @@ export default function OnMuhasebePanelLayout({
           return;
         }
 
+        const headers = {
+          Authorization: `Bearer ${session.access_token}`,
+        };
+
         const response = await fetch("/api/on-muhasebe/subscription-status", {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
+          headers,
           cache: "no-store",
         });
 
@@ -76,10 +105,44 @@ export default function OnMuhasebePanelLayout({
           return;
         }
 
-        const meResponse = await fetch("/api/on-muhasebe/me", {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
+        const periodResponse = await fetch("/api/on-muhasebe/donemler", {
+          headers,
+          cache: "no-store",
+        });
+        const periodResult = (await periodResponse.json().catch(() => null)) as PeriodResponse | null;
+
+        if (!periodResponse.ok) {
+          throw new Error(periodResult?.message || "Çalışma dönemleri alınamadı.");
+        }
+
+        if (periodResult?.setupRequired) {
+          throw new Error(
+            periodResult.message ||
+              "Çalışma dönemi tablosu kurulmamış. Önce Supabase SQL dosyasını çalıştır.",
+          );
+        }
+
+        const registeredPeriods = sortWorkPeriods(periodResult?.periods || []);
+
+        if (registeredPeriods.length === 0) {
+          throw new Error(
+            "Bu firmada kayıtlı çalışma dönemi yok. Yönetici giriş ekranından ilk dönemi oluşturmalı.",
+          );
+        }
+
+        const selectedWorkYear = pickRegisteredWorkYear(
+          registeredPeriods,
+          getBrowserWorkYear(),
+        );
+
+        if (!selectedWorkYear) {
+          throw new Error("Geçerli çalışma dönemi bulunamadı.");
+        }
+
+        setBrowserWorkYear(selectedWorkYear);
+
+        const meResponse = await fetch(`/api/on-muhasebe/me?workYear=${selectedWorkYear}`, {
+          headers,
           cache: "no-store",
         });
         const me = await meResponse.json().catch(() => null);
@@ -98,6 +161,8 @@ export default function OnMuhasebePanelLayout({
         }
 
         if (isMounted) {
+          setPeriodOptions(registeredPeriods);
+          setWorkYear(selectedWorkYear);
           setState("allowed");
         }
       } catch (error) {
@@ -120,7 +185,29 @@ export default function OnMuhasebePanelLayout({
   }, [pathname]);
 
   if (state === "allowed") {
-    return children;
+    return (
+      <>
+        {children}
+        <div className="fixed bottom-4 left-4 z-50 rounded-2xl bg-slate-950/95 p-3 text-white shadow-2xl shadow-slate-950/25 backdrop-blur-xl">
+          <label className="block">
+            <span className="mb-1 block text-[10px] font-black uppercase tracking-[0.16em] text-white/45">
+              Çalışma dönemi
+            </span>
+            <select
+              value={workYear ?? ""}
+              onChange={(event) => changeWorkYear(Number(event.target.value))}
+              className="h-10 rounded-xl border border-white/10 bg-white/10 px-3 text-xs font-black text-white outline-none"
+            >
+              {periodOptions.map((period) => (
+                <option key={period.id} value={period.yil} className="text-slate-950">
+                  {period.yil} {period.durum === "kapali" ? "(Kapalı)" : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </>
+    );
   }
 
   if (state === "error") {
@@ -135,10 +222,10 @@ export default function OnMuhasebePanelLayout({
           </p>
           <button
             type="button"
-            onClick={() => window.location.reload()}
+            onClick={() => window.location.replace("/on-muhasebe/giris")}
             className="mt-6 inline-flex min-h-12 items-center justify-center rounded-full bg-slate-950 px-6 text-sm font-black text-white"
           >
-            Tekrar Dene
+            Giriş Ekranına Dön
           </button>
         </div>
       </main>
@@ -150,7 +237,7 @@ export default function OnMuhasebePanelLayout({
       <div className="rounded-[2rem] bg-white p-8 text-center shadow-xl shadow-slate-200">
         <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-slate-100 border-t-indigo-600" />
         <p className="mt-5 text-sm font-black text-slate-600">
-          Paket ve deneme süresi kontrol ediliyor...
+          Paket, dönem ve yetki kontrol ediliyor...
         </p>
       </div>
     </main>

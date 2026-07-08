@@ -27,8 +27,8 @@ export const allOnMuhasebePermissions: OnMuhasebePermissions = {
 
 export const defaultStaffPermissions: OnMuhasebePermissions = {
   dashboard: true,
-  cari: true,
-  stok: true,
+  cari: false,
+  stok: false,
   kasa: false,
   fatura: false,
   rapor: false,
@@ -123,13 +123,6 @@ export function normalizePermissions(
   if (normalized.fatura) {
     normalized.cari = true;
     normalized.stok = true;
-  }
-
-  if (normalized.rapor) {
-    normalized.cari = true;
-    normalized.stok = true;
-    normalized.kasa = true;
-    normalized.fatura = true;
   }
 
   return normalized;

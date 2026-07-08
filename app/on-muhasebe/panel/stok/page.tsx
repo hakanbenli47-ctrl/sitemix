@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { getOnMuhasebeClientContext } from "@/lib/onMuhasebe/client";
+import { getBrowserWorkYear, todayForWorkYear, workYearDateRange } from "@/lib/onMuhasebe/workYear";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 type Company = {
@@ -417,7 +418,8 @@ function topluUrunSatirHatalari(
 
 export default function StokPage() {
   const [company, setCompany] = useState<Company | null>(null);
-    const stokFormRef = useRef<HTMLFormElement | null>(null);
+  const [workYear] = useState(getBrowserWorkYear());
+  const stokFormRef = useRef<HTMLFormElement | null>(null);
   const [urunler, setUrunler] = useState<Urun[]>([]);
   const [kategoriler, setKategoriler] = useState<UrunKategori[]>([]);
   const [hareketler, setHareketler] = useState<StokHareket[]>([]);
@@ -440,6 +442,7 @@ export default function StokPage() {
   const [isHareketSaving, setIsHareketSaving] = useState(false);
   const [isKategoriSaving, setIsKategoriSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const yearRange = useMemo(() => workYearDateRange(workYear), [workYear]);
   const [errorMessage, setErrorMessage] = useState("");
 
   const kategoriHaritasi = useMemo(() => {
@@ -597,6 +600,8 @@ export default function StokPage() {
           "id, company_id, urun_id, hareket_turu, hareket_tarihi, miktar, birim_maliyet, aciklama, created_at",
         )
         .eq("company_id", companyData.id)
+        .gte("hareket_tarihi", yearRange.start)
+        .lte("hareket_tarihi", yearRange.end)
         .order("created_at", { ascending: false })
         .limit(50);
 
@@ -1030,7 +1035,7 @@ export default function StokPage() {
         company_id: company.id,
         urun_id: urun.id,
         hareket_turu: hareketForm.hareket_turu,
-        hareket_tarihi: new Date().toISOString().slice(0, 10),
+        hareket_tarihi: todayForWorkYear(workYear),
         miktar: hareketMiktari,
         birim_maliyet: birimMaliyet,
         aciklama: bosIseNull(hareketForm.aciklama),
@@ -1115,7 +1120,7 @@ export default function StokPage() {
             </span>
             <span className="leading-tight">
               <span className="block text-base font-black tracking-[-0.03em]">
-                Stok Yönetimi
+                Stok Yönetimi / {workYear}
               </span>
               <span className="block text-xs font-extrabold text-slate-500">
                 {company?.company_code || "Sitemix Ön Muhasebe"}

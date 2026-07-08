@@ -3,6 +3,13 @@
 import Link from "next/link";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { getOnMuhasebeClientContext } from "@/lib/onMuhasebe/client";
+import {
+  getBrowserWorkYear,
+  monthStartForWorkYear,
+  todayForWorkYear,
+  weekStartForWorkYear,
+  workYearDateRange,
+} from "@/lib/onMuhasebe/workYear";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 type Company = {
@@ -168,22 +175,16 @@ function tarihiInputFormatinaCevir(date = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
-function bugununTarihi() {
-  return tarihiInputFormatinaCevir();
+function bugununTarihi(workYear = new Date().getFullYear()) {
+  return todayForWorkYear(workYear);
 }
 
-function haftaninIlkGunu() {
-  const date = new Date();
-  const gun = date.getDay();
-  const pazartesiFarki = gun === 0 ? -6 : 1 - gun;
-  date.setDate(date.getDate() + pazartesiFarki);
-  return tarihiInputFormatinaCevir(date);
+function haftaninIlkGunu(workYear = new Date().getFullYear()) {
+  return weekStartForWorkYear(workYear);
 }
 
-function ayinIlkGunu() {
-  const date = new Date();
-  date.setDate(1);
-  return tarihiInputFormatinaCevir(date);
+function ayinIlkGunu(workYear = new Date().getFullYear()) {
+  return monthStartForWorkYear(workYear);
 }
 
 function tarihFormatla(value: string) {
@@ -355,13 +356,14 @@ export default function KasaPage() {
   const [cariArama, setCariArama] = useState("");
   const [hareketFiltresi, setHareketFiltresi] = useState<HareketFiltresi>("son10");
   const [tahsilatFisOnizleme, setTahsilatFisOnizleme] = useState<KasaHareketView | null>(null);
+  const [workYear] = useState(getBrowserWorkYear());
 
   const [form, setForm] = useState<KasaForm>({
     hareketTuru: "tahsilat",
     kasaHesapId: "",
     cariId: "",
     kategoriId: "",
-    islemTarihi: bugununTarihi(),
+    islemTarihi: todayForWorkYear(getBrowserWorkYear()),
     tutar: "",
     aciklama: "",
   });
@@ -373,6 +375,8 @@ export default function KasaPage() {
     iban: "",
     acilisBakiyesi: "0",
   });
+
+  const yearRange = useMemo(() => workYearDateRange(workYear), [workYear]);
 
   const kasaBakiyeleri = useMemo(() => {
     const result: Record<string, number> = {};
@@ -485,9 +489,9 @@ export default function KasaPage() {
       return hareketler.slice(0, 10);
     }
 
-    const bugun = bugununTarihi();
-    const haftaBaslangici = haftaninIlkGunu();
-    const ayBaslangici = ayinIlkGunu();
+    const bugun = bugununTarihi(workYear);
+    const haftaBaslangici = haftaninIlkGunu(workYear);
+    const ayBaslangici = ayinIlkGunu(workYear);
 
     return hareketler.filter((hareket) => {
       if (hareketFiltresi === "bugun") return hareket.islem_tarihi === bugun;
@@ -495,7 +499,7 @@ export default function KasaPage() {
       if (hareketFiltresi === "ay") return hareket.islem_tarihi >= ayBaslangici;
       return true;
     });
-  }, [hareketFiltresi, hareketler]);
+  }, [hareketFiltresi, hareketler, workYear]);
 
   const seciliCari = useMemo(
     () => cariler.find((cari) => cari.id === form.cariId) || null,
@@ -594,6 +598,8 @@ export default function KasaPage() {
             "id, company_id, kasa_hesap_id, cari_id, kategori_id, hareket_turu, islem_tarihi, aciklama, tutar, para_birimi, tahsilat_fis_no, cari_bakiye_once, cari_bakiye_sonra, durum, created_at, kasa_hesaplari(hesap_adi, hesap_turu), cari_hesaplar(cari_kodu, unvan, telefon, bakiye), gelir_gider_kategorileri(kategori_adi)",
           )
           .eq("company_id", companyData.id)
+          .gte("islem_tarihi", yearRange.start)
+          .lte("islem_tarihi", yearRange.end)
           .order("islem_tarihi", { ascending: false })
           .order("created_at", { ascending: false })
           .limit(100),
@@ -700,6 +706,11 @@ export default function KasaPage() {
 
     if (tutar <= 0) {
       setErrorMessage("Tutar 0'dan büyük olmalı.");
+      return;
+    }
+
+    if (form.islemTarihi < yearRange.start || form.islemTarihi > yearRange.end) {
+      setErrorMessage(`${workYear} çalışma yılında sadece ${yearRange.start} - ${yearRange.end} arası işlem girebilirsin.`);
       return;
     }
 
@@ -1135,6 +1146,8 @@ export default function KasaPage() {
                   <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Tarih</span>
                   <input
                     type="date"
+                    min={yearRange.start}
+                    max={yearRange.end}
                     value={form.islemTarihi}
                     onChange={(event) => formGuncelle("islemTarihi", event.target.value)}
                     className="min-h-[52px] rounded-[1.25rem] border border-slate-200 bg-white px-4 text-sm font-black outline-none transition focus:border-emerald-500"

@@ -226,6 +226,26 @@ export async function POST(request: Request) {
       throw new Error(settingsError.message);
     }
 
+    const initialWorkYear = new Date().getFullYear();
+    const { error: periodError } = await supabaseAdmin
+      .from("on_muhasebe_calisma_donemleri")
+      .upsert(
+        {
+          company_id: companyData.id,
+          yil: initialWorkYear,
+          baslangic_tarihi: `${initialWorkYear}-01-01`,
+          bitis_tarihi: `${initialWorkYear}-12-31`,
+          durum: "acik",
+          locked: false,
+          created_by: createdUserId,
+        },
+        { onConflict: "company_id,yil" },
+      );
+
+    if (periodError && !isMissingTableError(periodError)) {
+      throw new Error(periodError.message);
+    }
+
     return NextResponse.json({
       success: true,
       message: "Kayıt oluşturuldu. Giriş yapabilirsin.",

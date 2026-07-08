@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { getOnMuhasebeContext, isMissingTableError } from "@/lib/onMuhasebe/auth";
 import { getOnMuhasebeDaysLeft } from "@/lib/onMuhasebe/plans";
+import {
+  getWorkYearFromRequest,
+  monthStartForWorkYear,
+  todayForWorkYear,
+  weekStartForWorkYear,
+  workYearDateRange,
+} from "@/lib/onMuhasebe/workYear";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
@@ -134,9 +141,11 @@ export async function GET(request: Request) {
     const context = await getOnMuhasebeContext(request);
     const { user, company } = context;
 
-    const today = dateKey();
-    const monthStart = monthStartKey();
-    const weekStart = weekStartKey();
+    const workYear = getWorkYearFromRequest(request);
+    const yearRange = workYearDateRange(workYear);
+    const today = todayForWorkYear(workYear);
+    const monthStart = monthStartForWorkYear(workYear);
+    const weekStart = weekStartForWorkYear(workYear);
 
     const [
       profileResponse,
@@ -190,20 +199,22 @@ export async function GET(request: Request) {
           "id, kasa_hesap_id, hareket_turu, islem_tarihi, tutar, durum, created_at, aciklama",
         )
         .eq("company_id", company.id)
-        .gte("islem_tarihi", monthStart)
+        .gte("islem_tarihi", yearRange.start)
+        .lte("islem_tarihi", yearRange.end)
         .order("islem_tarihi", { ascending: false })
         .order("created_at", { ascending: false })
-        .limit(500),
+        .limit(5000),
       supabaseAdmin
         .from("fatura_fisleri")
         .select(
           "id, fis_no, fis_turu, fis_tarihi, genel_toplam, durum, created_at, aciklama",
         )
         .eq("company_id", company.id)
-        .gte("fis_tarihi", monthStart)
+        .gte("fis_tarihi", yearRange.start)
+        .lte("fis_tarihi", yearRange.end)
         .order("fis_tarihi", { ascending: false })
         .order("created_at", { ascending: false })
-        .limit(300),
+        .limit(5000),
       supabaseAdmin
         .from("fatura_fis_kalemleri")
         .select("fis_id, urun_id, urun_adi, miktar, satir_toplami")
@@ -400,10 +411,13 @@ export async function GET(request: Request) {
         frequencyHours: settings?.backup_frequency_hours || 24,
         lastBackup,
       },
+      workYear,
       dateRange: {
         today,
         weekStart,
         monthStart,
+        yearStart: yearRange.start,
+        yearEnd: yearRange.end,
       },
       diagnostics: {
         activeSalesReceiptScope: aktifSatisFisIds.size,

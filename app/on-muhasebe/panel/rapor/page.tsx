@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ChangeEvent, type ReactNode, useEffect, useMemo, useState } from "react";
 import { getOnMuhasebeClientContext } from "@/lib/onMuhasebe/client";
+import { getBrowserWorkYear, referenceDateForWorkYear, workYearDateRange } from "@/lib/onMuhasebe/workYear";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 type Company = {
@@ -270,8 +271,8 @@ function tarihToIso(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
-function tarihAraligi(secim: TarihSecimi) {
-  const today = new Date();
+function tarihAraligi(secim: TarihSecimi, workYear = new Date().getFullYear()) {
+  const today = referenceDateForWorkYear(workYear);
   const bitis = tarihToIso(today);
 
   if (secim === "bugun") {
@@ -280,7 +281,7 @@ function tarihAraligi(secim: TarihSecimi) {
 
   if (secim === "bu_yil") {
     return {
-      baslangicTarihi: tarihToIso(new Date(today.getFullYear(), 0, 1)),
+      baslangicTarihi: tarihToIso(new Date(workYear, 0, 1)),
       bitisTarihi: bitis,
     };
   }
@@ -292,13 +293,13 @@ function tarihAraligi(secim: TarihSecimi) {
   }
 
   return {
-    baslangicTarihi: tarihToIso(new Date(today.getFullYear(), today.getMonth(), 1)),
+    baslangicTarihi: tarihToIso(new Date(workYear, today.getMonth(), 1)),
     bitisTarihi: bitis,
   };
 }
 
-function varsayilanFiltreler(): Filtreler {
-  const aralik = tarihAraligi("bu_ay");
+function varsayilanFiltreler(workYear = new Date().getFullYear()): Filtreler {
+  const aralik = tarihAraligi("bu_ay", workYear);
 
   return {
     tarihSecimi: "bu_ay",
@@ -419,8 +420,10 @@ export default function OnMuhasebeRaporPage() {
   const [gelirGiderKategorileri, setGelirGiderKategorileri] = useState<GelirGiderKategori[]>([]);
   const [stokHareketleri, setStokHareketleri] = useState<StokHareketi[]>([]);
 
+  const [workYear] = useState(getBrowserWorkYear());
+  const yearRange = useMemo(() => workYearDateRange(workYear), [workYear]);
   const [raporTuru, setRaporTuru] = useState<RaporTuru>("stok");
-  const [filtreler, setFiltreler] = useState<Filtreler>(() => varsayilanFiltreler());
+  const [filtreler, setFiltreler] = useState<Filtreler>(() => varsayilanFiltreler(getBrowserWorkYear()));
   const [raporHazir, setRaporHazir] = useState(false);
   const [seciliUrunId, setSeciliUrunId] = useState<string | null>(null);
   const [seciliCariId, setSeciliCariId] = useState<string | null>(null);
@@ -884,6 +887,8 @@ export default function OnMuhasebeRaporPage() {
             "id, company_id, cari_id, kasa_hesap_id, fis_no, fis_turu, fis_tarihi, ara_toplam, kdv_toplam, genel_toplam, tahsilat_tutari, cari_bakiye_once, cari_bakiye_sonra, aciklama, durum, created_at, updated_at",
           )
           .eq("company_id", companyId)
+          .gte("fis_tarihi", yearRange.start)
+          .lte("fis_tarihi", yearRange.end)
           .order("fis_tarihi", { ascending: false })
           .order("created_at", { ascending: false })
           .limit(10000),
@@ -909,6 +914,8 @@ export default function OnMuhasebeRaporPage() {
             "id, company_id, kasa_hesap_id, cari_id, fatura_id, kategori_id, hareket_turu, islem_tarihi, aciklama, tutar, para_birimi, iliskili_hareket_id, durum, created_at, tahsilat_fis_no, cari_bakiye_once, cari_bakiye_sonra",
           )
           .eq("company_id", companyId)
+          .gte("islem_tarihi", yearRange.start)
+          .lte("islem_tarihi", yearRange.end)
           .order("islem_tarihi", { ascending: false })
           .order("created_at", { ascending: false })
           .limit(20000),
@@ -925,6 +932,8 @@ export default function OnMuhasebeRaporPage() {
             "id, company_id, urun_id, fatura_id, fatura_satir_id, hareket_turu, hareket_tarihi, miktar, birim_maliyet, aciklama, created_at, belge_no, kaynak_turu, kaynak_id",
           )
           .eq("company_id", companyId)
+          .gte("hareket_tarihi", yearRange.start)
+          .lte("hareket_tarihi", yearRange.end)
           .order("hareket_tarihi", { ascending: false })
           .order("created_at", { ascending: false })
           .limit(20000),
@@ -991,7 +1000,7 @@ export default function OnMuhasebeRaporPage() {
       return;
     }
 
-    const aralik = tarihAraligi(secim);
+    const aralik = tarihAraligi(secim, workYear);
     setFiltreler((prev) => ({
       ...prev,
       tarihSecimi: secim,
@@ -1041,7 +1050,7 @@ export default function OnMuhasebeRaporPage() {
               <Link href="/on-muhasebe/panel" className="text-xs font-black uppercase tracking-[0.22em] text-slate-400 print:hidden">
                 ← Panele dön
               </Link>
-              <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Raporlar</h1>
+              <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Raporlar / {workYear}</h1>
               <p className="mt-1 text-sm font-bold text-slate-500">
                 {company?.name || "İşletme"} · sadece görüntüleme ekranı, düzenleme ve silme işlemi yok.
               </p>
@@ -1116,6 +1125,8 @@ export default function OnMuhasebeRaporPage() {
               <span className="text-[11px] font-black uppercase tracking-wide text-slate-400">Başlangıç</span>
               <input
                 type="date"
+                min={yearRange.start}
+                max={yearRange.end}
                 value={filtreler.baslangicTarihi}
                 onChange={(event) => {
                   filtreGuncelle("baslangicTarihi", event.target.value);
@@ -1129,6 +1140,8 @@ export default function OnMuhasebeRaporPage() {
               <span className="text-[11px] font-black uppercase tracking-wide text-slate-400">Bitiş</span>
               <input
                 type="date"
+                min={yearRange.start}
+                max={yearRange.end}
                 value={filtreler.bitisTarihi}
                 onChange={(event) => {
                   filtreGuncelle("bitisTarihi", event.target.value);

@@ -3,6 +3,12 @@
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { getOnMuhasebeClientContext } from "@/lib/onMuhasebe/client";
+import {
+  getBrowserWorkYear,
+  monthStartForWorkYear,
+  todayForWorkYear,
+  workYearDateRange,
+} from "@/lib/onMuhasebe/workYear";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 type Company = {
@@ -138,23 +144,22 @@ function tarihiYaz(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
-function bugununTarihi() {
-  return tarihiYaz(new Date());
+function bugununTarihi(workYear = new Date().getFullYear()) {
+  return todayForWorkYear(workYear);
 }
 
-function ayBaslangici() {
-  const now = new Date();
-  return tarihiYaz(new Date(now.getFullYear(), now.getMonth(), 1));
+function ayBaslangici(workYear = new Date().getFullYear()) {
+  return monthStartForWorkYear(workYear);
 }
 
-function yilBaslangici() {
-  const now = new Date();
-  return tarihiYaz(new Date(now.getFullYear(), 0, 1));
+function yilBaslangici(workYear = new Date().getFullYear()) {
+  return workYearDateRange(workYear).start;
 }
 
-function donemAraliklari() {
-  const now = new Date();
-  const bugun = tarihiYaz(now);
+function donemAraliklari(workYear = new Date().getFullYear()) {
+  const bugun = bugununTarihi(workYear);
+  const ayIlkGun = ayBaslangici(workYear);
+  const yilIlkGun = yilBaslangici(workYear);
 
   return {
     gun: {
@@ -163,14 +168,14 @@ function donemAraliklari() {
       etiket: tarihFormatla(bugun),
     },
     ay: {
-      baslangic: tarihiYaz(new Date(now.getFullYear(), now.getMonth(), 1)),
+      baslangic: ayIlkGun,
       bitis: bugun,
-      etiket: `${tarihFormatla(tarihiYaz(new Date(now.getFullYear(), now.getMonth(), 1)))} - ${tarihFormatla(bugun)}`,
+      etiket: `${tarihFormatla(ayIlkGun)} - ${tarihFormatla(bugun)}`,
     },
     yil: {
-      baslangic: tarihiYaz(new Date(now.getFullYear(), 0, 1)),
+      baslangic: yilIlkGun,
       bitis: bugun,
-      etiket: `${tarihFormatla(tarihiYaz(new Date(now.getFullYear(), 0, 1)))} - ${tarihFormatla(bugun)}`,
+      etiket: `${tarihFormatla(yilIlkGun)} - ${tarihFormatla(bugun)}`,
     },
   };
 }
@@ -348,7 +353,12 @@ export default function FaturaFisPage() {
   const [istatistikFisleri, setIstatistikFisleri] = useState<FisIstatistikSatiri[]>([]);
   const [formAcik, setFormAcik] = useState(false);
   const [duzenlenenFisId, setDuzenlenenFisId] = useState<string | null>(null);
-  const [form, setForm] = useState<FisForm>(bosForm);
+  const [workYear] = useState(getBrowserWorkYear());
+  const yearRange = useMemo(() => workYearDateRange(workYear), [workYear]);
+  const [form, setForm] = useState<FisForm>(() => ({
+    ...bosForm,
+    fis_tarihi: todayForWorkYear(getBrowserWorkYear()),
+  }));
   const [satirlar, setSatirlar] = useState<FisSatiri[]>([yeniSatir()]);
   const [cariArama, setCariArama] = useState("");
   const [urunArama, setUrunArama] = useState("");
@@ -360,7 +370,7 @@ export default function FaturaFisPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
-  const donemler = useMemo(() => donemAraliklari(), []);
+  const donemler = useMemo(() => donemAraliklari(workYear), [workYear]);
   const duzenlemeModu = Boolean(duzenlenenFisId);
 
   const seciliCari = useMemo(
@@ -511,6 +521,8 @@ export default function FaturaFisPage() {
             "id, company_id, cari_id, fis_no, fis_turu, fis_tarihi, ara_toplam, kdv_toplam, genel_toplam, tahsilat_tutari, cari_bakiye_once, cari_bakiye_sonra, aciklama, durum, created_at, cari_hesaplar(cari_kodu, unvan, telefon)",
           )
           .eq("company_id", companyData.id)
+          .gte("fis_tarihi", yearRange.start)
+          .lte("fis_tarihi", yearRange.end)
           .order("fis_tarihi", { ascending: false })
           .order("created_at", { ascending: false })
           .limit(50),
@@ -564,7 +576,7 @@ export default function FaturaFisPage() {
     setForm({
       ...bosForm,
       fis_turu: fisTuru,
-      fis_tarihi: bugununTarihi(),
+      fis_tarihi: bugununTarihi(workYear),
     });
     setSatirlar([yeniSatir()]);
     setCariArama("");
@@ -576,7 +588,7 @@ export default function FaturaFisPage() {
 
   function formuKapat() {
     setDuzenlenenFisId(null);
-    setForm({ ...bosForm, fis_tarihi: bugununTarihi() });
+    setForm({ ...bosForm, fis_tarihi: bugununTarihi(workYear) });
     setSatirlar([yeniSatir()]);
     setCariArama("");
     setUrunArama("");
@@ -676,6 +688,9 @@ export default function FaturaFisPage() {
     if (!company) hatalar.push("Firma bilgisi bulunamadı.");
     if (!form.cari_id) hatalar.push(form.fis_turu === "satis" ? "Müşteri seçmelisin." : "Tedarikçi seçmelisin.");
     if (!form.fis_tarihi) hatalar.push("Fiş tarihi seçmelisin.");
+    if (form.fis_tarihi && (form.fis_tarihi < yearRange.start || form.fis_tarihi > yearRange.end)) {
+      hatalar.push(`${workYear} çalışma yılında sadece ${yearRange.start} - ${yearRange.end} arası fiş kesebilirsin.`);
+    }
 
     const doluSatirlar = satirHesaplari.filter((satir) => satir.urun && satir.miktar > 0);
 
@@ -796,7 +811,7 @@ export default function FaturaFisPage() {
       );
       setDuzenlenenFisId(null);
       setFormAcik(false);
-      setForm({ ...bosForm, fis_tarihi: bugununTarihi() });
+      setForm({ ...bosForm, fis_tarihi: bugununTarihi(workYear) });
       setSatirlar([yeniSatir()]);
       setCariArama("");
       setUrunArama("");
@@ -1030,7 +1045,7 @@ setDuzenlenenFisId(guncelFis.id);
 setForm({
   fis_turu: guncelFis.fis_turu,
   cari_id: guncelFis.cari_id,
-  fis_tarihi: String(guncelFis.fis_tarihi || "").slice(0, 10) || bugununTarihi(),
+  fis_tarihi: String(guncelFis.fis_tarihi || "").slice(0, 10) || bugununTarihi(workYear),
   aciklama: guncelFis.aciklama || "",
 });
       setSatirlar(
@@ -1093,7 +1108,7 @@ setForm({
       setForm({
         fis_turu: guncelFis.fis_turu,
         cari_id: guncelFis.cari_id,
-        fis_tarihi: bugununTarihi(),
+        fis_tarihi: bugununTarihi(workYear),
         aciklama: guncelFis.aciklama || "",
       });
       setSatirlar(
@@ -1138,7 +1153,7 @@ setForm({
               F
             </span>
             <span className="leading-tight">
-              <span className="block text-base font-black tracking-[-0.03em]">Fatura / Fiş</span>
+              <span className="block text-base font-black tracking-[-0.03em]">Fatura / Fiş / {workYear}</span>
               <span className="block text-xs font-extrabold text-slate-500">
                 {company?.company_code || "Sitemix Ön Muhasebe"}
               </span>
@@ -1198,7 +1213,7 @@ setForm({
 
           <div className="rounded-[2rem] bg-white p-5 shadow-xl shadow-slate-200">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Bu Ay</p>
-            <p className="mt-2 text-xs font-bold text-slate-400">{tarihFormatla(ayBaslangici())} - {donemler.gun.etiket}</p>
+            <p className="mt-2 text-xs font-bold text-slate-400">{tarihFormatla(ayBaslangici(workYear))} - {donemler.gun.etiket}</p>
             <div className="mt-5 grid grid-cols-3 gap-3">
               <div>
                 <p className="text-xs font-bold text-slate-400">Satış</p>
@@ -1217,7 +1232,7 @@ setForm({
 
           <div className="rounded-[2rem] bg-white p-5 shadow-xl shadow-slate-200">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Bu Yıl</p>
-            <p className="mt-2 text-xs font-bold text-slate-400">{tarihFormatla(yilBaslangici())} - {donemler.gun.etiket}</p>
+            <p className="mt-2 text-xs font-bold text-slate-400">{tarihFormatla(yilBaslangici(workYear))} - {donemler.gun.etiket}</p>
             <div className="mt-5 grid grid-cols-3 gap-3">
               <div>
                 <p className="text-xs font-bold text-slate-400">Satış</p>
@@ -1388,6 +1403,8 @@ setForm({
                     <span className="text-xs font-black uppercase tracking-[0.12em] text-slate-400">Fiş Tarihi</span>
                     <input
                       type="date"
+                      min={yearRange.start}
+                      max={yearRange.end}
                       value={form.fis_tarihi}
                       onChange={(event) => formGuncelle("fis_tarihi", event.target.value)}
                       className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold outline-none transition focus:border-violet-400 focus:bg-white"
