@@ -107,7 +107,7 @@ export function normalizePermissions(
     return allOnMuhasebePermissions;
   }
 
-  return {
+  const normalized = {
     ...defaultStaffPermissions,
     ...(permissions || {}),
     dashboard: true,
@@ -115,6 +115,24 @@ export function normalizePermissions(
     yedekleme: false,
     personel: false,
   };
+
+  if (normalized.kasa) {
+    normalized.cari = true;
+  }
+
+  if (normalized.fatura) {
+    normalized.cari = true;
+    normalized.stok = true;
+  }
+
+  if (normalized.rapor) {
+    normalized.cari = true;
+    normalized.stok = true;
+    normalized.kasa = true;
+    normalized.fatura = true;
+  }
+
+  return normalized;
 }
 
 export async function getOnMuhasebeContext(request: Request) {

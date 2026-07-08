@@ -65,6 +65,51 @@ const emptyPermissions: OnMuhasebePermissions = {
   personel: false,
 };
 
+function applyPermissionDependencies(
+  value: OnMuhasebePermissions,
+): OnMuhasebePermissions {
+  const next = {
+    ...value,
+    dashboard: true,
+    ayarlar: false,
+    yedekleme: false,
+    personel: false,
+  };
+
+  if (next.kasa) {
+    next.cari = true;
+  }
+
+  if (next.fatura) {
+    next.cari = true;
+    next.stok = true;
+  }
+
+  if (next.rapor) {
+    next.cari = true;
+    next.stok = true;
+    next.kasa = true;
+    next.fatura = true;
+  }
+
+  if (!next.cari) {
+    next.kasa = false;
+    next.fatura = false;
+    next.rapor = false;
+  }
+
+  if (!next.stok) {
+    next.fatura = false;
+    next.rapor = false;
+  }
+
+  if (!next.kasa || !next.fatura) {
+    next.rapor = false;
+  }
+
+  return next;
+}
+
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("tr-TR", {
     day: "2-digit",
@@ -168,8 +213,10 @@ export default function OnMuhasebePersonelPage() {
     if (key === "dashboard") return;
 
     setPermissions((current) => ({
-      ...current,
-      [key]: !current[key],
+      ...applyPermissionDependencies({
+        ...current,
+        [key]: !current[key],
+      }),
     }));
   }
 

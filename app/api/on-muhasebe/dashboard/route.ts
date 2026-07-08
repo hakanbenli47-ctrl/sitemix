@@ -160,10 +160,10 @@ export async function GET(request: Request) {
         .select(
           "id, plan, status, trial_started_at, trial_ends_at, monthly_price, total_price, saving_amount, currency",
         )
-        .eq("user_id", user.id)
+        .eq("company_id", company.id)
         .order("created_at", { ascending: false })
         .limit(1)
-        .single(),
+        .maybeSingle(),
       supabaseAdmin
         .from("cari_hesaplar")
         .select("id, cari_turu, unvan, bakiye, aktif")
@@ -232,6 +232,9 @@ export async function GET(request: Request) {
 
     if (profileResponse.error) throw profileResponse.error;
     if (subscriptionResponse.error) throw subscriptionResponse.error;
+    if (!subscriptionResponse.data) {
+      throw new Error("Paket bilgisi bulunamadı.");
+    }
     if (cariResponse.error) throw cariResponse.error;
     if (urunResponse.error) throw urunResponse.error;
     if (kasaHesapResponse.error) throw kasaHesapResponse.error;

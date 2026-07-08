@@ -18,6 +18,29 @@ as $$
         membership.role = 'owner'
         or module_key is null
         or coalesce((membership.permissions ->> module_key)::boolean, false)
+        or (
+          module_key = 'cari'
+          and (
+            coalesce((membership.permissions ->> 'kasa')::boolean, false)
+            or coalesce((membership.permissions ->> 'fatura')::boolean, false)
+            or coalesce((membership.permissions ->> 'rapor')::boolean, false)
+          )
+        )
+        or (
+          module_key = 'stok'
+          and (
+            coalesce((membership.permissions ->> 'fatura')::boolean, false)
+            or coalesce((membership.permissions ->> 'rapor')::boolean, false)
+          )
+        )
+        or (
+          module_key = 'kasa'
+          and coalesce((membership.permissions ->> 'rapor')::boolean, false)
+        )
+        or (
+          module_key = 'fatura'
+          and coalesce((membership.permissions ->> 'rapor')::boolean, false)
+        )
       )
   );
 $$;
