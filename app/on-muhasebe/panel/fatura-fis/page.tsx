@@ -136,14 +136,6 @@ const fisKisaAciklama: Record<FisTuru, string> = {
   alis: "Tedarikçiden alış kaydı oluşturur. Ürün stoğu artar, firmaya ödenecek bakiye artar.",
 };
 
-function tarihiYaz(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-}
-
 function bugununTarihi(workYear = new Date().getFullYear()) {
   return todayForWorkYear(workYear);
 }
@@ -561,7 +553,7 @@ export default function FaturaFisPage() {
     } finally {
       if (tamEkranYukleme) setIsLoading(false);
     }
-  }, [donemler.yil.baslangic, donemler.yil.bitis]);
+  }, [donemler.yil.baslangic, donemler.yil.bitis, yearRange.end, yearRange.start]);
 
   useEffect(() => {
     verileriYukle();
@@ -1153,7 +1145,7 @@ setForm({
               F
             </span>
             <span className="leading-tight">
-              <span className="block text-base font-black tracking-[-0.03em]">Fatura / Fiş / {workYear}</span>
+              <span className="block text-base font-black tracking-[-0.03em]">Fatura / Fiş</span>
               <span className="block text-xs font-extrabold text-slate-500">
                 {company?.company_code || "Sitemix Ön Muhasebe"}
               </span>

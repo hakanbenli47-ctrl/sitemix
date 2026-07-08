@@ -32,7 +32,63 @@ export type OnMuhasebeClientContext = {
   workYear: number;
 };
 
+const CLIENT_CONTEXT_CACHE_KEY = "onMuhasebeClientContext";
+const CLIENT_CONTEXT_CACHE_TTL_MS = 2 * 60 * 1000;
+
+type CachedClientContext = {
+  expiresAt: number;
+  data: OnMuhasebeClientContext;
+};
+
+function cacheKey(workYear: number) {
+  return `${CLIENT_CONTEXT_CACHE_KEY}:${workYear}`;
+}
+
+export function cacheOnMuhasebeClientContext(
+  context: OnMuhasebeClientContext,
+  ttlMs = CLIENT_CONTEXT_CACHE_TTL_MS,
+) {
+  if (typeof window === "undefined") return;
+
+  const cached: CachedClientContext = {
+    expiresAt: Date.now() + ttlMs,
+    data: context,
+  };
+
+  window.sessionStorage.setItem(
+    cacheKey(context.workYear),
+    JSON.stringify(cached),
+  );
+}
+
+function readCachedClientContext(workYear: number) {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = window.sessionStorage.getItem(cacheKey(workYear));
+    if (!raw) return null;
+
+    const cached = JSON.parse(raw) as CachedClientContext;
+    if (!cached?.data || cached.expiresAt < Date.now()) {
+      window.sessionStorage.removeItem(cacheKey(workYear));
+      return null;
+    }
+
+    return cached.data;
+  } catch {
+    window.sessionStorage.removeItem(cacheKey(workYear));
+    return null;
+  }
+}
+
 export async function getOnMuhasebeClientContext() {
+  const workYear = getBrowserWorkYear();
+  const cached = readCachedClientContext(workYear);
+
+  if (cached) {
+    return cached;
+  }
+
   const {
     data: { session },
     error,
@@ -43,7 +99,7 @@ export async function getOnMuhasebeClientContext() {
     throw new Error("Oturum bulunamadı.");
   }
 
-  const response = await fetch(buildYearScopedUrl("/api/on-muhasebe/me", getBrowserWorkYear()), {
+  const response = await fetch(buildYearScopedUrl("/api/on-muhasebe/me", workYear), {
     headers: {
       Authorization: `Bearer ${session.access_token}`,
     },
@@ -55,5 +111,8 @@ export async function getOnMuhasebeClientContext() {
     throw new Error(result.message || "Oturum bilgisi alınamadı.");
   }
 
-  return result as OnMuhasebeClientContext;
+  const context = result as OnMuhasebeClientContext;
+  cacheOnMuhasebeClientContext(context);
+
+  return context;
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { getOnMuhasebeClientContext } from "@/lib/onMuhasebe/client";
 import {
   getBrowserWorkYear,
@@ -166,14 +166,6 @@ const hareketFiltresiEtiketleri: Record<HareketFiltresi, string> = {
   hafta: "Bu Hafta",
   ay: "Bu Ay",
 };
-
-function tarihiInputFormatinaCevir(date = new Date()) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-}
 
 function bugununTarihi(workYear = new Date().getFullYear()) {
   return todayForWorkYear(workYear);
@@ -516,7 +508,7 @@ export default function KasaPage() {
     return mevcutCariBakiye;
   }, [form.hareketTuru, formTutari, mevcutCariBakiye, seciliCari]);
 
-  async function verileriYukle(mesajlariTemizle = true) {
+  const verileriYukle = useCallback(async (mesajlariTemizle = true) => {
     setIsLoading(true);
     setErrorMessage("");
 
@@ -626,11 +618,11 @@ export default function KasaPage() {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [yearRange.end, yearRange.start]);
 
   useEffect(() => {
     verileriYukle();
-  }, []);
+  }, [verileriYukle]);
 
   function formGuncelle<K extends keyof KasaForm>(field: K, value: KasaForm[K]) {
     setForm((current) => ({ ...current, [field]: value }));

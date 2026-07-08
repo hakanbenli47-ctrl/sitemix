@@ -7,6 +7,7 @@
 html {
   scroll-behavior: smooth;
   background: #0a0706;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -25,4 +26,58 @@ a {
 
 button {
   font-family: inherit;
+}
+
+input,
+select,
+textarea {
+  font-size: 16px;
+}
+
+main[class*="bg-[#f3f6fb]"] [class*="shadow-lg"],
+main[class*="bg-[#f3f6fb]"] [class*="shadow-xl"],
+main[class*="bg-[#f3f6fb]"] [class*="shadow-2xl"] {
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.06), 0 8px 24px rgb(15 23 42 / 0.06) !important;
+}
+
+main[class*="bg-[#f3f6fb]"] [class*="rounded-[2rem]"],
+main[class*="bg-[#f3f6fb]"] [class*="rounded-[2.25rem]"],
+main[class*="bg-[#f3f6fb]"] [class*="rounded-[2.75rem]"] {
+  border-radius: 1.25rem !important;
+}
+
+main[class*="bg-[#f3f6fb]"] [class*="rounded-[1.75rem]"],
+main[class*="bg-[#f3f6fb]"] [class*="rounded-[1.6rem]"],
+main[class*="bg-[#f3f6fb]"] [class*="rounded-[1.5rem]"] {
+  border-radius: 1rem !important;
+}
+
+main[class*="bg-[#f3f6fb]"] table {
+  white-space: nowrap;
+}
+
+main[class*="bg-[#f3f6fb]"] button[class*="bg-slate-950"],
+main[class*="bg-[#f3f6fb]"] a[class*="bg-slate-950"],
+main[class*="bg-[#f3f6fb]"] button[class*="bg-black"],
+main[class*="bg-[#f3f6fb]"] a[class*="bg-black"] {
+  color: #fff !important;
+}
+
+@media (max-width: 640px) {
+  main[class*="bg-[#f3f6fb]"] {
+    background: #f8fafc;
+  }
+
+  main[class*="bg-[#f3f6fb]"] [class*="shadow-lg"],
+  main[class*="bg-[#f3f6fb]"] [class*="shadow-xl"],
+  main[class*="bg-[#f3f6fb]"] [class*="shadow-2xl"] {
+    box-shadow: 0 1px 2px rgb(15 23 42 / 0.05) !important;
+  }
+
+  main[class*="bg-[#f3f6fb]"] [class*="rounded-[2rem]"],
+  main[class*="bg-[#f3f6fb]"] [class*="rounded-[1.75rem]"],
+  main[class*="bg-[#f3f6fb]"] [class*="rounded-[1.6rem]"],
+  main[class*="bg-[#f3f6fb]"] [class*="rounded-[1.5rem]"] {
+    border-radius: 0.9rem !important;
+  }
 }

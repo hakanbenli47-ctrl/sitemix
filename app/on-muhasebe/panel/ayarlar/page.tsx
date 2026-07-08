@@ -5,6 +5,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import {
   buildYearScopedUrl,
   getBrowserWorkYear,
+  setBrowserWorkYear,
   sortWorkPeriods,
   type OnMuhasebeWorkPeriod,
 } from "@/lib/onMuhasebe/workYear";
@@ -155,6 +156,18 @@ function devirTipiEtiketi(value: string) {
   return "Bakiye yok";
 }
 
+function clearWorkYearCaches() {
+  if (typeof window === "undefined") return;
+
+  Object.keys(window.sessionStorage)
+    .filter((key) =>
+      key.startsWith("onMuhasebeBootstrap:") ||
+      key.startsWith("onMuhasebeClientContext:") ||
+      key.startsWith("onMuhasebeDashboard:"),
+    )
+    .forEach((key) => window.sessionStorage.removeItem(key));
+}
+
 export default function OnMuhasebeAyarlarPage() {
   const [settings, setSettings] = useState<Settings>(emptySettings);
   const [isOwner, setIsOwner] = useState(false);
@@ -182,7 +195,7 @@ export default function OnMuhasebeAyarlarPage() {
   const [passwordErrorMessage, setPasswordErrorMessage] = useState("");
   const [isPasswordSaving, setIsPasswordSaving] = useState(false);
 
-  const [workYear] = useState(getBrowserWorkYear());
+  const [workYear, setWorkYear] = useState(getBrowserWorkYear());
   const [periodOptions, setPeriodOptions] = useState<OnMuhasebeWorkPeriod[]>([]);
   const [periodSetupRequired, setPeriodSetupRequired] = useState(false);
   const [sourceYear, setSourceYear] = useState("");
@@ -494,6 +507,19 @@ export default function OnMuhasebeAyarlarPage() {
     }
   }
 
+  function handleActiveWorkYearChange(nextYearValue: string) {
+    const nextYear = Number(nextYearValue);
+    const exists = periodOptions.some((period) => period.yil === nextYear);
+
+    if (!exists) return;
+
+    setBrowserWorkYear(nextYear);
+    clearWorkYearCaches();
+    setWorkYear(nextYear);
+    setSourceYear(String(nextYear));
+    setMessage(`${nextYear} çalışma dönemine geçildi. Panel ve modüller bu dönemin verilerini gösterecek.`);
+  }
+
   if (isLoading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#f3f6fb] px-5 text-slate-950">
@@ -738,7 +764,7 @@ export default function OnMuhasebeAyarlarPage() {
               </label>
 
               <label className="grid gap-2">
-                <span className="text-sm font-black">Dönem filtresi</span>
+                <span className="text-sm font-black">Hareket zaman filtresi</span>
                 <select
                   value={activityPeriod}
                   onChange={(event) => setActivityPeriod(event.target.value as ActivityPeriod)}
@@ -761,7 +787,7 @@ export default function OnMuhasebeAyarlarPage() {
                 <p className="mt-2 text-2xl font-black">{paraFormatla(activitySummary.totalAmount)}</p>
               </div>
               <div className="rounded-[1.5rem] bg-slate-100 p-4">
-                <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Yıl</p>
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Aktif dönem</p>
                 <p className="mt-2 text-2xl font-black">{workYear}</p>
               </div>
             </div>
@@ -831,6 +857,30 @@ export default function OnMuhasebeAyarlarPage() {
                 {devirErrorMessage}
               </div>
             ) : null}
+
+            <div className="mt-5 grid gap-4 rounded-[1.5rem] bg-slate-100 p-4 md:grid-cols-[1fr_1.2fr] md:items-center">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">
+                  Aktif çalışma dönemi
+                </p>
+                <p className="mt-2 text-sm font-bold leading-6 text-slate-600">
+                  Seçtiğin dönem cari, stok, kasa, fiş ve rapor ekranlarında kullanılacak.
+                </p>
+              </div>
+              <select
+                value={workYear}
+                onChange={(event) => handleActiveWorkYearChange(event.target.value)}
+                disabled={periodOptions.length === 0}
+                className="min-h-14 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-950 outline-none transition focus:border-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {periodOptions.length === 0 ? <option value={workYear}>Kayıtlı dönem yok</option> : null}
+                {periodOptions.map((period) => (
+                  <option key={period.id} value={period.yil}>
+                    {period.yil} {period.durum === "kapali" ? "(Kapalı)" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
 
             <div className="mt-5 rounded-[1.5rem] bg-slate-100 p-4">
               <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Kayıtlı dönemler</p>

@@ -69,24 +69,6 @@ type FisKalemRow = {
   satir_toplami: number | null;
 };
 
-function dateKey(date = new Date()) {
-  return date.toISOString().slice(0, 10);
-}
-
-function monthStartKey(date = new Date()) {
-  return new Date(date.getFullYear(), date.getMonth(), 1)
-    .toISOString()
-    .slice(0, 10);
-}
-
-function weekStartKey(date = new Date()) {
-  const result = new Date(date);
-  const day = result.getDay();
-  const mondayOffset = day === 0 ? -6 : 1 - day;
-  result.setDate(result.getDate() + mondayOffset);
-  return result.toISOString().slice(0, 10);
-}
-
 function kasaGirisiMi(type: string) {
   return ["gelir", "tahsilat", "transfer_giris"].includes(type);
 }

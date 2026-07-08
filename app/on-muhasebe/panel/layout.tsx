@@ -3,21 +3,47 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
+  buildYearScopedUrl,
   getBrowserWorkYear,
   pickRegisteredWorkYear,
   setBrowserWorkYear,
   sortWorkPeriods,
   type OnMuhasebeWorkPeriod,
 } from "@/lib/onMuhasebe/workYear";
+import {
+  cacheOnMuhasebeClientContext,
+  type OnMuhasebeClientContext,
+} from "@/lib/onMuhasebe/client";
 import { supabaseClient } from "@/lib/supabaseClient";
 
-type GuardState = "checking" | "allowed" | "redirecting" | "error";
+type GuardState = "checking" | "allowed" | "error";
 
 type PeriodResponse = {
   setupRequired?: boolean;
   periods?: OnMuhasebeWorkPeriod[];
-  message?: string;
+  message?: string | null;
 };
+
+type BootstrapResponse = OnMuhasebeClientContext & {
+  allowed: boolean;
+  message?: string;
+  subscription?: {
+    planLabel?: string;
+    trial_ends_at?: string | null;
+    statusLabel?: string;
+  };
+  periods?: PeriodResponse & {
+    canCreatePeriod?: boolean;
+  };
+};
+
+type CachedBootstrap = {
+  expiresAt: number;
+  data: BootstrapResponse;
+};
+
+const BOOTSTRAP_CACHE_TTL_MS = 2 * 60 * 1000;
+const BOOTSTRAP_CACHE_PREFIX = "onMuhasebeBootstrap";
 
 const pathPermissions = [
   ["/on-muhasebe/panel/cari", "cari"],
@@ -29,6 +55,42 @@ const pathPermissions = [
   ["/on-muhasebe/panel/personel", "personel"],
 ] as const;
 
+function bootstrapCacheKey(userId: string) {
+  return `${BOOTSTRAP_CACHE_PREFIX}:${userId}`;
+}
+
+function readCachedBootstrap(userId: string) {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = window.sessionStorage.getItem(bootstrapCacheKey(userId));
+    if (!raw) return null;
+
+    const cached = JSON.parse(raw) as CachedBootstrap;
+    if (!cached?.data || cached.expiresAt < Date.now()) {
+      window.sessionStorage.removeItem(bootstrapCacheKey(userId));
+      return null;
+    }
+
+    return cached.data;
+  } catch {
+    window.sessionStorage.removeItem(bootstrapCacheKey(userId));
+    return null;
+  }
+}
+
+function writeCachedBootstrap(userId: string, data: BootstrapResponse) {
+  if (typeof window === "undefined" || !data.allowed) return;
+
+  window.sessionStorage.setItem(
+    bootstrapCacheKey(userId),
+    JSON.stringify({
+      expiresAt: Date.now() + BOOTSTRAP_CACHE_TTL_MS,
+      data,
+    } satisfies CachedBootstrap),
+  );
+}
+
 export default function OnMuhasebePanelLayout({
   children,
 }: {
@@ -37,24 +99,55 @@ export default function OnMuhasebePanelLayout({
   const pathname = usePathname();
   const [state, setState] = useState<GuardState>("checking");
   const [message, setMessage] = useState("");
-  const [workYear, setWorkYear] = useState<number | null>(null);
-  const [periodOptions, setPeriodOptions] = useState<OnMuhasebeWorkPeriod[]>([]);
-
-  function changeWorkYear(nextYear: number) {
-    const exists = periodOptions.some((period) => period.yil === nextYear);
-
-    if (!exists) return;
-
-    setBrowserWorkYear(nextYear);
-    setWorkYear(nextYear);
-    window.location.reload();
-  }
 
   useEffect(() => {
     let isMounted = true;
 
+    function allowWithPeriods(result: BootstrapResponse) {
+      if (!result.allowed) {
+        const searchParams = new URLSearchParams();
+        const subscription = result.subscription;
+
+        if (subscription?.planLabel) searchParams.set("paket", subscription.planLabel);
+        if (subscription?.trial_ends_at) searchParams.set("bitis", subscription.trial_ends_at);
+        if (subscription?.statusLabel) searchParams.set("durum", subscription.statusLabel);
+
+        window.location.replace(
+          `/on-muhasebe/deneme-bitti?${searchParams.toString()}`,
+        );
+        return;
+      }
+
+      const requiredPermission = pathPermissions.find(([path]) =>
+        pathname.startsWith(path),
+      )?.[1];
+
+      if (requiredPermission && !result.permissions?.[requiredPermission]) {
+        window.location.replace("/on-muhasebe/panel/yetkisiz");
+        return;
+      }
+
+      const registeredPeriods = result.periods?.setupRequired
+        ? []
+        : sortWorkPeriods(result.periods?.periods || []);
+      const selectedWorkYear =
+        registeredPeriods.length > 0
+          ? pickRegisteredWorkYear(registeredPeriods, getBrowserWorkYear())
+          : new Date().getFullYear();
+
+      if (!selectedWorkYear) {
+        throw new Error("Geçerli çalışma dönemi bulunamadı.");
+      }
+
+      setBrowserWorkYear(selectedWorkYear);
+      cacheOnMuhasebeClientContext({ ...result, workYear: selectedWorkYear });
+
+      if (!isMounted) return;
+
+      setState("allowed");
+    }
+
     async function checkAccess() {
-      setState("checking");
       setMessage("");
 
       try {
@@ -68,103 +161,31 @@ export default function OnMuhasebePanelLayout({
           return;
         }
 
-        const headers = {
-          Authorization: `Bearer ${session.access_token}`,
-        };
-
-        const response = await fetch("/api/on-muhasebe/subscription-status", {
-          headers,
-          cache: "no-store",
-        });
-
-        const result = await response.json().catch(() => null);
-
-        if (!response.ok) {
-          throw new Error(result?.message || "Paket durumu kontrol edilemedi.");
-        }
-
-        if (!result.allowed) {
-          const searchParams = new URLSearchParams();
-          const subscription = result.subscription;
-
-          if (subscription?.planLabel) {
-            searchParams.set("paket", subscription.planLabel);
-          }
-
-          if (subscription?.trial_ends_at) {
-            searchParams.set("bitis", subscription.trial_ends_at);
-          }
-
-          if (subscription?.statusLabel) {
-            searchParams.set("durum", subscription.statusLabel);
-          }
-
-          window.location.replace(
-            `/on-muhasebe/deneme-bitti?${searchParams.toString()}`,
-          );
+        const cached = readCachedBootstrap(session.user.id);
+        if (cached) {
+          allowWithPeriods(cached);
           return;
         }
 
-        const periodResponse = await fetch("/api/on-muhasebe/donemler", {
-          headers,
-          cache: "no-store",
-        });
-        const periodResult = (await periodResponse.json().catch(() => null)) as PeriodResponse | null;
+        setState("checking");
 
-        if (!periodResponse.ok) {
-          throw new Error(periodResult?.message || "Çalışma dönemleri alınamadı.");
-        }
-
-        if (periodResult?.setupRequired) {
-          throw new Error(
-            periodResult.message ||
-              "Çalışma dönemi tablosu kurulmamış. Önce Supabase SQL dosyasını çalıştır.",
-          );
-        }
-
-        const registeredPeriods = sortWorkPeriods(periodResult?.periods || []);
-
-        if (registeredPeriods.length === 0) {
-          throw new Error(
-            "Bu firmada kayıtlı çalışma dönemi yok. Yönetici giriş ekranından ilk dönemi oluşturmalı.",
-          );
-        }
-
-        const selectedWorkYear = pickRegisteredWorkYear(
-          registeredPeriods,
-          getBrowserWorkYear(),
+        const response = await fetch(
+          buildYearScopedUrl("/api/on-muhasebe/bootstrap", getBrowserWorkYear()),
+          {
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            cache: "no-store",
+          },
         );
+        const result = (await response.json().catch(() => null)) as BootstrapResponse | null;
 
-        if (!selectedWorkYear) {
-          throw new Error("Geçerli çalışma dönemi bulunamadı.");
+        if (!response.ok || !result) {
+          throw new Error(result?.message || "Panel bilgileri alınamadı.");
         }
 
-        setBrowserWorkYear(selectedWorkYear);
-
-        const meResponse = await fetch(`/api/on-muhasebe/me?workYear=${selectedWorkYear}`, {
-          headers,
-          cache: "no-store",
-        });
-        const me = await meResponse.json().catch(() => null);
-
-        if (!meResponse.ok) {
-          throw new Error(me?.message || "Yetki bilgisi alınamadı.");
-        }
-
-        const requiredPermission = pathPermissions.find(([path]) =>
-          pathname.startsWith(path),
-        )?.[1];
-
-        if (requiredPermission && !me.permissions?.[requiredPermission]) {
-          window.location.replace("/on-muhasebe/panel/yetkisiz");
-          return;
-        }
-
-        if (isMounted) {
-          setPeriodOptions(registeredPeriods);
-          setWorkYear(selectedWorkYear);
-          setState("allowed");
-        }
+        writeCachedBootstrap(session.user.id, result);
+        allowWithPeriods(result);
       } catch (error) {
         if (!isMounted) return;
 
@@ -185,29 +206,7 @@ export default function OnMuhasebePanelLayout({
   }, [pathname]);
 
   if (state === "allowed") {
-    return (
-      <>
-        {children}
-        <div className="fixed bottom-4 left-4 z-50 rounded-2xl bg-slate-950/95 p-3 text-white shadow-2xl shadow-slate-950/25 backdrop-blur-xl">
-          <label className="block">
-            <span className="mb-1 block text-[10px] font-black uppercase tracking-[0.16em] text-white/45">
-              Çalışma dönemi
-            </span>
-            <select
-              value={workYear ?? ""}
-              onChange={(event) => changeWorkYear(Number(event.target.value))}
-              className="h-10 rounded-xl border border-white/10 bg-white/10 px-3 text-xs font-black text-white outline-none"
-            >
-              {periodOptions.map((period) => (
-                <option key={period.id} value={period.yil} className="text-slate-950">
-                  {period.yil} {period.durum === "kapali" ? "(Kapalı)" : ""}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      </>
-    );
+    return <>{children}</>;
   }
 
   if (state === "error") {
@@ -237,7 +236,7 @@ export default function OnMuhasebePanelLayout({
       <div className="rounded-[2rem] bg-white p-8 text-center shadow-xl shadow-slate-200">
         <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-slate-100 border-t-indigo-600" />
         <p className="mt-5 text-sm font-black text-slate-600">
-          Paket, dönem ve yetki kontrol ediliyor...
+          Panel hazırlanıyor...
         </p>
       </div>
     </main>

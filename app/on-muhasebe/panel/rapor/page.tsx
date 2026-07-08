@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChangeEvent, type ReactNode, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { getOnMuhasebeClientContext } from "@/lib/onMuhasebe/client";
 import { getBrowserWorkYear, referenceDateForWorkYear, workYearDateRange } from "@/lib/onMuhasebe/workYear";
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -834,7 +834,7 @@ export default function OnMuhasebeRaporPage() {
     });
   }, [fisKalemleri, seciliCari, seciliCariFisleri]);
 
-  async function verileriYukle(forceRefresh = false) {
+  const verileriYukle = useCallback(async (forceRefresh = false) => {
     if (forceRefresh) setIsRefreshing(true);
     else setIsLoading(true);
 
@@ -969,11 +969,11 @@ export default function OnMuhasebeRaporPage() {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }
+  }, [yearRange.end, yearRange.start]);
 
   useEffect(() => {
     verileriYukle();
-  }, []);
+  }, [verileriYukle]);
 
   function raporTurunuSec(tur: RaporTuru) {
     setRaporTuru(tur);
@@ -1050,7 +1050,7 @@ export default function OnMuhasebeRaporPage() {
               <Link href="/on-muhasebe/panel" className="text-xs font-black uppercase tracking-[0.22em] text-slate-400 print:hidden">
                 ← Panele dön
               </Link>
-              <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Raporlar / {workYear}</h1>
+              <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Raporlar</h1>
               <p className="mt-1 text-sm font-bold text-slate-500">
                 {company?.name || "İşletme"} · sadece görüntüleme ekranı, düzenleme ve silme işlemi yok.
               </p>

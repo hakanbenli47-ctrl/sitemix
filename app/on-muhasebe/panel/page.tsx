@@ -227,11 +227,54 @@ function activityTone(tone: DashboardData["recentActivities"][number]["tone"]) {
   return map[tone];
 }
 
+const DASHBOARD_CACHE_TTL_MS = 60 * 1000;
+const DASHBOARD_CACHE_PREFIX = "onMuhasebeDashboard";
+
+type CachedDashboard = {
+  expiresAt: number;
+  data: DashboardData;
+};
+
+function dashboardCacheKey(workYear: number) {
+  return `${DASHBOARD_CACHE_PREFIX}:${workYear}`;
+}
+
+function readCachedDashboard(workYear: number) {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = window.sessionStorage.getItem(dashboardCacheKey(workYear));
+    if (!raw) return null;
+
+    const cached = JSON.parse(raw) as CachedDashboard;
+    if (!cached?.data || cached.expiresAt < Date.now()) {
+      window.sessionStorage.removeItem(dashboardCacheKey(workYear));
+      return null;
+    }
+
+    return cached.data;
+  } catch {
+    window.sessionStorage.removeItem(dashboardCacheKey(workYear));
+    return null;
+  }
+}
+
+function writeCachedDashboard(workYear: number, data: DashboardData) {
+  if (typeof window === "undefined") return;
+
+  window.sessionStorage.setItem(
+    dashboardCacheKey(workYear),
+    JSON.stringify({
+      expiresAt: Date.now() + DASHBOARD_CACHE_TTL_MS,
+      data,
+    } satisfies CachedDashboard),
+  );
+}
+
 export default function OnMuhasebePanelPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [introOpen, setIntroOpen] = useState(false);
-  const [workYear, setWorkYear] = useState(getBrowserWorkYear());
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -269,10 +312,19 @@ export default function OnMuhasebePanelPage() {
     let isMounted = true;
 
     async function loadDashboard() {
-      setIsLoading(true);
       setErrorMessage("");
 
       try {
+        const selectedWorkYear = getBrowserWorkYear();
+        const cachedDashboard = readCachedDashboard(selectedWorkYear);
+
+        if (cachedDashboard) {
+          setData(cachedDashboard);
+          setIsLoading(false);
+        } else {
+          setIsLoading(true);
+        }
+
         const {
           data: { session },
           error: sessionError,
@@ -282,9 +334,6 @@ export default function OnMuhasebePanelPage() {
           window.location.href = "/on-muhasebe/giris";
           return;
         }
-
-        const selectedWorkYear = getBrowserWorkYear();
-        setWorkYear(selectedWorkYear);
 
         const response = await fetch(buildYearScopedUrl("/api/on-muhasebe/dashboard", selectedWorkYear), {
           headers: {
@@ -300,15 +349,18 @@ export default function OnMuhasebePanelPage() {
 
         if (isMounted) {
           setData(result);
+          writeCachedDashboard(selectedWorkYear, result);
         }
       } catch (error) {
         if (!isMounted) return;
 
-        setErrorMessage(
-          error instanceof Error
-            ? error.message
-            : "Panel özeti yüklenirken hata oluştu.",
-        );
+        if (!readCachedDashboard(getBrowserWorkYear())) {
+          setErrorMessage(
+            error instanceof Error
+              ? error.message
+              : "Panel özeti yüklenirken hata oluştu.",
+          );
+        }
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -387,7 +439,7 @@ export default function OnMuhasebePanelPage() {
   return (
     <main className="min-h-screen bg-[#f3f6fb] text-slate-950">
       <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur-2xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 lg:px-8">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:gap-4 sm:px-5 sm:py-4 lg:px-8">
           <Link href="/on-muhasebe/panel" className="flex items-center gap-3">
             <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-sm font-black text-white shadow-lg shadow-slate-300">
               S
@@ -418,9 +470,6 @@ export default function OnMuhasebePanelPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="hidden rounded-full bg-indigo-50 px-4 py-2 text-xs font-black text-indigo-700 sm:block">
-              {workYear} yılı
-            </div>
             <div className="hidden rounded-full bg-slate-100 px-4 py-2 text-xs font-black text-slate-600 sm:block">
               {company.company_code || "-"}
             </div>
@@ -449,7 +498,7 @@ export default function OnMuhasebePanelPage() {
             className="absolute inset-0 bg-slate-950/45 backdrop-blur-sm"
           />
 
-          <aside className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col overflow-y-auto bg-white p-5 shadow-2xl shadow-slate-950/20 sm:p-6">
+          <aside className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col overflow-y-auto bg-white p-4 shadow-2xl shadow-slate-950/20 sm:p-6">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">
@@ -473,7 +522,7 @@ export default function OnMuhasebePanelPage() {
               <p className="text-xs font-black uppercase tracking-[0.2em] text-white/40">
                 Firma Kodu
               </p>
-              <p className="mt-2 text-3xl font-black tracking-[-0.05em] text-white">
+              <p className="mt-2 break-words text-2xl font-black tracking-[-0.04em] text-white sm:text-3xl">
                 {company.company_code || "-"}
               </p>
               <p className="mt-2 text-sm font-bold text-white/55">
@@ -484,7 +533,6 @@ export default function OnMuhasebePanelPage() {
             <div className="mt-5 grid gap-3">
               {[
                 ["Firma", company.name],
-                ["Çalışma Yılı", String(workYear)],
                 ["Yetkili", profile.full_name || "-"],
                 ["E-posta", data.userEmail || "-"],
                 ["Telefon", profile.phone || company.phone || "-"],
@@ -587,7 +635,7 @@ export default function OnMuhasebePanelPage() {
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-600">
                   İlk Kullanım
                 </p>
-                <h2 className="mt-2 text-3xl font-black tracking-[-0.05em]">
+                <h2 className="mt-2 text-2xl font-black tracking-[-0.04em] sm:text-3xl">
                   Ön muhasebeye hızlı başlangıç
                 </h2>
                 <p className="mt-2 text-sm font-bold leading-6 text-slate-500">
@@ -689,7 +737,7 @@ export default function OnMuhasebePanelPage() {
         </div>
       ) : null}
 
-      <section className="mx-auto max-w-7xl px-5 py-6 pb-24 lg:px-8 lg:py-8">
+      <section className="mx-auto max-w-7xl px-4 py-4 pb-40 sm:px-5 sm:py-6 lg:px-8 lg:py-8">
         <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
           <div className="relative overflow-hidden rounded-[2rem] bg-slate-950 p-6 text-white shadow-xl shadow-slate-300 sm:p-8">
             <div className="absolute right-[-90px] top-[-90px] h-64 w-64 rounded-full bg-indigo-500/30 blur-3xl" />
@@ -698,7 +746,7 @@ export default function OnMuhasebePanelPage() {
               <p className="text-xs font-black uppercase tracking-[0.22em] text-white/40">
                 Günlük kontrol
               </p>
-              <h1 className="mt-3 text-3xl font-black tracking-[-0.05em] sm:text-4xl lg:text-5xl">
+              <h1 className="mt-3 break-words text-2xl font-black tracking-[-0.04em] sm:text-4xl lg:text-5xl">
                 {company.name}
               </h1>
               <p className="mt-3 max-w-2xl text-sm font-bold leading-6 text-white/55">
@@ -709,7 +757,7 @@ export default function OnMuhasebePanelPage() {
               <div className="mt-6 grid gap-3 sm:grid-cols-3">
                 <div className="rounded-[1.35rem] bg-white/10 p-4">
                   <p className="text-xs font-black text-white/40">Kasa</p>
-                  <p className="mt-2 text-2xl font-black text-white">
+                  <p className="mt-2 break-words text-xl font-black text-white sm:text-2xl">
                     {formatMoney(summary.kasaBakiyesi)}
                   </p>
                 </div>
@@ -717,7 +765,7 @@ export default function OnMuhasebePanelPage() {
                   <p className="text-xs font-black text-white/40">
                     Tahsil Edilecek
                   </p>
-                  <p className="mt-2 text-2xl font-black text-white">
+                  <p className="mt-2 break-words text-xl font-black text-white sm:text-2xl">
                     {formatMoney(summary.tahsilEdilecek)}
                   </p>
                 </div>
@@ -733,7 +781,7 @@ export default function OnMuhasebePanelPage() {
             </div>
           </div>
 
-          <div className="rounded-[2rem] bg-white p-6 shadow-xl shadow-slate-200 sm:p-7">
+          <div className="rounded-[2rem] bg-white p-5 shadow-xl shadow-slate-200 sm:p-7">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">
@@ -851,7 +899,7 @@ export default function OnMuhasebePanelPage() {
         </div>
 
         <div className="mt-5 grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
-          <div className="rounded-[2rem] bg-white p-6 shadow-xl shadow-slate-200">
+          <div className="rounded-[2rem] bg-white p-5 shadow-xl shadow-slate-200 sm:p-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-600">
@@ -874,7 +922,7 @@ export default function OnMuhasebePanelPage() {
                 <p className="text-xs font-black uppercase tracking-[0.16em] text-violet-500">
                   Satış
                 </p>
-                <p className="mt-3 text-3xl font-black tracking-[-0.06em]">
+                  <p className="mt-3 break-words text-2xl font-black tracking-[-0.04em] sm:text-3xl">
                   {formatMoney(summary.buAySatis)}
                 </p>
               </div>
@@ -882,7 +930,7 @@ export default function OnMuhasebePanelPage() {
                 <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">
                   Alış
                 </p>
-                <p className="mt-3 text-3xl font-black tracking-[-0.06em]">
+                  <p className="mt-3 break-words text-2xl font-black tracking-[-0.04em] sm:text-3xl">
                   {formatMoney(summary.buAyAlis)}
                 </p>
               </div>
@@ -890,7 +938,7 @@ export default function OnMuhasebePanelPage() {
                 <p className="text-xs font-black uppercase tracking-[0.16em] text-white/40">
                   Net
                 </p>
-                <p className="mt-3 text-3xl font-black tracking-[-0.06em]">
+                  <p className="mt-3 break-words text-2xl font-black tracking-[-0.04em] sm:text-3xl">
                   {formatMoney(summary.buAyNet)}
                 </p>
               </div>
@@ -920,7 +968,7 @@ export default function OnMuhasebePanelPage() {
             </div>
           </div>
 
-          <div className="rounded-[2rem] bg-white p-6 shadow-xl shadow-slate-200">
+          <div className="rounded-[2rem] bg-white p-5 shadow-xl shadow-slate-200 sm:p-6">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-600">
@@ -964,7 +1012,7 @@ export default function OnMuhasebePanelPage() {
         </div>
 
         <div className="mt-5 grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
-          <div className="rounded-[2rem] bg-white p-6 shadow-xl shadow-slate-200">
+          <div className="rounded-[2rem] bg-white p-5 shadow-xl shadow-slate-200 sm:p-6">
             <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-600">
               Yedek ve Güvenlik
             </p>
@@ -1007,7 +1055,7 @@ export default function OnMuhasebePanelPage() {
             </Link>
           </div>
 
-          <div className="rounded-[2rem] bg-white p-6 shadow-xl shadow-slate-200">
+          <div className="rounded-[2rem] bg-white p-5 shadow-xl shadow-slate-200 sm:p-6">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">

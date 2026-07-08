@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getOnMuhasebeClientContext } from "@/lib/onMuhasebe/client";
 import { getBrowserWorkYear, todayForWorkYear, workYearDateRange } from "@/lib/onMuhasebe/workYear";
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -558,7 +558,7 @@ export default function StokPage() {
     };
   }, [topluSatirlar, urunler]);
 
-  async function verileriYukle(mesajlariTemizle = true) {
+  const verileriYukle = useCallback(async (mesajlariTemizle = true) => {
     setIsLoading(true);
     setErrorMessage("");
 
@@ -620,11 +620,11 @@ export default function StokPage() {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [yearRange.end, yearRange.start]);
 
   useEffect(() => {
     verileriYukle();
-  }, []);
+  }, [verileriYukle]);
   useEffect(() => {
     if (!formAcik) return;
 
@@ -1120,7 +1120,7 @@ export default function StokPage() {
             </span>
             <span className="leading-tight">
               <span className="block text-base font-black tracking-[-0.03em]">
-                Stok Yönetimi / {workYear}
+                Stok Yönetimi
               </span>
               <span className="block text-xs font-extrabold text-slate-500">
                 {company?.company_code || "Sitemix Ön Muhasebe"}
