@@ -5,6 +5,7 @@ import { motion, AnimatePresence, type Variants } from "framer-motion";
 
 const phone = "905515550302";
 const instagramUrl = "https://www.instagram.com/siteyap.site/";
+const accountingUrl = "/on-muhasebe";
 
 const wp = {
   genel: `https://wa.me/${phone}?text=${encodeURIComponent(
@@ -1083,6 +1084,15 @@ export default function Home() {
 
           <div className="flex items-center gap-2">
             <a
+              href={accountingUrl}
+              className="hidden min-h-[46px] items-center justify-center rounded-full bg-[#1f6b43] px-6 text-center text-sm font-black leading-none text-white shadow-lg shadow-[#1f6b43]/15 transition hover:bg-[#185735] lg:inline-flex"
+            >
+              <span className="whitespace-nowrap text-white">
+                Ön Muhasebe
+              </span>
+            </a>
+
+            <a
               href={wp.demo}
               className="hidden min-h-[46px] items-center justify-center rounded-full bg-[#102018] px-6 text-center text-sm font-black leading-none text-white shadow-lg shadow-black/10 transition hover:bg-[#1d342a] sm:inline-flex"
             >
@@ -1126,6 +1136,13 @@ export default function Home() {
                     {item.label}
                   </button>
                 ))}
+
+                <a
+                  href={accountingUrl}
+                  className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-[#102018] px-5 text-sm font-black text-white shadow-sm"
+                >
+                  <span className="text-white">Ön Muhasebe</span>
+                </a>
 
                 <a
                   href={wp.genel}
