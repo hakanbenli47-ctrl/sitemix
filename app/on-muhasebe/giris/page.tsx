@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import {
   currentCalendarYear,
+  getBrowserWorkYear,
   pickRegisteredWorkYear,
   setBrowserWorkYear,
   sortWorkPeriods,
@@ -59,6 +60,24 @@ export default function OnMuhasebeGirisPage() {
   }
 
   async function loadRegisteredPeriods(accessToken: string) {
+    if (typeof window !== "undefined") {
+      const selectedYear = getBrowserWorkYear();
+
+      return {
+        periods: [
+          {
+            id: `local-${selectedYear}`,
+            yil: selectedYear,
+            baslangic_tarihi: `${selectedYear}-01-01`,
+            bitis_tarihi: `${selectedYear}-12-31`,
+            durum: "acik",
+          },
+        ],
+        canCreatePeriod: false,
+        selectedYear,
+      };
+    }
+
     const response = await fetch("/api/on-muhasebe/donemler", {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -97,7 +116,7 @@ export default function OnMuhasebeGirisPage() {
       const cleanLogin = email.trim();
       const cleanEmail = cleanLogin.toLowerCase();
 
-      if (cleanLogin && password) {
+      if (cleanLogin && password && !cleanLogin.includes("@")) {
         const adminResponse = await fetch("/api/admin/login", {
           method: "POST",
           headers: {
@@ -395,7 +414,7 @@ export default function OnMuhasebeGirisPage() {
                   className="group inline-flex min-h-[60px] w-full items-center justify-center rounded-full bg-[#4f46e5] px-8 text-sm font-black text-white shadow-xl shadow-indigo-500/25 transition hover:-translate-y-0.5 hover:bg-[#4338ca] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
                 >
                   <span className="text-white">
-                    {isSubmitting ? "Dönemler Kontrol Ediliyor..." : "Panele Giriş Yap"}
+                    {isSubmitting ? "Giriş Yapılıyor..." : "Panele Giriş Yap"}
                   </span>
                   <span className="ml-2 text-white transition group-hover:translate-x-1">→</span>
                 </button>

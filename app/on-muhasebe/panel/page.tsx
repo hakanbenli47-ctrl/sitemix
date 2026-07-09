@@ -227,7 +227,7 @@ function activityTone(tone: DashboardData["recentActivities"][number]["tone"]) {
   return map[tone];
 }
 
-const DASHBOARD_CACHE_TTL_MS = 60 * 1000;
+const DASHBOARD_CACHE_TTL_MS = 10 * 60 * 1000;
 const DASHBOARD_CACHE_PREFIX = "onMuhasebeDashboard";
 
 type CachedDashboard = {

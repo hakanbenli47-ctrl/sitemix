@@ -53,6 +53,7 @@ type CachedBootstrap = {
 };
 
 const BOOTSTRAP_CACHE_TTL_MS = 2 * 60 * 1000;
+const BOOTSTRAP_STALE_CACHE_TTL_MS = 10 * 60 * 1000;
 const BOOTSTRAP_CACHE_PREFIX = "onMuhasebeBootstrap";
 
 const pathPermissions = [
@@ -84,6 +85,42 @@ function writeCachedBootstrap(userId: string, data: BootstrapResponse) {
       data,
     } satisfies CachedBootstrap),
   );
+}
+
+function readCachedBootstrap(userId: string, allowStale = false) {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const key = bootstrapCacheKey(userId);
+    const raw = window.sessionStorage.getItem(key);
+    if (!raw) return null;
+
+    const cached = JSON.parse(raw) as CachedBootstrap;
+    if (!cached?.data) {
+      window.sessionStorage.removeItem(key);
+      return null;
+    }
+
+    const now = Date.now();
+    const subscriptionEnd = new Date(
+      cached.data.subscription?.trial_ends_at || "",
+    ).getTime();
+    const subscriptionAlreadyEnded =
+      Number.isFinite(subscriptionEnd) && subscriptionEnd <= now;
+
+    if (cached.expiresAt < now) {
+      const staleUntil = cached.expiresAt + BOOTSTRAP_STALE_CACHE_TTL_MS;
+      if (!allowStale || staleUntil < now || subscriptionAlreadyEnded) {
+        window.sessionStorage.removeItem(key);
+        return null;
+      }
+    }
+
+    return cached.data;
+  } catch {
+    window.sessionStorage.removeItem(bootstrapCacheKey(userId));
+    return null;
+  }
 }
 
 function clearOnMuhasebeSessionCache() {
@@ -171,6 +208,7 @@ export default function OnMuhasebePanelLayout({
 
     async function checkAccess() {
       setMessage("");
+      let allowedFromCache = false;
 
       try {
         const {
@@ -183,7 +221,14 @@ export default function OnMuhasebePanelLayout({
           return;
         }
 
-        setState("checking");
+        const cachedBootstrap = readCachedBootstrap(session.user.id, true);
+
+        if (cachedBootstrap) {
+          allowedFromCache = true;
+          allowWithPeriods(cachedBootstrap);
+        } else {
+          setState("checking");
+        }
 
         const response = await fetch(
           buildYearScopedUrl("/api/on-muhasebe/bootstrap", getBrowserWorkYear()),
@@ -200,10 +245,13 @@ export default function OnMuhasebePanelLayout({
           throw new Error(result?.message || "Panel bilgileri alınamadı.");
         }
 
+        if (!isMounted) return;
+
         writeCachedBootstrap(session.user.id, result);
         allowWithPeriods(result);
       } catch (error) {
         if (!isMounted) return;
+        if (allowedFromCache) return;
 
         setMessage(
           error instanceof Error
