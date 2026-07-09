@@ -65,9 +65,31 @@ type DashboardData = {
   };
   topProduct: {
     urunAdi: string;
+    birim?: string;
     miktar: number;
     tutar: number;
   } | null;
+  todaySoldProducts: Array<{
+    urunAdi: string;
+    birim: string;
+    miktar: number;
+    tutar: number;
+  }>;
+  topSoldProducts: Array<{
+    urunAdi: string;
+    birim: string;
+    miktar: number;
+    tutar: number;
+  }>;
+  upcomingReceivables: Array<{
+    id: string;
+    cariId: string;
+    cariUnvan: string;
+    belgeNo: string;
+    dueDate: string;
+    amount: number;
+    daysLeft: number;
+  }>;
   recentActivities: Array<{
     id: string;
     title: string;
@@ -191,6 +213,12 @@ function formatMoney(value?: number | null) {
   }).format(Number(value || 0));
 }
 
+function formatNumber(value?: number | null) {
+  return new Intl.NumberFormat("tr-TR", {
+    maximumFractionDigits: 2,
+  }).format(Number(value || 0));
+}
+
 function formatDate(value?: string | null) {
   if (!value) return "-";
 
@@ -225,6 +253,12 @@ function activityTone(tone: DashboardData["recentActivities"][number]["tone"]) {
   };
 
   return map[tone];
+}
+
+function receivableTimeLabel(daysLeft: number) {
+  if (daysLeft < 0) return `${Math.abs(daysLeft)} gün gecikti`;
+  if (daysLeft === 0) return "Bugün";
+  return `${daysLeft} gün sonra`;
 }
 
 const DASHBOARD_CACHE_TTL_MS = 10 * 60 * 1000;
@@ -451,6 +485,9 @@ export default function OnMuhasebePanelPage() {
   }
 
   const { company, profile, summary, backup } = data;
+  const todaySoldProducts = data.todaySoldProducts || [];
+  const topSoldProducts = data.topSoldProducts || [];
+  const upcomingReceivables = data.upcomingReceivables || [];
 
   return (
     <main className="min-h-screen bg-[#f3f6fb] text-slate-950">
@@ -1014,6 +1051,7 @@ export default function OnMuhasebePanelPage() {
                   Bu hafta kasa çıkışı: {formatMoney(summary.buHaftaOdeme)}
                 </p>
               </Link>
+              {data.isOwner ? (
               <Link
                 href="/on-muhasebe/panel/yedekleme"
                 className="rounded-[1.5rem] bg-slate-950 p-4 text-white transition hover:bg-slate-800"
@@ -1023,10 +1061,12 @@ export default function OnMuhasebePanelPage() {
                   Otomatik yedek: {backup.autoEnabled ? "Açık" : "Kapalı"}
                 </p>
               </Link>
+              ) : null}
             </div>
           </div>
         </div>
 
+        {data.isOwner ? (
         <div className="mt-5 grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
           <div className="rounded-[2rem] bg-white p-5 shadow-xl shadow-slate-200 sm:p-6">
             <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-600">
@@ -1117,6 +1157,104 @@ export default function OnMuhasebePanelPage() {
             </div>
           </div>
         </div>
+        ) : (
+          <div className="mt-5 grid gap-5 lg:grid-cols-3">
+            <div className="rounded-[2rem] bg-white p-5 shadow-xl shadow-slate-200 sm:p-6">
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-violet-600">
+                Bugün
+              </p>
+              <h2 className="mt-2 text-2xl font-black tracking-[-0.05em]">
+                Satılan ürünler
+              </h2>
+              <div className="mt-5 grid gap-3">
+                {todaySoldProducts.length === 0 ? (
+                  <div className="rounded-[1.5rem] bg-slate-100 p-5 text-sm font-bold text-slate-500">
+                    Bugün satış fişi yok.
+                  </div>
+                ) : null}
+
+                {todaySoldProducts.map((item) => (
+                  <div key={item.urunAdi} className="rounded-[1.5rem] bg-slate-100 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-sm font-black">{item.urunAdi}</p>
+                      <p className="shrink-0 text-sm font-black text-violet-700">
+                        {formatMoney(item.tutar)}
+                      </p>
+                    </div>
+                    <p className="mt-1 text-xs font-bold text-slate-500">
+                      {formatNumber(item.miktar)} {item.birim}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-[2rem] bg-white p-5 shadow-xl shadow-slate-200 sm:p-6">
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-600">
+                Performans
+              </p>
+              <h2 className="mt-2 text-2xl font-black tracking-[-0.05em]">
+                En çok satılanlar
+              </h2>
+              <div className="mt-5 grid gap-3">
+                {topSoldProducts.length === 0 ? (
+                  <div className="rounded-[1.5rem] bg-slate-100 p-5 text-sm font-bold text-slate-500">
+                    Seçili dönemde satış yok.
+                  </div>
+                ) : null}
+
+                {topSoldProducts.map((item) => (
+                  <div key={item.urunAdi} className="rounded-[1.5rem] bg-slate-100 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-sm font-black">{item.urunAdi}</p>
+                      <p className="shrink-0 text-sm font-black text-cyan-700">
+                        {formatNumber(item.miktar)} {item.birim}
+                      </p>
+                    </div>
+                    <p className="mt-1 text-xs font-bold text-slate-500">
+                      Toplam: {formatMoney(item.tutar)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-[2rem] bg-white p-5 shadow-xl shadow-slate-200 sm:p-6">
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-600">
+                Cari
+              </p>
+              <h2 className="mt-2 text-2xl font-black tracking-[-0.05em]">
+                Yaklaşan alacaklar
+              </h2>
+              <div className="mt-5 grid gap-3">
+                {upcomingReceivables.length === 0 ? (
+                  <div className="rounded-[1.5rem] bg-slate-100 p-5 text-sm font-bold text-slate-500">
+                    Yaklaşan alacak kaydı yok.
+                  </div>
+                ) : null}
+
+                {upcomingReceivables.map((item) => (
+                  <div key={item.id} className="rounded-[1.5rem] bg-slate-100 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-black">{item.cariUnvan}</p>
+                        <p className="mt-1 text-xs font-bold text-slate-500">
+                          {item.belgeNo} / {formatDate(item.dueDate)}
+                        </p>
+                      </div>
+                      <p className="shrink-0 text-sm font-black text-emerald-700">
+                        {formatMoney(item.amount)}
+                      </p>
+                    </div>
+                    <p className="mt-2 text-xs font-black text-slate-500">
+                      {receivableTimeLabel(item.daysLeft)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </section>
 
       <nav className="fixed bottom-4 left-1/2 z-30 flex w-[calc(100%-2rem)] max-w-md -translate-x-1/2 items-center justify-between rounded-full bg-slate-950/95 px-3 py-3 shadow-2xl shadow-slate-400 backdrop-blur-xl lg:hidden">

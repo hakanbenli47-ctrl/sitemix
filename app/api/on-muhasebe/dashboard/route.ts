@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import {
   getOnMuhasebeContext,
   isMissingTableError,
@@ -79,8 +79,22 @@ type FisKalemRow = {
   fis_id: string;
   urun_id: string;
   urun_adi: string;
+  birim: string | null;
   miktar: number | null;
   satir_toplami: number | null;
+};
+
+type CariHareketRow = {
+  id: string;
+  cari_id: string;
+  hareket_turu: string;
+  hareket_tarihi: string;
+  vade_tarihi: string | null;
+  borc_tutar: number | null;
+  alacak_tutar: number | null;
+  durum: "aktif" | "iptal";
+  belge_no: string | null;
+  aciklama: string | null;
 };
 
 type SubscriptionRow = {
@@ -106,6 +120,28 @@ function kasaCikisiMi(type: string) {
 
 function numberValue(value: number | null | undefined) {
   return Number(value || 0);
+}
+
+function addDays(dateKey: string, days: number) {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  const date = new Date(year, (month || 1) - 1, day || 1);
+  date.setDate(date.getDate() + days);
+
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
+function daysBetween(from: string, to: string) {
+  const fromDate = new Date(`${from}T00:00:00`);
+  const toDate = new Date(`${to}T00:00:00`);
+  const diff = toDate.getTime() - fromDate.getTime();
+
+  if (!Number.isFinite(diff)) return 0;
+
+  return Math.round(diff / 86400000);
 }
 
 async function optionalSingle<T>(
@@ -165,6 +201,7 @@ export async function GET(request: Request) {
       kasaHareketResponse,
       fisResponse,
       kalemResponse,
+      cariHareketResponse,
       settings,
       lastBackup,
     ] = await Promise.all([
@@ -226,9 +263,20 @@ export async function GET(request: Request) {
         .limit(5000),
       supabaseAdmin
         .from("fatura_fis_kalemleri")
-        .select("fis_id, urun_id, urun_adi, miktar, satir_toplami")
+        .select("fis_id, urun_id, urun_adi, birim, miktar, satir_toplami")
         .eq("company_id", company.id)
         .limit(3000),
+      supabaseAdmin
+        .from("cari_hareketleri")
+        .select(
+          "id, cari_id, hareket_turu, hareket_tarihi, vade_tarihi, borc_tutar, alacak_tutar, durum, belge_no, aciklama",
+        )
+        .eq("company_id", company.id)
+        .eq("durum", "aktif")
+        .gte("hareket_tarihi", yearRange.start)
+        .lte("hareket_tarihi", yearRange.end)
+        .order("hareket_tarihi", { ascending: true })
+        .limit(5000),
       optionalSingle<{
         auto_backup_enabled: boolean;
         backup_email: string | null;
@@ -253,7 +301,7 @@ export async function GET(request: Request) {
     if (profileResponse.error) throw profileResponse.error;
     if (subscriptionResponse.error) throw subscriptionResponse.error;
     if (!subscriptionResponse.data) {
-      throw new Error("Paket bilgisi bulunamadı.");
+      throw new Error("Paket bilgisi bulunamadÄ±.");
     }
     const subscription = subscriptionResponse.data;
     const activeStaffCount = await getActiveStaffCount(company.id);
@@ -287,8 +335,8 @@ export async function GET(request: Request) {
           role: context.role,
           message:
             context.role === "staff"
-              ? "Firmanın aylık paketi sonlanmıştır. Ödeme yapıldığında sisteminiz açılacaktır."
-              : "Paket süresi dolmuş veya firma erişimi pasif.",
+              ? "FirmanÄ±n aylÄ±k paketi sonlanmÄ±ÅŸtÄ±r. Ã–deme yapÄ±ldÄ±ÄŸÄ±nda sisteminiz aÃ§Ä±lacaktÄ±r."
+              : "Paket sÃ¼resi dolmuÅŸ veya firma eriÅŸimi pasif.",
           subscription: {
             ...subscription,
             billing_period_months: billing.billingPeriodMonths,
@@ -316,6 +364,7 @@ export async function GET(request: Request) {
     if (kasaHareketResponse.error) throw kasaHareketResponse.error;
     if (fisResponse.error) throw fisResponse.error;
     if (kalemResponse.error) throw kalemResponse.error;
+    if (cariHareketResponse.error) throw cariHareketResponse.error;
 
     const cariler = (cariResponse.data || []) as CariRow[];
     const urunler = (urunResponse.data || []) as UrunRow[];
@@ -323,6 +372,8 @@ export async function GET(request: Request) {
     const kasaHareketleri = (kasaHareketResponse.data || []) as KasaHareketRow[];
     const fisler = (fisResponse.data || []) as FisRow[];
     const kalemler = (kalemResponse.data || []) as FisKalemRow[];
+    const cariHareketleri = (cariHareketResponse.data || []) as CariHareketRow[];
+    const cariMap = new Map(cariler.map((cari) => [cari.id, cari]));
 
     const kasaBakiyesi = kasaHesaplari.reduce(
       (sum, hesap) => sum + numberValue(hesap.acilis_bakiyesi),
@@ -394,22 +445,58 @@ export async function GET(request: Request) {
         .map((fis) => fis.id),
     );
 
-    const enCokSatilan = [...kalemler
-      .filter((kalem) => aktifSatisFisIds.has(kalem.fis_id))
-      .reduce((map, kalem) => {
-      const key = kalem.urun_id || kalem.urun_adi;
-      const current = map.get(key) || {
-        urunAdi: kalem.urun_adi || "Ürün",
-        miktar: 0,
-        tutar: 0,
-      };
+    function aggregateSoldProducts(fisIds: Set<string>, limit: number) {
+      return [
+        ...kalemler
+          .filter((kalem) => fisIds.has(kalem.fis_id))
+          .reduce((map, kalem) => {
+            const key = kalem.urun_id || kalem.urun_adi;
+            const current = map.get(key) || {
+              urunAdi: kalem.urun_adi || "Urun",
+              birim: kalem.birim || "",
+              miktar: 0,
+              tutar: 0,
+            };
 
-      current.miktar += numberValue(kalem.miktar);
-      current.tutar += numberValue(kalem.satir_toplami);
-      map.set(key, current);
-      return map;
-      }, new Map<string, { urunAdi: string; miktar: number; tutar: number }>()).values()]
-      .sort((a, b) => b.miktar - a.miktar)[0] || null;
+            current.miktar += numberValue(kalem.miktar);
+            current.tutar += numberValue(kalem.satir_toplami);
+            map.set(key, current);
+            return map;
+          }, new Map<string, { urunAdi: string; birim: string; miktar: number; tutar: number }>())
+          .values(),
+      ]
+        .sort((a, b) => b.miktar - a.miktar || b.tutar - a.tutar)
+        .slice(0, limit);
+    }
+
+    const bugunkuSatisFisIds = new Set(
+      fisler
+        .filter((fis) => fis.durum === "aktif" && fis.fis_turu === "satis" && fis.fis_tarihi === today)
+        .map((fis) => fis.id),
+    );
+    const todaySoldProducts = aggregateSoldProducts(bugunkuSatisFisIds, 5);
+    const topSoldProducts = aggregateSoldProducts(aktifSatisFisIds, 5);
+    const enCokSatilan = topSoldProducts[0] || null;
+    const upcomingLimit = addDays(today, 30);
+    const upcomingReceivables = cariHareketleri
+      .filter((hareket) => numberValue(hareket.borc_tutar) > numberValue(hareket.alacak_tutar))
+      .map((hareket) => {
+        const dueDate = hareket.vade_tarihi || hareket.hareket_tarihi;
+
+        return {
+          id: hareket.id,
+          cariId: hareket.cari_id,
+          cariUnvan: cariMap.get(hareket.cari_id)?.unvan || "Cari",
+          belgeNo: hareket.belge_no || hareket.aciklama || "-",
+          dueDate,
+          amount: numberValue(hareket.borc_tutar) - numberValue(hareket.alacak_tutar),
+          daysLeft: daysBetween(today, dueDate),
+        };
+      })
+      .filter((item) => item.dueDate <= upcomingLimit)
+      .sort((a, b) => a.dueDate.localeCompare(b.dueDate) || b.amount - a.amount)
+      .slice(0, 6);
+
 
     const canCari = context.permissions.cari;
     const canStok = context.permissions.stok;
@@ -428,7 +515,7 @@ export async function GET(request: Request) {
       ...(canFatura ? fisler.slice(0, 6).map((fis) => ({
         id: `fis-${fis.id}`,
         title: fis.fis_no,
-        type: fis.fis_turu === "satis" ? "Satış Fişi" : "Alış Fişi",
+        type: fis.fis_turu === "satis" ? "SatÄ±ÅŸ FiÅŸi" : "AlÄ±ÅŸ FiÅŸi",
         date: fis.fis_tarihi,
         amount: numberValue(fis.genel_toplam),
         tone: fis.fis_turu === "satis" ? "violet" : "slate",
@@ -477,6 +564,9 @@ export async function GET(request: Request) {
         kasaHesapSayisi: canKasa ? kasaHesaplari.length : 0,
       },
       topProduct: canFatura ? enCokSatilan : null,
+      todaySoldProducts: canFatura ? todaySoldProducts : [],
+      topSoldProducts: canFatura ? topSoldProducts : [],
+      upcomingReceivables: canCari ? upcomingReceivables : [],
       recentActivities,
       backup: {
         autoEnabled: settings?.auto_backup_enabled ?? true,
@@ -513,7 +603,7 @@ export async function GET(request: Request) {
         message:
           error instanceof Error
             ? error.message
-            : "Panel özeti yüklenirken hata oluştu.",
+            : "Panel Ã¶zeti yÃ¼klenirken hata oluÅŸtu.",
       },
       { status: 500 },
     );
