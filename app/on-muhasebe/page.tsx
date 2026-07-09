@@ -2,9 +2,9 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Sitemix Ön Muhasebe | 7 Gün Ücretsiz Dene",
+  title: "Sitemix Ön Muhasebe | Cari, Stok ve Kasa Takip Programı",
   description:
-    "Cari, stok, fiyat, gelir-gider, tahsilat, ödeme, fatura ve rapor takibini tek panelden yönetin. Sitemix Ön Muhasebe'yi 7 gün ücretsiz deneyin.",
+    "Küçük işletmeler için cari, stok, kasa, gelir-gider, tahsilat, ödeme, PDF çıktı, WhatsApp bilgilendirme ve yedekleme destekli ön muhasebe programı. 7 gün ücretsiz deneyin.",
 };
 
 const navItems = [
@@ -16,30 +16,30 @@ const navItems = [
 
 const heroMetrics = [
   { value: "7 gün", label: "ücretsiz deneme" },
-  { value: "₺399", label: "aylık başlangıç" },
-  { value: "₺960", label: "yıllık kazanç" },
+  { value: "₺399", label: "aylık kullanım" },
+  { value: "PDF + WP", label: "hazır bilgilendirme" },
 ];
 
 const quickActions = [
   {
-    title: "Tek tıkla cari ekle",
-    text: "Müşteri, tedarikçi veya firma hesabını saniyeler içinde aç. Alacak, borç ve hareket geçmişini aynı ekranda takip et.",
+    title: "Carini saniyeler içinde aç",
+    text: "Müşteri, tedarikçi veya firma hesabını hızlıca oluştur. Alacak, borç, tahsilat ve hareket geçmişini tek ekrandan takip et.",
     tag: "Cari",
   },
   {
-    title: "Tek tıkla stok ekle",
-    text: "Ürün adı, kategori, alış fiyatı, satış fiyatı, barkod ve mevcut stok bilgisini hızlıca sisteme işle.",
+    title: "Ürün ve stok eklemek kolay",
+    text: "Ürün adı, kategori, alış fiyatı, satış fiyatı, barkod ve mevcut stok bilgisini sade formla sisteme işle.",
     tag: "Stok",
   },
   {
-    title: "Toplu aktarım hazır",
-    text: "Excel mantığıyla cari, ürün ve stok verilerini toplu yüklemeye uygun altyapı. Tek tek uğraşmadan liste halinde içeri al.",
-    tag: "Toplu",
+    title: "PDF hazır, WhatsApp hazır",
+    text: "Tahsilat, ödeme veya satış sonrası hazır PDF çıktısı oluştur; müşteriye WhatsApp üzerinden anında bilgi gönder.",
+    tag: "PDF + WP",
   },
   {
-    title: "Hızlı tahsilat ve gider",
-    text: "Nakit, banka, kredi kartı, kasa çıkışı ve işletme giderlerini hızlı işlem mantığıyla kaydet.",
-    tag: "Kasa",
+    title: "Yedekleme ve destek dahil",
+    text: "İşletme verilerini düzenli tut, ihtiyaç olduğunda dışa aktar ve takıldığın yerde destek alarak kullanıma devam et.",
+    tag: "Destek",
   },
 ];
 
@@ -47,7 +47,7 @@ const modules = [
   {
     title: "Cari hesap",
     desc: "Müşteri ve tedarikçi bakiyelerini net gör.",
-    items: ["Alacak-borç", "Hareket geçmişi", "Tahsilat notu"],
+    items: ["Alacak-borç", "Hareket geçmişi", "Tahsilat PDF"],
   },
   {
     title: "Stok ve ürün",
@@ -55,55 +55,55 @@ const modules = [
     items: ["Alış fiyatı", "Satış fiyatı", "Düşük stok"],
   },
   {
-    title: "Gelir-gider",
+    title: "Kasa ve gelir-gider",
     desc: "Günlük para giriş çıkışlarını düzenli kaydet.",
-    items: ["Kategori", "Kasa", "Aylık özet"],
+    items: ["Kasa hareketi", "Gider kaydı", "Aylık özet"],
   },
   {
     title: "Fatura ve fiş",
     desc: "Satış, alış, belge ve fiş kayıtlarını toparla.",
-    items: ["Satış kaydı", "Alış kaydı", "Belge notu"],
+    items: ["Satış kaydı", "Alış kaydı", "PDF çıktı"],
   },
   {
     title: "Tahsilat ödeme",
     desc: "Kimden ne alınacak, kime ne ödenecek karışmasın.",
-    items: ["Vade", "Durum", "Hatırlatma"],
+    items: ["Vade", "Durum", "WhatsApp bilgi"],
   },
   {
-    title: "Rapor ekranı",
-    desc: "İşletmenin günlük durumunu tek bakışta oku.",
-    items: ["Kasa özeti", "Açık cari", "Stok özeti"],
+    title: "Rapor ve yedekleme",
+    desc: "İşletmenin durumunu gör, verilerini düzenli tut.",
+    items: ["Kasa özeti", "Cari rapor", "Dışa aktar"],
   },
 ];
 
 const workflow = [
   {
     step: "01",
-    title: "Hesabını aç",
-    text: "7 gün ücretsiz denemeyi başlat. Sade kayıt akışıyla işletme hesabını oluştur.",
+    title: "7 gün ücretsiz başla",
+    text: "Ödeme riski olmadan hesabını aç. İşletme bilgilerini gir ve panelini kullanmaya başla.",
   },
   {
     step: "02",
-    title: "Cari ve stoklarını ekle",
-    text: "Tek tek ekle veya toplu aktarım mantığıyla ürün, fiyat, stok ve cari bilgilerini hazırla.",
+    title: "Cari ve ürünlerini ekle",
+    text: "Müşterilerini, tedarikçilerini, ürünlerini ve stok bilgilerini sade ekranlardan hızlıca oluştur.",
   },
   {
     step: "03",
-    title: "Günlük işlemleri gir",
-    text: "Tahsilat, ödeme, gider, satış ve kasa hareketlerini hızlı işlem butonlarıyla kaydet.",
+    title: "Günlük işlemleri kaydet",
+    text: "Satış, tahsilat, ödeme, gider ve kasa hareketlerini anında işle; PDF çıktısını hazırla.",
   },
   {
     step: "04",
-    title: "Raporlardan takip et",
-    text: "Bugün ne kazandın, kime borcun var, kimden alacağın var ve stokta ne kaldı net gör.",
+    title: "Müşteriye bilgi ver, rapordan izle",
+    text: "Hazır WhatsApp mesajıyla müşteriyi bilgilendir; kasa, cari ve stok durumunu raporlardan takip et.",
   },
 ];
 
 const comparison = [
   "Defter, Excel ve WhatsApp notlarını tek düzene toplar.",
-  "Cari, stok, fiyat ve kasa karışıklığını azaltır.",
-  "Küçük işletmelerin anlayacağı sade bir panel mantığı sunar.",
-  "Mobilde hızlı işlem için büyük buton ve net alanlarla tasarlanır.",
+  "Cari, stok, fiyat, kasa ve tahsilat karışıklığını azaltır.",
+  "PDF çıktı ve WhatsApp bilgilendirme ile müşteriye daha profesyonel görünürsün.",
+  "Mobil uyumlu sade panel sayesinde işlemlerini bilgisayar başında olmadan da takip edersin.",
 ];
 
 const pricingPlans = [
@@ -116,7 +116,7 @@ const pricingPlans = [
     normal: "Taahhüt yok",
     saving: "Esnek kullanım",
     savingDetail: "Önce dene, aylık devam et.",
-    desc: "Yeni başlayan işletmeler için en hızlı başlangıç.",
+    desc: "Defter ve Excel yerine düzenli takip isteyen işletmeler için hızlı başlangıç.",
     highlighted: false,
     featured: false,
     features: [
@@ -125,6 +125,8 @@ const pricingPlans = [
       "Stok ve ürün takibi",
       "Gelir-gider kaydı",
       "Tahsilat ve ödeme takibi",
+      "Hazır PDF çıktı",
+      "WhatsApp ile bilgilendirme",
       "Mobil uyumlu kullanım",
     ],
   },
@@ -137,7 +139,7 @@ const pricingPlans = [
     normal: "Normal: ₺2.394",
     saving: "₺240 kazanç",
     savingDetail: "Aylığa göre %10 daha avantajlı.",
-    desc: "Düzenli kullanmak isteyen işletmeler için dengeli paket.",
+    desc: "Ön muhasebesini düzenli kullanmak ve aylık maliyeti düşürmek isteyen işletmeler için.",
     highlighted: true,
     featured: false,
     features: [
@@ -147,6 +149,8 @@ const pricingPlans = [
       "Alış-satış fiyat takibi",
       "Gelişmiş işletme özeti",
       "Ödeme ve tahsilat görünümü",
+      "Yedekleme ve dışa aktarma altyapısı",
+      "Destek sistemi",
     ],
   },
   {
@@ -158,7 +162,7 @@ const pricingPlans = [
     normal: "Normal: ₺4.788",
     saving: "₺960 kazanç",
     savingDetail: "Aylığa göre %20 daha avantajlı.",
-    desc: "Uzun süreli kullanımda en düşük aylık maliyet.",
+    desc: "İşletmesini uzun vadeli düzene almak isteyenler için en düşük aylık maliyet.",
     highlighted: false,
     featured: true,
     features: [
@@ -168,6 +172,8 @@ const pricingPlans = [
       "Yedekleme ve dışa aktarma altyapısı",
       "Yeni modüllere erken erişim",
       "Öncelikli geliştirme desteği",
+      "Daha avantajlı yıllık kullanım",
+      "Düzenli geliştirme güncellemeleri",
     ],
   },
 ];
@@ -176,22 +182,27 @@ const faqs = [
   {
     question: "7 gün ücretsiz denemede ödeme gerekiyor mu?",
     answer:
-      "Hayır. Kullanıcı sistemi önce ücretsiz deneyebilir. İşletmesine uygunsa paket seçerek devam eder.",
+      "Hayır. Sistemi önce 7 gün ücretsiz deneyebilir, işletmene uygunsa paket seçerek devam edebilirsin.",
   },
   {
     question: "Aylık paket fiyatı ne kadar?",
     answer:
-      "Aylık paket 399 TL olarak kurgulandı. 6 aylık ve yıllık paketler bu fiyat üzerinden indirimli hesaplandı.",
+      "Aylık paket 399 TL'dir. 6 aylık ve yıllık paketlerde aylık maliyet daha avantajlı hale gelir.",
   },
   {
-    question: "Toplu cari ve stok ekleme olacak mı?",
+    question: "PDF çıktı ve WhatsApp bilgilendirme var mı?",
     answer:
-      "Evet. Platform akışında cari, ürün ve stok bilgilerinin toplu aktarım mantığıyla eklenmesi hedefleniyor.",
+      "Evet. Hazır PDF çıktısı oluşturabilir ve müşteriye WhatsApp üzerinden hızlı bilgilendirme gönderebilirsin.",
+  },
+  {
+    question: "Destek ve yedekleme dahil mi?",
+    answer:
+      "Evet. Kullanım sürecinde destek alabilir, verilerini düzenli tutmak için yedekleme ve dışa aktarma altyapısından yararlanabilirsin.",
   },
   {
     question: "Telefondan kullanılabilecek mi?",
     answer:
-      "Evet. Tasarım mobil öncelikli kurgulanıyor. İşletme sahibi temel işlemleri telefondan rahatça yapabilecek.",
+      "Evet. Panel mobil uyumlu tasarlanır. İşletme sahibi temel işlemleri telefondan rahatça takip edebilir.",
   },
 ];
 
@@ -263,21 +274,21 @@ export default function OnMuhasebePage() {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#22c55e] opacity-75" />
                 <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#22c55e]" />
               </span>
-              7 gün ücretsiz dene, aylık sadece ₺399
+              7 gün ücretsiz dene, sonra aylık sadece ₺399
             </div>
 
             <h1 className="mt-6 max-w-5xl text-4xl font-black tracking-[-0.06em] text-[#0b1025] sm:text-5xl lg:text-7xl">
-              Cari, stok ve kasanı
+              Defter, Excel ve karışık notları bırak.
               <span className="block bg-gradient-to-r from-[#4f46e5] via-[#06b6d4] to-[#22c55e] bg-clip-text text-transparent motion-safe:animate-pulse">
-                tek ekranda yönet.
+                Ön muhasebeni tek panelden yönet.
               </span>
             </h1>
 
             <p className="mt-6 max-w-2xl text-base font-semibold leading-8 text-slate-600 sm:text-lg">
-              Sitemix Ön Muhasebe; cari hesap, ürün, stok, alış-satış fiyatı,
-              gelir-gider, tahsilat, ödeme ve günlük kasa özetini sade bir
-              panelde toplamak için tasarlanır. Önce 7 gün ücretsiz dene,
-              sonra işletmene uygunsa devam et.
+              Sitemix Ön Muhasebe; cari, stok, kasa, gelir-gider, tahsilat,
+              ödeme, PDF çıktı ve WhatsApp bilgilendirme akışını küçük
+              işletmeler için sade bir panelde toplar. Önce 7 gün ücretsiz
+              dene, işletmene uyarsa aylık sadece ₺399 ile devam et.
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -297,8 +308,8 @@ export default function OnMuhasebePage() {
             </div>
 
             <p className="mt-5 text-sm font-bold text-slate-500">
-              Kurulum yok. Karmaşık ekran yok. Küçük işletmeler için hızlı ve
-              anlaşılır takip mantığı.
+              Kurulumla uğraşma. Karmaşık muhasebe ekranlarıyla boğulma.
+              Küçük işletmen için hızlı, anlaşılır ve destekli takip sistemi.
             </p>
 
             <div className="mt-9 grid max-w-2xl gap-3 sm:grid-cols-3">
@@ -320,10 +331,10 @@ export default function OnMuhasebePage() {
 
           <div className="relative">
             <div className="absolute -right-6 -top-6 hidden rounded-3xl bg-[#22c55e] px-5 py-4 text-sm font-black text-white shadow-xl shadow-emerald-500/25 motion-safe:animate-bounce sm:block">
-              + Stok eklendi
+              PDF hazırlandı
             </div>
             <div className="absolute -bottom-6 -left-6 hidden rounded-3xl bg-[#06b6d4] px-5 py-4 text-sm font-black text-white shadow-xl shadow-cyan-500/25 motion-safe:animate-pulse sm:block">
-              ₺960 yıllık kazanç
+              WhatsApp gönderildi
             </div>
 
             <div className="overflow-hidden rounded-[2.25rem] border border-white/70 bg-[#0b1025] p-4 shadow-2xl shadow-indigo-950/25 sm:p-6">
@@ -397,7 +408,7 @@ export default function OnMuhasebePage() {
                   </div>
 
                   <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                    {["+ Cari", "+ Stok", "+ Gider", "+ Tahsilat"].map(
+                    {["+ Cari", "+ Ürün", "PDF Oluştur", "WhatsApp Gönder"].map(
                       (item) => (
                         <span
                           key={item}
@@ -422,12 +433,12 @@ export default function OnMuhasebePage() {
               Hızlı işlemler
             </p>
             <h2 className="mt-4 text-3xl font-black tracking-[-0.05em] text-[#0b1025] sm:text-5xl">
-              Günlük işleri tek tek uğraştırmadan hızlandır.
+              Günlük ön muhasebeni daha hızlı ve düzenli yönet.
             </h2>
           </div>
           <p className="max-w-2xl text-base font-semibold leading-8 text-slate-600 lg:ml-auto">
-            İşletme sahibinin ihtiyacı netliktir. Bu yüzden ana işlem akışı;
-            cari, stok, gelir-gider, tahsilat ve toplu aktarım üzerine kuruldu.
+            İşletme sahibinin ihtiyacı netliktir. Bu yüzden cari, stok, kasa,
+            PDF, WhatsApp bilgilendirme, yedekleme ve destek akışı sade tutuldu.
           </p>
         </div>
 
@@ -462,12 +473,12 @@ export default function OnMuhasebePage() {
                 İş akışı
               </p>
               <h2 className="mt-4 text-3xl font-black tracking-[-0.05em] text-[#0b1025] sm:text-5xl">
-                Kullanıcıyı kayda götüren sade düzen.
+                İlk günden kullanmaya uygun sade düzen.
               </h2>
               <p className="mt-5 text-base font-semibold leading-8 text-slate-600">
-                Önce ücretsiz deneme, sonra hızlı kurulum, ardından günlük
-                işlemler ve rapor ekranı. Akış net olduğu için kullanıcı ne
-                alacağını daha kolay anlar.
+                Önce ücretsiz deneme, sonra hızlı kullanım. Cari, stok, kasa,
+                PDF ve WhatsApp adımları net olduğu için işletme sahibi sistemi
+                kısa sürede benimser.
               </p>
             </div>
 
@@ -502,11 +513,11 @@ export default function OnMuhasebePage() {
               Modüller
             </p>
             <h2 className="mt-4 text-3xl font-black tracking-[-0.05em] text-[#0b1025] sm:text-5xl">
-              Ön muhasebe için gereken ana yapı burada.
+              Küçük işletmenin günlük takip ihtiyacı burada.
             </h2>
             <p className="mt-5 text-base font-semibold leading-8 text-slate-600">
-              Karmaşık muhasebe ekranları yerine; günlük para, stok ve cari
-              takibini kolaylaştıran sade bir sistem.
+              Karmaşık muhasebe ekranları yerine; para, stok, cari, PDF,
+              WhatsApp bilgilendirme ve rapor takibini kolaylaştıran sade sistem.
             </p>
           </div>
 
@@ -546,12 +557,12 @@ export default function OnMuhasebePage() {
                 Toplu işlem gücü
               </p>
               <h2 className="mt-4 text-3xl font-black tracking-[-0.05em] text-[#0b1025] sm:text-5xl">
-                Yüzlerce ürünü ve cariyi tek tek girmek zorunda kalma.
+                Ürünleri ve carileri tek tek uğraşmadan düzene al.
               </h2>
               <p className="mt-5 text-base font-semibold leading-8 text-slate-600">
-                Toplu cari, toplu ürün ve toplu stok aktarımı öne çıkarıldı.
-                Bu alan kullanıcıya gerçek bir platform hissi verir ve deneme
-                butonuna geçişi güçlendirir.
+                Cari, ürün ve stok bilgilerini daha düzenli şekilde içeri al.
+                Böylece işletme ilk kurulumda zaman kaybetmeden günlük takibe
+                geçebilir.
               </p>
             </div>
 
@@ -597,17 +608,17 @@ export default function OnMuhasebePage() {
               Fiyatlar
             </p>
             <h2 className="mt-4 text-3xl font-black tracking-[-0.05em] text-[#0b1025] sm:text-5xl">
-              Aylık ₺399. 6 ay ve yıllıkta aylık maliyet düşer.
+              Aylık ₺399 ile başla. Daha uzun kullanımda maliyetini düşür.
             </h2>
           </div>
           <div className="rounded-[2rem] bg-[#0b1025] p-5 text-white shadow-xl shadow-indigo-950/15">
             <p className="text-sm font-black text-white/50">Hesap net</p>
             <p className="mt-2 text-lg font-black tracking-[-0.03em]">
-              6 ayda ₺240, yılda ₺960 cebinde kalır.
+              Aylık kullan, 6 aylıkta tasarruf et, yıllıkta en düşük maliyete geç.
             </p>
             <p className="mt-2 text-sm font-semibold leading-6 text-white/60">
-              Aylık 399 TL baz alınarak 6 aylık pakette %10, yıllık pakette
-              %20 avantaj gösterildi.
+              Aylık ₺399 baz alınarak 6 aylık pakette %10, yıllık pakette
+              %20 avantaj sunulur. 7 gün ücretsiz deneyip karar verebilirsin.
             </p>
           </div>
         </div>
@@ -762,9 +773,9 @@ export default function OnMuhasebePage() {
               Neden avantajlı?
             </p>
             <h2 className="mt-4 text-3xl font-black tracking-[-0.05em] sm:text-5xl">
-              Defter ve Excel karışıklığını bırak,
+              Defter, Excel ve unutulan tahsilatları bırak,
               <span className="block bg-gradient-to-r from-cyan-300 via-emerald-300 to-yellow-200 bg-clip-text text-transparent motion-safe:animate-pulse">
-                düzenli takip sistemine geç.
+                işletmeni düzenli takip sistemine taşı.
               </span>
             </h2>
           </div>
@@ -793,14 +804,14 @@ export default function OnMuhasebePage() {
               Şimdi başla
             </p>
             <h2 className="mt-4 max-w-4xl text-3xl font-black tracking-[-0.05em] sm:text-5xl">
-              Ön muhasebeni karışık notlardan çıkar,
+              Cari, stok, kasa ve tahsilat takibini karışık notlardan çıkar,
               <span className="block bg-gradient-to-r from-cyan-300 to-emerald-300 bg-clip-text text-transparent">
-                düzenli bir panele taşı.
+                işletmeni düzenli bir panele taşı.
               </span>
             </h2>
             <p className="mt-5 max-w-2xl text-base font-semibold leading-8 text-white/60">
-              7 gün ücretsiz dene. Cari, stok, kasa ve günlük işletme özetini
-              tek ekranda görmeye başla.
+              7 gün ücretsiz dene. Cari, stok, kasa, PDF çıktı ve WhatsApp
+              bilgilendirme akışını tek panelde kullanmaya başla.
             </p>
           </div>
 
@@ -832,7 +843,7 @@ export default function OnMuhasebePage() {
               Sık sorulanlar
             </p>
             <h2 className="mt-4 text-3xl font-black tracking-[-0.05em] text-[#0b1025] sm:text-5xl">
-              Kullanıcının aklındaki soruları kayıt öncesi azalt.
+              Başlamadan önce merak edilenleri netleştir.
             </h2>
           </div>
 
