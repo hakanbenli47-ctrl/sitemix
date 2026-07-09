@@ -13,9 +13,10 @@ type BackupTable = {
   table: string;
   column: string;
   value: (scope: BackupScope) => string;
+  optional?: boolean;
 };
 
-const backupTables: BackupTable[] = [
+export const onMuhasebeBackupTables: BackupTable[] = [
   {
     key: "profiles",
     table: "profiles",
@@ -33,6 +34,55 @@ const backupTables: BackupTable[] = [
     table: "subscriptions",
     column: "company_id",
     value: (scope) => scope.companyId,
+  },
+  {
+    key: "on_muhasebe_company_users",
+    table: "on_muhasebe_company_users",
+    column: "company_id",
+    value: (scope) => scope.companyId,
+    optional: true,
+  },
+  {
+    key: "on_muhasebe_settings",
+    table: "on_muhasebe_settings",
+    column: "company_id",
+    value: (scope) => scope.companyId,
+    optional: true,
+  },
+  {
+    key: "on_muhasebe_calisma_donemleri",
+    table: "on_muhasebe_calisma_donemleri",
+    column: "company_id",
+    value: (scope) => scope.companyId,
+    optional: true,
+  },
+  {
+    key: "on_muhasebe_yil_devirleri",
+    table: "on_muhasebe_yil_devirleri",
+    column: "company_id",
+    value: (scope) => scope.companyId,
+    optional: true,
+  },
+  {
+    key: "on_muhasebe_cari_devirleri",
+    table: "on_muhasebe_cari_devirleri",
+    column: "company_id",
+    value: (scope) => scope.companyId,
+    optional: true,
+  },
+  {
+    key: "on_muhasebe_personel_hareketleri",
+    table: "on_muhasebe_personel_hareketleri",
+    column: "company_id",
+    value: (scope) => scope.companyId,
+    optional: true,
+  },
+  {
+    key: "on_muhasebe_payment_notifications",
+    table: "on_muhasebe_payment_notifications",
+    column: "company_id",
+    value: (scope) => scope.companyId,
+    optional: true,
   },
   {
     key: "cari_hesaplar",
@@ -138,23 +188,53 @@ export function serializeBackup(payload: BackupPayload) {
   return JSON.stringify(payload, null, 2);
 }
 
-export async function createCompanyBackup(scope: BackupScope) {
-  const tables: BackupPayload["tables"] = {};
-  const rowCounts: BackupPayload["rowCounts"] = {};
+function isMissingBackupTableError(error: unknown) {
+  if (!error || typeof error !== "object") return false;
 
-  for (const item of backupTables) {
+  const supabaseError = error as { code?: string; message?: string };
+  const message = supabaseError.message?.toLowerCase() || "";
+
+  return (
+    supabaseError.code === "42P01" ||
+    supabaseError.code === "PGRST205" ||
+    message.includes("does not exist") ||
+    message.includes("schema cache")
+  );
+}
+
+async function readBackupRows(item: BackupTable, scope: BackupScope) {
+  const pageSize = 1000;
+  const rows: unknown[] = [];
+
+  for (let from = 0; ; from += pageSize) {
     const { data, error } = await supabaseAdmin
       .from(item.table)
       .select("*")
       .eq(item.column, item.value(scope))
-      .limit(10000);
+      .range(from, from + pageSize - 1);
 
     if (error) {
+      if (item.optional && isMissingBackupTableError(error)) return rows;
       throw new Error(`${item.table} yedeklenemedi: ${error.message}`);
     }
 
-    tables[item.key] = data || [];
-    rowCounts[item.key] = data?.length || 0;
+    rows.push(...(data || []));
+
+    if (!data || data.length < pageSize) {
+      return rows;
+    }
+  }
+}
+
+export async function createCompanyBackup(scope: BackupScope) {
+  const tables: BackupPayload["tables"] = {};
+  const rowCounts: BackupPayload["rowCounts"] = {};
+
+  for (const item of onMuhasebeBackupTables) {
+    const rows = await readBackupRows(item, scope);
+
+    tables[item.key] = rows;
+    rowCounts[item.key] = rows.length;
   }
 
   return {

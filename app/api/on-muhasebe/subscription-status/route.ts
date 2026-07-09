@@ -3,10 +3,14 @@ import { getOnMuhasebeContext } from "@/lib/onMuhasebe/auth";
 import {
   type OnMuhasebeSubscriptionStatus,
   getOnMuhasebeDaysLeft,
-  isTrialExpired,
+  isSubscriptionExpired,
   onMuhasebePlans,
   onMuhasebeStatusLabels,
 } from "@/lib/onMuhasebe/plans";
+import {
+  calculateOnMuhasebeSubscriptionBilling,
+  getActiveStaffCount,
+} from "@/lib/onMuhasebe/billing";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
@@ -19,6 +23,7 @@ type SubscriptionRecord = {
   status: OnMuhasebeSubscriptionStatus;
   trial_started_at: string | null;
   trial_ends_at: string | null;
+  billing_period_months: number | null;
   monthly_price: number;
   total_price: number;
   saving_amount: number;
@@ -33,7 +38,7 @@ export async function GET(request: Request) {
       await supabaseAdmin
         .from("subscriptions")
         .select(
-          "id, company_id, user_id, plan, status, trial_started_at, trial_ends_at, monthly_price, total_price, saving_amount, currency",
+          "id, company_id, user_id, plan, status, trial_started_at, trial_ends_at, billing_period_months, monthly_price, total_price, saving_amount, currency",
         )
         .eq("company_id", context.company.id)
         .order("created_at", { ascending: false })
@@ -48,12 +53,12 @@ export async function GET(request: Request) {
     }
 
     let normalizedStatus = subscription.status;
-    const expired = isTrialExpired(
+    const expired = isSubscriptionExpired(
       subscription.status,
       subscription.trial_ends_at,
     );
 
-    if (expired && subscription.status === "trial") {
+    if (expired && (subscription.status === "trial" || subscription.status === "active")) {
       normalizedStatus = "expired";
 
       await supabaseAdmin
@@ -63,15 +68,30 @@ export async function GET(request: Request) {
     }
 
     const plan = onMuhasebePlans[subscription.plan];
+    const activeStaffCount = await getActiveStaffCount(context.company.id);
+    const billing = calculateOnMuhasebeSubscriptionBilling(
+      subscription,
+      activeStaffCount,
+    );
 
     return NextResponse.json({
       allowed: !expired,
-      reason: expired ? "trial_expired" : null,
+      reason: expired ? "subscription_expired" : null,
+      role: context.role,
       subscription: {
         ...subscription,
+        billing_period_months: billing.billingPeriodMonths,
+        monthly_price: billing.monthlyPrice,
+        total_price: billing.totalPrice,
+        saving_amount: billing.savingAmount,
+        staff_count: billing.staffCount,
+        staff_monthly_price: billing.staffMonthlyPrice,
+        staff_monthly_total: billing.staffMonthlyTotal,
         status: normalizedStatus,
         statusLabel: onMuhasebeStatusLabels[normalizedStatus],
         planLabel: plan?.name || subscription.plan,
+        expiresAt: subscription.trial_ends_at,
+        daysLeft: getOnMuhasebeDaysLeft(subscription.trial_ends_at),
         trialDaysLeft: getOnMuhasebeDaysLeft(subscription.trial_ends_at),
       },
     });

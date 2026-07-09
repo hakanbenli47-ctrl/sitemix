@@ -418,6 +418,7 @@ function topluUrunSatirHatalari(
 
 export default function StokPage() {
   const [company, setCompany] = useState<Company | null>(null);
+  const [canManageStock, setCanManageStock] = useState(false);
   const [workYear] = useState(getBrowserWorkYear());
   const stokFormRef = useRef<HTMLFormElement | null>(null);
   const [urunler, setUrunler] = useState<Urun[]>([]);
@@ -569,6 +570,7 @@ export default function StokPage() {
     try {
       const context = await getOnMuhasebeClientContext();
       const companyData = context.company;
+      setCanManageStock(context.isOwner);
 
       const { data: kategoriData, error: kategoriError } = await supabaseClient
         .from("urun_kategorileri")
@@ -625,6 +627,17 @@ export default function StokPage() {
   useEffect(() => {
     verileriYukle();
   }, [verileriYukle]);
+
+  function stokYazmaIzniVar() {
+    if (canManageStock) return true;
+
+    setMessage("");
+    setErrorMessage(
+      "Personel stok ekranında sadece görüntüleme yapabilir. Ürün, kategori ve stok hareketi değişikliklerini yönetici yapmalıdır.",
+    );
+    return false;
+  }
+
   useEffect(() => {
     if (!formAcik) return;
 
@@ -693,6 +706,8 @@ export default function StokPage() {
   }
 
   function yeniUrunAc() {
+    if (!stokYazmaIzniVar()) return;
+
     setDuzenlenenUrunId(null);
     setForm({ ...bosForm, urun_kodu: siradakiUrunKodu(urunler) });
     setFormAcik(true);
@@ -703,6 +718,11 @@ export default function StokPage() {
   }
 
   function topluUrunAcKapat() {
+    if (!canManageStock && !topluAcik) {
+      stokYazmaIzniVar();
+      return;
+    }
+
     setTopluAcik((current) => {
       const yeniDurum = !current;
 
@@ -773,6 +793,8 @@ export default function StokPage() {
   }
 
   function urunDuzenle(urun: Urun) {
+    if (!stokYazmaIzniVar()) return;
+
     setDuzenlenenUrunId(urun.id);
     setForm(urunFormunaDonustur(urun));
     setFormAcik(true);
@@ -783,6 +805,8 @@ export default function StokPage() {
   }
 
   function stokHareketiAc(urun?: Urun, hareketTuru: StokHareketTuru = "giris") {
+    if (!stokYazmaIzniVar()) return;
+
     setHareketForm({
       urun_id: urun?.id || "",
       hareket_turu: hareketTuru,
@@ -801,6 +825,8 @@ export default function StokPage() {
 
   async function kategoriEkle(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (!stokYazmaIzniVar()) return;
 
     if (!company) {
       setErrorMessage("Firma bilgisi bulunamadı.");
@@ -849,6 +875,8 @@ export default function StokPage() {
 
   async function urunKaydet(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (!stokYazmaIzniVar()) return;
 
     if (!company) {
       setErrorMessage("Firma bilgisi bulunamadı.");
@@ -916,6 +944,8 @@ export default function StokPage() {
   }
 
   async function topluUrunleriKaydet() {
+    if (!stokYazmaIzniVar()) return;
+
     if (!company) {
       setErrorMessage("Firma bilgisi bulunamadı.");
       return;
@@ -969,6 +999,8 @@ export default function StokPage() {
 
   async function stokHareketiKaydet(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (!stokYazmaIzniVar()) return;
 
     if (!company) {
       setErrorMessage("Firma bilgisi bulunamadı.");
@@ -1077,6 +1109,7 @@ export default function StokPage() {
   }
 
   async function aktiflikDegistir(urun: Urun) {
+    if (!stokYazmaIzniVar()) return;
     if (!company) return;
 
     setMessage("");
@@ -1144,6 +1177,8 @@ export default function StokPage() {
             >
               Yenile
             </button>
+            {canManageStock ? (
+              <>
             <button
               type="button"
               onClick={topluUrunAcKapat}
@@ -1165,6 +1200,8 @@ export default function StokPage() {
             >
               Yeni Ürün
             </button>
+              </>
+            ) : null}
           </div>
         </div>
       </header>
@@ -1250,6 +1287,12 @@ export default function StokPage() {
         {errorMessage ? (
           <div className="mt-5 rounded-[1.5rem] bg-red-50 p-4 text-sm font-black text-red-700">
             {errorMessage}
+          </div>
+        ) : null}
+
+        {!canManageStock ? (
+          <div className="mt-5 rounded-[1.5rem] bg-amber-50 p-4 text-sm font-black leading-6 text-amber-800">
+            Personel hesabı stokta sadece liste ve hareketleri görüntüler. Ürün kartı, kategori, manuel stok hareketi ve aktif/pasif değişikliklerini yönetici yapar.
           </div>
         ) : null}
 
@@ -1600,16 +1643,18 @@ export default function StokPage() {
               </h2>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setKategoriFormAcik((current) => !current)}
-              className="inline-flex min-h-11 items-center justify-center rounded-full bg-slate-950 px-5 text-xs font-black text-white transition hover:bg-slate-800"
-            >
-              Kategori Ekle
-            </button>
+            {canManageStock ? (
+              <button
+                type="button"
+                onClick={() => setKategoriFormAcik((current) => !current)}
+                className="inline-flex min-h-11 items-center justify-center rounded-full bg-slate-950 px-5 text-xs font-black text-white transition hover:bg-slate-800"
+              >
+                Kategori Ekle
+              </button>
+            ) : null}
           </div>
 
-          {kategoriFormAcik ? (
+          {kategoriFormAcik && canManageStock ? (
             <form onSubmit={kategoriEkle} className="mt-5 flex flex-col gap-3 sm:flex-row">
               <input
                 value={kategoriAdi}
@@ -2258,6 +2303,7 @@ export default function StokPage() {
                                 <button
                                   type="button"
                                   onClick={() => stokHareketiAc(urun, "giris")}
+                                  disabled={!canManageStock}
                                   className="inline-flex min-h-10 items-center justify-center rounded-full bg-emerald-600 px-4 text-xs font-black text-white shadow-sm transition hover:bg-emerald-700"
                                 >
                                   Giriş
@@ -2265,6 +2311,7 @@ export default function StokPage() {
                                 <button
                                   type="button"
                                   onClick={() => stokHareketiAc(urun, "cikis")}
+                                  disabled={!canManageStock}
                                   className="inline-flex min-h-10 items-center justify-center rounded-full bg-orange-500 px-4 text-xs font-black text-white shadow-sm transition hover:bg-orange-600"
                                 >
                                   Çıkış
@@ -2275,6 +2322,7 @@ export default function StokPage() {
                             <button
                               type="button"
                               onClick={() => urunDuzenle(urun)}
+                              disabled={!canManageStock}
                               className="inline-flex min-h-10 items-center justify-center rounded-full bg-white px-4 text-xs font-black text-slate-950 shadow-sm transition hover:bg-slate-100"
                             >
                               Düzenle
@@ -2282,6 +2330,7 @@ export default function StokPage() {
                             <button
                               type="button"
                               onClick={() => aktiflikDegistir(urun)}
+                              disabled={!canManageStock}
                               className="inline-flex min-h-10 items-center justify-center rounded-full bg-slate-950 px-4 text-xs font-black text-white shadow-sm transition hover:bg-slate-800"
                             >
                               {urun.aktif ? "Pasifleştir" : "Aktifleştir"}
@@ -2307,13 +2356,15 @@ export default function StokPage() {
                 Giriş / çıkış kayıtları
               </h2>
             </div>
-            <button
-              type="button"
-              onClick={() => stokHareketiAc()}
-              className="inline-flex min-h-11 items-center justify-center rounded-full bg-slate-950 px-5 text-xs font-black text-white transition hover:bg-slate-800"
-            >
-              Yeni Hareket
-            </button>
+            {canManageStock ? (
+              <button
+                type="button"
+                onClick={() => stokHareketiAc()}
+                className="inline-flex min-h-11 items-center justify-center rounded-full bg-slate-950 px-5 text-xs font-black text-white transition hover:bg-slate-800"
+              >
+                Yeni Hareket
+              </button>
+            ) : null}
           </div>
 
           {sonHareketler.length === 0 ? (
@@ -2368,6 +2419,7 @@ export default function StokPage() {
         </div>
       </section>
 
+      {canManageStock ? (
       <div className="fixed bottom-5 right-5 z-30 flex flex-col gap-2 lg:hidden">
         <button
           type="button"
@@ -2394,6 +2446,7 @@ export default function StokPage() {
           +
         </button>
       </div>
+      ) : null}
     </main>
   );
 }

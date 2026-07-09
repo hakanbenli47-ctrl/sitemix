@@ -2,7 +2,10 @@
 
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-import { getOnMuhasebeClientContext } from "@/lib/onMuhasebe/client";
+import {
+  getOnMuhasebeClientContext,
+  type OnMuhasebeClientContext,
+} from "@/lib/onMuhasebe/client";
 import {
   getBrowserWorkYear,
   monthStartForWorkYear,
@@ -93,6 +96,11 @@ type KayitliFis = {
   aciklama: string | null;
   durum: "aktif" | "iptal";
   created_at: string;
+  lastEdit?: {
+    actorName: string;
+    actorRole: string | null;
+    createdAt: string;
+  } | null;
   cari?: {
     cari_kodu: string;
     unvan: string;
@@ -121,6 +129,17 @@ type DonemIstatistigi = {
   satis: number;
   alis: number;
   net: number;
+};
+
+type FisEditLog = {
+  entity_id: string | null;
+  actor_role: string | null;
+  created_at: string;
+  metadata: {
+    actor_name?: string;
+    actor_email?: string | null;
+    fis_no?: string;
+  } | null;
 };
 
 const fisEtiketleri: Record<FisTuru, string> = {
@@ -337,8 +356,45 @@ function donemIstatistigiHesapla(fisler: FisIstatistikSatiri[], baslangic: strin
   };
 }
 
+async function fisDuzenlemeLoglariniGetir(companyId: string, fisIds: string[]) {
+  if (fisIds.length === 0) return new Map<string, KayitliFis["lastEdit"]>();
+
+  const { data, error } = await supabaseClient
+    .from("on_muhasebe_personel_hareketleri")
+    .select("entity_id, actor_role, created_at, metadata")
+    .eq("company_id", companyId)
+    .eq("module_key", "fatura")
+    .eq("action_type", "guncelle")
+    .in("entity_id", fisIds)
+    .order("created_at", { ascending: false })
+    .limit(250);
+
+  if (error) {
+    console.warn("Fiş düzenleme logları alınamadı:", error);
+    return new Map<string, KayitliFis["lastEdit"]>();
+  }
+
+  const byFisId = new Map<string, KayitliFis["lastEdit"]>();
+
+  ((data || []) as FisEditLog[]).forEach((log) => {
+    if (!log.entity_id || byFisId.has(log.entity_id)) return;
+
+    byFisId.set(log.entity_id, {
+      actorName:
+        log.metadata?.actor_name ||
+        log.metadata?.actor_email ||
+        (log.actor_role === "owner" ? "Yönetici" : "Personel"),
+      actorRole: log.actor_role,
+      createdAt: log.created_at,
+    });
+  });
+
+  return byFisId;
+}
+
 export default function FaturaFisPage() {
   const [company, setCompany] = useState<Company | null>(null);
+  const [clientContext, setClientContext] = useState<OnMuhasebeClientContext | null>(null);
   const [cariler, setCariler] = useState<CariHesap[]>([]);
   const [urunler, setUrunler] = useState<Urun[]>([]);
   const [sonFisler, setSonFisler] = useState<KayitliFis[]>([]);
@@ -489,6 +545,7 @@ export default function FaturaFisPage() {
       const companyData = context.company;
 
       setCompany(companyData as Company);
+      setClientContext(context);
 
       const [cariResponse, urunResponse, fisResponse, istatistikResponse] = await Promise.all([
         supabaseClient
@@ -525,7 +582,6 @@ export default function FaturaFisPage() {
           .eq("durum", "aktif")
           .gte("fis_tarihi", donemler.yil.baslangic)
           .lte("fis_tarihi", donemler.yil.bitis)
-          .order("fis_tarihi", { ascending: false })
           .limit(5000),
       ]);
 
@@ -539,11 +595,17 @@ export default function FaturaFisPage() {
       setCariler((cariResponse.data || []) as CariHesap[]);
       setUrunler((urunResponse.data || []) as Urun[]);
       setIstatistikFisleri((istatistikResponse.data || []) as FisIstatistikSatiri[]);
+      const fisRows = (fisResponse.data || []) as (Omit<KayitliFis, "cari"> & {
+        cari_hesaplar?: KayitliFis["cari"] | KayitliFis["cari"][];
+      })[];
+      const editLogs = await fisDuzenlemeLoglariniGetir(
+        companyData.id,
+        fisRows.map((fis) => fis.id),
+      );
       setSonFisler(
-        ((fisResponse.data || []) as (Omit<KayitliFis, "cari"> & {
-          cari_hesaplar?: KayitliFis["cari"] | KayitliFis["cari"][];
-        })[]).map((fis) => ({
+        fisRows.map((fis) => ({
           ...fis,
+          lastEdit: editLogs.get(fis.id) || null,
           cari: Array.isArray(fis.cari_hesaplar) ? fis.cari_hesaplar[0] || null : fis.cari_hesaplar || null,
         })),
       );
@@ -707,6 +769,41 @@ export default function FaturaFisPage() {
     return hatalar;
   }
 
+  async function fisDuzenlemeLoguYaz(fisId: string, fisNo: string, genelToplam: number) {
+    if (!company) return;
+
+    try {
+      const context = clientContext || (await getOnMuhasebeClientContext());
+      const actorName =
+        context.profile?.full_name ||
+        context.user.email ||
+        (context.isOwner ? "Yönetici" : "Personel");
+
+      const { error } = await supabaseClient.from("on_muhasebe_personel_hareketleri").insert({
+        company_id: company.id,
+        actor_user_id: context.user.id,
+        actor_role: context.role,
+        module_key: "fatura",
+        action_type: "guncelle",
+        title: "Fiş düzenlendi",
+        detail: `${fisNo} fişi güncellendi.`,
+        entity_table: "fatura_fisleri",
+        entity_id: fisId,
+        amount: genelToplam,
+        movement_date: form.fis_tarihi,
+        metadata: {
+          fis_no: fisNo,
+          actor_name: actorName,
+          actor_email: context.user.email,
+        },
+      });
+
+      if (error) throw error;
+    } catch (error) {
+      console.warn("Fiş düzenleme logu yazılamadı:", error);
+    }
+  }
+
   async function fisiKaydet(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setErrorMessage("");
@@ -758,6 +855,11 @@ export default function FaturaFisPage() {
       if (error) throw error;
 
       const sonuc = data as RpcFisSonucu;
+      const editedFisId = duzenlenenFisId;
+      const editActorName =
+        clientContext?.profile?.full_name ||
+        clientContext?.user.email ||
+        (clientContext?.isOwner ? "Yönetici" : "Personel");
       const kayitliFis: KayitliFis = {
         id: sonuc.id,
         company_id: company.id,
@@ -774,6 +876,13 @@ export default function FaturaFisPage() {
         aciklama: form.aciklama.trim() || null,
         durum: "aktif",
         created_at: new Date().toISOString(),
+        lastEdit: editedFisId
+          ? {
+              actorName: editActorName,
+              actorRole: clientContext?.role || null,
+              createdAt: new Date().toISOString(),
+            }
+          : null,
         cari: {
           cari_kodu: seciliCari.cari_kodu,
           unvan: seciliCari.unvan,
@@ -794,6 +903,10 @@ export default function FaturaFisPage() {
             satir_toplami: satir.satirToplami,
           })),
       };
+
+      if (editedFisId) {
+        await fisDuzenlemeLoguYaz(editedFisId, sonuc.fis_no, Number(sonuc.genel_toplam || 0));
+      }
 
       setSonKayitliFis(kayitliFis);
       setSuccessMessage(
@@ -1682,6 +1795,11 @@ setForm({
                           {fisEtiketleri[fis.fis_turu]} · {tarihFormatla(fis.fis_tarihi)} · {fis.durum === "iptal" ? "İptal" : "Aktif"}
                         </p>
                         <p className="mt-1 text-xs font-bold text-slate-500">{fis.cari?.unvan || "-"}</p>
+                        {fis.lastEdit ? (
+                          <p className="mt-1 text-xs font-black text-amber-600">
+                            Son düzenleyen: {fis.lastEdit.actorName} · {tarihFormatla(fis.lastEdit.createdAt)}
+                          </p>
+                        ) : null}
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-black">{paraFormatla(Number(fis.genel_toplam || 0))}</p>
@@ -1816,6 +1934,11 @@ setForm({
                 <div>
                   <p className="text-sm font-black text-slate-950">{fis.cari?.unvan || "-"}</p>
                   <p className="mt-1 text-xs font-bold text-slate-400">{fis.cari?.cari_kodu || "Cari kodu yok"}</p>
+                  {fis.lastEdit ? (
+                    <p className="mt-1 text-xs font-black text-amber-600">
+                      Son düzenleyen: {fis.lastEdit.actorName}
+                    </p>
+                  ) : null}
                 </div>
                 <div>
                   <span

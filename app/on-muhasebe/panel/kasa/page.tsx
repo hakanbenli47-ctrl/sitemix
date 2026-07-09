@@ -334,6 +334,7 @@ function kasaHareketBasligi(hareketTuru: KasaHareket["hareket_turu"]) {
 
 export default function KasaPage() {
   const [company, setCompany] = useState<Company | null>(null);
+  const [canManageAccounts, setCanManageAccounts] = useState(false);
   const [kasaHesaplari, setKasaHesaplari] = useState<KasaHesabi[]>([]);
   const [cariler, setCariler] = useState<CariHesap[]>([]);
   const [kategoriler, setKategoriler] = useState<GelirGiderKategori[]>([]);
@@ -521,6 +522,7 @@ export default function KasaPage() {
       const companyData = context.company;
 
       setCompany(companyData as Company);
+      setCanManageAccounts(context.isOwner);
 
       const { data: hesapData, error: hesapError } = await supabaseClient
         .from("kasa_hesaplari")
@@ -534,6 +536,10 @@ export default function KasaPage() {
       }
 
       let hesaplar = (hesapData || []) as KasaHesabi[];
+
+      if (hesaplar.length === 0 && !context.isOwner) {
+        throw new Error("Kasa hesabı henüz oluşturulmamış. Yönetici ilk kasa/banka hesabını açmalıdır.");
+      }
 
       if (hesaplar.length === 0) {
         const { data: createdAccounts, error: createAccountError } = await supabaseClient
@@ -746,6 +752,10 @@ export default function KasaPage() {
     event.preventDefault();
     setErrorMessage("");
     setSuccessMessage("");
+    if (!canManageAccounts) {
+      setErrorMessage("Kasa/banka hesabını sadece yönetici oluşturabilir. Personel para hareketi ekleyebilir ve hatalı hareketi iptal edebilir.");
+      return;
+    }
 
     if (!company) {
       setErrorMessage("Firma bilgisi bulunamadı.");
@@ -1004,13 +1014,15 @@ export default function KasaPage() {
             >
               Yenile
             </button>
-            <button
+            {canManageAccounts ? (
+              <button
               type="button"
               onClick={() => setShowAccountForm((value) => !value)}
               className="inline-flex min-h-11 items-center justify-center rounded-full bg-slate-950 px-5 text-xs font-black text-white transition hover:bg-slate-800"
             >
               Hesap Ekle
-            </button>
+              </button>
+            ) : null}
           </div>
         </div>
       </header>
@@ -1318,7 +1330,7 @@ export default function KasaPage() {
                 </div>
               </div>
 
-              {showAccountForm ? (
+              {showAccountForm && canManageAccounts ? (
                 <form onSubmit={hesapOlustur} className="mt-5 grid gap-3 rounded-[1.5rem] bg-slate-100 p-4">
                   <input
                     value={accountForm.hesapAdi}

@@ -9,6 +9,7 @@ create table if not exists public.on_muhasebe_settings (
   low_stock_alert_enabled boolean not null default true,
   receipt_prefix text not null default 'FIS',
   whatsapp_support_enabled boolean not null default true,
+  active_work_year integer,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -17,7 +18,8 @@ alter table public.on_muhasebe_settings
   add column if not exists default_kdv_rate numeric(5,2) not null default 20,
   add column if not exists low_stock_alert_enabled boolean not null default true,
   add column if not exists receipt_prefix text not null default 'FIS',
-  add column if not exists whatsapp_support_enabled boolean not null default true;
+  add column if not exists whatsapp_support_enabled boolean not null default true,
+  add column if not exists active_work_year integer;
 
 create table if not exists public.on_muhasebe_backup_logs (
   id uuid primary key default gen_random_uuid(),
@@ -33,6 +35,22 @@ create table if not exists public.on_muhasebe_backup_logs (
 
 create index if not exists on_muhasebe_backup_logs_company_created_idx
   on public.on_muhasebe_backup_logs(company_id, created_at desc);
+
+create table if not exists public.on_muhasebe_restore_logs (
+  id uuid primary key default gen_random_uuid(),
+  company_id uuid not null references public.companies(id) on delete cascade,
+  status text not null check (status in ('success', 'failed')),
+  file_name text not null,
+  row_count integer not null default 0,
+  backup_exported_at timestamptz,
+  error_message text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists on_muhasebe_restore_logs_company_created_idx
+  on public.on_muhasebe_restore_logs(company_id, created_at desc);
+
+alter table public.on_muhasebe_restore_logs enable row level security;
 
 create or replace function public.set_on_muhasebe_settings_updated_at()
 returns trigger

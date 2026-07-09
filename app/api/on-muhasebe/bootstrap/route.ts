@@ -1,15 +1,21 @@
 import { NextResponse } from "next/server";
 import {
+  getAuthenticatedUser,
   getOnMuhasebeContext,
+  isOnMuhasebeAccessError,
   isMissingTableError,
 } from "@/lib/onMuhasebe/auth";
 import {
   getOnMuhasebeDaysLeft,
-  isTrialExpired,
+  isSubscriptionExpired,
   onMuhasebePlans,
   onMuhasebeStatusLabels,
   type OnMuhasebeSubscriptionStatus,
 } from "@/lib/onMuhasebe/plans";
+import {
+  calculateOnMuhasebeSubscriptionBilling,
+  getActiveStaffCount,
+} from "@/lib/onMuhasebe/billing";
 import { getWorkYearFromRequest } from "@/lib/onMuhasebe/workYear";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -23,12 +29,87 @@ type SubscriptionRecord = {
   status: OnMuhasebeSubscriptionStatus;
   trial_started_at: string | null;
   trial_ends_at: string | null;
+  billing_period_months: number | null;
   monthly_price: number;
   total_price: number;
   saving_amount: number;
   currency: string;
 };
 
+type PassiveMembershipRecord = {
+  company_id: string;
+  role: "owner" | "staff";
+};
+
+type PassiveCompanyRecord = {
+  id: string;
+  owner_user_id: string;
+  company_code: string | null;
+  name: string;
+  sector: string | null;
+  phone: string | null;
+};
+
+async function getPassiveAccountSnapshot(request: Request) {
+  try {
+    const user = await getAuthenticatedUser(request);
+    const { data: membership, error: membershipError } = await supabaseAdmin
+      .from("on_muhasebe_company_users")
+      .select("company_id, role")
+      .eq("user_id", user.id)
+      .maybeSingle<PassiveMembershipRecord>();
+
+    if (membershipError || !membership) return null;
+
+    const [{ data: company }, { data: subscription }] = await Promise.all([
+      supabaseAdmin
+        .from("companies")
+        .select("id, owner_user_id, company_code, name, sector, phone")
+        .eq("id", membership.company_id)
+        .maybeSingle<PassiveCompanyRecord>(),
+      supabaseAdmin
+        .from("subscriptions")
+        .select(
+          "id, company_id, user_id, plan, status, trial_started_at, trial_ends_at, billing_period_months, monthly_price, total_price, saving_amount, currency",
+        )
+        .eq("company_id", membership.company_id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle<SubscriptionRecord>(),
+    ]);
+
+    if (!company || !subscription) return null;
+
+    const plan = onMuhasebePlans[subscription.plan];
+    const activeStaffCount = await getActiveStaffCount(membership.company_id);
+    const billing = calculateOnMuhasebeSubscriptionBilling(
+      subscription,
+      activeStaffCount,
+    );
+
+    return {
+      company,
+      role: membership.role,
+      subscription: {
+        ...subscription,
+        billing_period_months: billing.billingPeriodMonths,
+        monthly_price: billing.monthlyPrice,
+        total_price: billing.totalPrice,
+        saving_amount: billing.savingAmount,
+        staff_count: billing.staffCount,
+        staff_monthly_price: billing.staffMonthlyPrice,
+        staff_monthly_total: billing.staffMonthlyTotal,
+        statusLabel: onMuhasebeStatusLabels.cancelled,
+        planLabel: plan?.name || subscription.plan,
+        expiresAt: subscription.trial_ends_at,
+        daysLeft: 0,
+        trialDaysLeft: 0,
+      },
+    };
+  } catch {
+    return null;
+  }
+}
 async function getPeriods(companyId: string) {
   const { data, error } = await supabaseAdmin
     .from("on_muhasebe_calisma_donemleri")
@@ -57,7 +138,7 @@ export async function GET(request: Request) {
         supabaseAdmin
           .from("subscriptions")
           .select(
-            "id, company_id, user_id, plan, status, trial_started_at, trial_ends_at, monthly_price, total_price, saving_amount, currency",
+            "id, company_id, user_id, plan, status, trial_started_at, trial_ends_at, billing_period_months, monthly_price, total_price, saving_amount, currency",
           )
           .eq("company_id", context.company.id)
           .order("created_at", { ascending: false })
@@ -93,12 +174,12 @@ export async function GET(request: Request) {
     }
 
     let normalizedStatus = subscription.status;
-    const expired = isTrialExpired(
+    const expired = isSubscriptionExpired(
       subscription.status,
       subscription.trial_ends_at,
     );
 
-    if (expired && subscription.status === "trial") {
+    if (expired && (subscription.status === "trial" || subscription.status === "active")) {
       normalizedStatus = "expired";
 
       await supabaseAdmin
@@ -108,10 +189,15 @@ export async function GET(request: Request) {
     }
 
     const plan = onMuhasebePlans[subscription.plan];
+    const activeStaffCount = await getActiveStaffCount(context.company.id);
+    const billing = calculateOnMuhasebeSubscriptionBilling(
+      subscription,
+      activeStaffCount,
+    );
 
     return NextResponse.json({
       allowed: !expired,
-      reason: expired ? "trial_expired" : null,
+      reason: expired ? "subscription_expired" : null,
       user: {
         id: context.user.id,
         email: context.user.email || null,
@@ -124,9 +210,18 @@ export async function GET(request: Request) {
       workYear,
       subscription: {
         ...subscription,
+        billing_period_months: billing.billingPeriodMonths,
+        monthly_price: billing.monthlyPrice,
+        total_price: billing.totalPrice,
+        saving_amount: billing.savingAmount,
+        staff_count: billing.staffCount,
+        staff_monthly_price: billing.staffMonthlyPrice,
+        staff_monthly_total: billing.staffMonthlyTotal,
         status: normalizedStatus,
         statusLabel: onMuhasebeStatusLabels[normalizedStatus],
         planLabel: plan?.name || subscription.plan,
+        expiresAt: subscription.trial_ends_at,
+        daysLeft: getOnMuhasebeDaysLeft(subscription.trial_ends_at),
         trialDaysLeft: getOnMuhasebeDaysLeft(subscription.trial_ends_at),
       },
       periods: {
@@ -137,6 +232,27 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
+    if (isOnMuhasebeAccessError(error)) {
+      const snapshot = await getPassiveAccountSnapshot(request);
+
+      return NextResponse.json({
+        allowed: false,
+        reason: error.reason,
+        message: error.message,
+        role: snapshot?.role || "owner",
+        company: snapshot?.company || null,
+        subscription: snapshot?.subscription || {
+          status: "cancelled",
+          statusLabel: "Pasif",
+          planLabel: "Panel erişimi",
+          trial_ends_at: null,
+          expiresAt: null,
+          daysLeft: 0,
+          trialDaysLeft: 0,
+        },
+      });
+    }
+
     return NextResponse.json(
       {
         message:

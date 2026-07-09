@@ -19,6 +19,7 @@ type Settings = {
   low_stock_alert_enabled: boolean;
   receipt_prefix: string;
   whatsapp_support_enabled: boolean;
+  active_work_year: number | null;
 };
 
 type StaffOption = {
@@ -83,6 +84,7 @@ type DevirDetail = {
 type PeriodResponse = {
   setupRequired?: boolean;
   periods?: OnMuhasebeWorkPeriod[];
+  selectedYear?: number | null;
   message?: string;
 };
 
@@ -104,6 +106,7 @@ const emptySettings: Settings = {
   low_stock_alert_enabled: true,
   receipt_prefix: "FIS",
   whatsapp_support_enabled: true,
+  active_work_year: null,
 };
 
 const emptySummary: ActivitySummary = {
@@ -257,10 +260,20 @@ export default function OnMuhasebeAyarlarPage() {
       throw new Error(result?.message || "Ayarlar yüklenemedi.");
     }
 
-    setSettings(result.settings || emptySettings);
+    const loadedSettings = (result.settings || emptySettings) as Settings;
+    const selectedWorkYear = Number(loadedSettings.active_work_year || 0);
+
+    setSettings(loadedSettings);
+
+    if (selectedWorkYear && selectedWorkYear !== workYear) {
+      setBrowserWorkYear(selectedWorkYear);
+      clearWorkYearCaches();
+      setWorkYear(selectedWorkYear);
+    }
+
     setSetupRequired(Boolean(result.setupRequired));
     setMessage(result.message || "");
-  }, [authHeaders]);
+  }, [authHeaders, workYear]);
 
   const loadWorkPeriods = useCallback(async () => {
     try {
@@ -422,6 +435,7 @@ export default function OnMuhasebeAyarlarPage() {
           lowStockAlertEnabled: settings.low_stock_alert_enabled,
           receiptPrefix: settings.receipt_prefix,
           whatsappSupportEnabled: settings.whatsapp_support_enabled,
+          activeWorkYear: workYear,
         }),
       });
       const result = await response.json().catch(() => null);
@@ -507,7 +521,7 @@ export default function OnMuhasebeAyarlarPage() {
     }
   }
 
-  function handleActiveWorkYearChange(nextYearValue: string) {
+  async function handleActiveWorkYearChange(nextYearValue: string) {
     const nextYear = Number(nextYearValue);
     const exists = periodOptions.some((period) => period.yil === nextYear);
 
@@ -517,7 +531,49 @@ export default function OnMuhasebeAyarlarPage() {
     clearWorkYearCaches();
     setWorkYear(nextYear);
     setSourceYear(String(nextYear));
-    setMessage(`${nextYear} çalışma dönemine geçildi. Panel ve modüller bu dönemin verilerini gösterecek.`);
+    setSettings((current) => ({ ...current, active_work_year: nextYear }));
+    setMessage(`${nextYear} çalışma dönemine geçildi. Girişte panel bu dönemle açılacak.`);
+    setErrorMessage("");
+
+    try {
+      const headers = await authHeaders();
+      const response = await fetch("/api/on-muhasebe/settings", {
+        method: "PUT",
+        headers,
+        body: JSON.stringify({
+          autoBackupEnabled: settings.auto_backup_enabled,
+          backupEmail: settings.backup_email,
+          backupFrequencyHours: settings.backup_frequency_hours,
+          defaultKdvRate: settings.default_kdv_rate,
+          lowStockAlertEnabled: settings.low_stock_alert_enabled,
+          receiptPrefix: settings.receipt_prefix,
+          whatsappSupportEnabled: settings.whatsapp_support_enabled,
+          activeWorkYear: nextYear,
+        }),
+      });
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(result?.message || "Aktif dönem kaydedilemedi.");
+      }
+
+      if (result?.settings) {
+        setSettings(result.settings);
+      }
+
+      setSetupRequired(Boolean(result?.setupRequired));
+      setMessage(
+        result?.setupRequired
+          ? result.message || "Aktif dönem yerel olarak değişti. Kalıcı kayıt için SQL güncellemesi gerekli."
+          : `${nextYear} çalışma dönemi kaydedildi. Bundan sonra girişte bu dönem açılacak.`,
+      );
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Aktif dönem kaydedilemedi.",
+      );
+    }
+
+    return;
   }
 
   if (isLoading) {

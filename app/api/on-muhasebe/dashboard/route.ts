@@ -1,6 +1,20 @@
 import { NextResponse } from "next/server";
-import { getOnMuhasebeContext, isMissingTableError } from "@/lib/onMuhasebe/auth";
-import { getOnMuhasebeDaysLeft } from "@/lib/onMuhasebe/plans";
+import {
+  getOnMuhasebeContext,
+  isMissingTableError,
+  isOnMuhasebeAccessError,
+} from "@/lib/onMuhasebe/auth";
+import {
+  getOnMuhasebeDaysLeft,
+  isSubscriptionExpired,
+  onMuhasebePlans,
+  onMuhasebeStatusLabels,
+  type OnMuhasebeSubscriptionStatus,
+} from "@/lib/onMuhasebe/plans";
+import {
+  calculateOnMuhasebeSubscriptionBilling,
+  getActiveStaffCount,
+} from "@/lib/onMuhasebe/billing";
 import {
   getWorkYearFromRequest,
   monthStartForWorkYear,
@@ -67,6 +81,19 @@ type FisKalemRow = {
   urun_adi: string;
   miktar: number | null;
   satir_toplami: number | null;
+};
+
+type SubscriptionRow = {
+  id: string;
+  plan: keyof typeof onMuhasebePlans;
+  status: OnMuhasebeSubscriptionStatus;
+  trial_started_at: string | null;
+  trial_ends_at: string | null;
+  billing_period_months: number | null;
+  monthly_price: number | null;
+  total_price: number | null;
+  saving_amount: number | null;
+  currency: string | null;
 };
 
 function kasaGirisiMi(type: string) {
@@ -149,12 +176,12 @@ export async function GET(request: Request) {
       supabaseAdmin
         .from("subscriptions")
         .select(
-          "id, plan, status, trial_started_at, trial_ends_at, monthly_price, total_price, saving_amount, currency",
+          "id, plan, status, trial_started_at, trial_ends_at, billing_period_months, monthly_price, total_price, saving_amount, currency",
         )
         .eq("company_id", company.id)
         .order("created_at", { ascending: false })
         .limit(1)
-        .maybeSingle(),
+        .maybeSingle<SubscriptionRow>(),
       supabaseAdmin
         .from("cari_hesaplar")
         .select("id, cari_turu, unvan, bakiye, aktif")
@@ -228,6 +255,61 @@ export async function GET(request: Request) {
     if (!subscriptionResponse.data) {
       throw new Error("Paket bilgisi bulunamadı.");
     }
+    const subscription = subscriptionResponse.data;
+    const activeStaffCount = await getActiveStaffCount(company.id);
+    const billing = calculateOnMuhasebeSubscriptionBilling(
+      subscription,
+      activeStaffCount,
+    );
+    const subscriptionBlocked = isSubscriptionExpired(
+      subscription.status,
+      subscription.trial_ends_at,
+    );
+
+    if (subscriptionBlocked) {
+      if (subscription.status === "trial" || subscription.status === "active") {
+        await supabaseAdmin
+          .from("subscriptions")
+          .update({ status: "expired" })
+          .eq("id", subscription.id);
+      }
+
+      const normalizedStatus =
+        subscription.status === "trial" || subscription.status === "active"
+          ? "expired"
+          : subscription.status;
+      const plan = onMuhasebePlans[subscription.plan];
+
+      return NextResponse.json(
+        {
+          allowed: false,
+          reason: "subscription_expired",
+          role: context.role,
+          message:
+            context.role === "staff"
+              ? "Firmanın aylık paketi sonlanmıştır. Ödeme yapıldığında sisteminiz açılacaktır."
+              : "Paket süresi dolmuş veya firma erişimi pasif.",
+          subscription: {
+            ...subscription,
+            billing_period_months: billing.billingPeriodMonths,
+            monthly_price: billing.monthlyPrice,
+            total_price: billing.totalPrice,
+            saving_amount: billing.savingAmount,
+            staff_count: billing.staffCount,
+            staff_monthly_price: billing.staffMonthlyPrice,
+            staff_monthly_total: billing.staffMonthlyTotal,
+            status: normalizedStatus,
+            statusLabel: onMuhasebeStatusLabels[normalizedStatus],
+            planLabel: plan?.name || subscription.plan,
+            expiresAt: subscription.trial_ends_at,
+            daysLeft: getOnMuhasebeDaysLeft(subscription.trial_ends_at),
+            trialDaysLeft: getOnMuhasebeDaysLeft(subscription.trial_ends_at),
+          },
+        },
+        { status: 403 },
+      );
+    }
+
     if (cariResponse.error) throw cariResponse.error;
     if (urunResponse.error) throw urunResponse.error;
     if (kasaHesapResponse.error) throw kasaHesapResponse.error;
@@ -364,6 +446,15 @@ export async function GET(request: Request) {
       isOwner: context.isOwner,
       subscription: {
         ...subscriptionResponse.data,
+        billing_period_months: billing.billingPeriodMonths,
+        monthly_price: billing.monthlyPrice,
+        total_price: billing.totalPrice,
+        saving_amount: billing.savingAmount,
+        staff_count: billing.staffCount,
+        staff_monthly_price: billing.staffMonthlyPrice,
+        staff_monthly_total: billing.staffMonthlyTotal,
+        expiresAt: subscriptionResponse.data.trial_ends_at,
+        daysLeft: getOnMuhasebeDaysLeft(subscriptionResponse.data.trial_ends_at),
         trialDaysLeft: getOnMuhasebeDaysLeft(subscriptionResponse.data.trial_ends_at),
       },
       summary: {
@@ -406,6 +497,17 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
+    if (isOnMuhasebeAccessError(error)) {
+      return NextResponse.json(
+        {
+          allowed: false,
+          reason: error.reason,
+          message: error.message,
+        },
+        { status: error.status },
+      );
+    }
+
     return NextResponse.json(
       {
         message:

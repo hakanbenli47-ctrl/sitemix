@@ -4,7 +4,11 @@ import {
   isMissingTableError,
   requireOwner,
 } from "@/lib/onMuhasebe/auth";
-import { currentCalendarYear, normalizeWorkYear } from "@/lib/onMuhasebe/workYear";
+import {
+  currentCalendarYear,
+  normalizeWorkYear,
+  pickRegisteredWorkYear,
+} from "@/lib/onMuhasebe/workYear";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
@@ -31,6 +35,14 @@ function cleanYear(value: unknown) {
   return normalizeWorkYear(value, currentCalendarYear());
 }
 
+function isMissingActiveWorkYearColumn(error: unknown) {
+  const candidate = error as { code?: string; message?: string } | null;
+  return (
+    candidate?.code === "42703" ||
+    String(candidate?.message || "").includes("active_work_year")
+  );
+}
+
 async function listPeriods(companyId: string) {
   const { data, error } = await supabaseAdmin
     .from("on_muhasebe_calisma_donemleri")
@@ -44,15 +56,52 @@ async function listPeriods(companyId: string) {
   return (data || []) as WorkPeriodRow[];
 }
 
+async function readSelectedWorkYear(companyId: string) {
+  const { data, error } = await supabaseAdmin
+    .from("on_muhasebe_settings")
+    .select("active_work_year")
+    .eq("company_id", companyId)
+    .maybeSingle<{ active_work_year: number | null }>();
+
+  if (!error) return data?.active_work_year ?? null;
+  if (isMissingTableError(error) || isMissingActiveWorkYearColumn(error)) return null;
+  throw error;
+}
+
+async function saveSelectedWorkYear(companyId: string, year: number) {
+  const { error } = await supabaseAdmin
+    .from("on_muhasebe_settings")
+    .upsert(
+      {
+        company_id: companyId,
+        active_work_year: year,
+      },
+      { onConflict: "company_id" },
+    );
+
+  if (error && !isMissingTableError(error) && !isMissingActiveWorkYearColumn(error)) {
+    throw error;
+  }
+}
+
+function selectedYearFor(periods: WorkPeriodRow[], configuredYear: number | null) {
+  return pickRegisteredWorkYear(
+    periods,
+    configuredYear || currentCalendarYear(),
+  );
+}
+
 export async function GET(request: Request) {
   try {
     const context = await getOnMuhasebeContext(request);
     const periods = await listPeriods(context.company.id);
+    const configuredYear = await readSelectedWorkYear(context.company.id);
 
     return NextResponse.json({
       setupRequired: false,
       canCreatePeriod: context.isOwner,
       periods,
+      selectedYear: selectedYearFor(periods, configuredYear),
     });
   } catch (error) {
     if (isMissingTableError(error)) {
@@ -60,6 +109,7 @@ export async function GET(request: Request) {
         setupRequired: true,
         canCreatePeriod: false,
         periods: [],
+        selectedYear: null,
         message:
           "Çalışma dönemi tablosu henüz kurulmamış. Supabase SQL dosyasını çalıştırınca dönem seçimi aktif olur.",
       });
@@ -100,6 +150,7 @@ export async function POST(request: Request) {
 
     if (error) throw error;
 
+    await saveSelectedWorkYear(context.company.id, year);
     const periods = await listPeriods(context.company.id);
 
     return NextResponse.json({

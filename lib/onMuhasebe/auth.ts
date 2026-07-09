@@ -39,6 +39,27 @@ export const defaultStaffPermissions: OnMuhasebePermissions = {
 
 export type OnMuhasebeUserRole = "owner" | "staff";
 
+export class OnMuhasebeAccessError extends Error {
+  reason: "account_passive" | "unauthorized";
+  status: number;
+
+  constructor(
+    message: string,
+    reason: "account_passive" | "unauthorized" = "unauthorized",
+    status = 403,
+  ) {
+    super(message);
+    this.name = "OnMuhasebeAccessError";
+    this.reason = reason;
+    this.status = status;
+  }
+}
+export function isOnMuhasebeAccessError(
+  error: unknown,
+): error is OnMuhasebeAccessError {
+  return error instanceof OnMuhasebeAccessError;
+}
+
 type MembershipRecord = {
   id: string;
   company_id: string;
@@ -142,7 +163,7 @@ export async function getOnMuhasebeContext(request: Request) {
   }
 
   if (membership && membership.status !== "active") {
-    throw new Error("Personel hesabı pasif durumda.");
+    throw new OnMuhasebeAccessError("Bu hesabın panel erişimi pasif durumda.", "account_passive");
   }
 
   if (membership) {
@@ -154,6 +175,27 @@ export async function getOnMuhasebeContext(request: Request) {
 
     if (companyError || !company) {
       throw new Error("İşletme bilgisi bulunamadı.");
+    }
+
+    if (membership.role === "staff") {
+      const { data: ownerMembership, error: ownerMembershipError } =
+        await supabaseAdmin
+          .from("on_muhasebe_company_users")
+          .select("status")
+          .eq("company_id", membership.company_id)
+          .eq("role", "owner")
+          .maybeSingle<{ status: "active" | "passive" }>();
+
+      if (ownerMembershipError && !isMissingTableError(ownerMembershipError)) {
+        throw ownerMembershipError;
+      }
+
+      if (ownerMembership && ownerMembership.status !== "active") {
+        throw new OnMuhasebeAccessError(
+          "Firmanın aylık paketi sonlanmıştır. Ödeme yapıldığında sisteminiz açılacaktır.",
+          "account_passive",
+        );
+      }
     }
 
     const permissions = normalizePermissions(
@@ -196,6 +238,8 @@ export function isMissingTableError(error: unknown) {
 
   return (
     supabaseError.code === "42P01" ||
-    Boolean(supabaseError.message?.toLowerCase().includes("does not exist"))
+    supabaseError.code === "PGRST205" ||
+    Boolean(supabaseError.message?.toLowerCase().includes("does not exist")) ||
+    Boolean(supabaseError.message?.toLowerCase().includes("schema cache"))
   );
 }

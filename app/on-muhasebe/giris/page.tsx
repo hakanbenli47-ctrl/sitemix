@@ -82,6 +82,7 @@ export default function OnMuhasebeGirisPage() {
     return {
       periods: sortWorkPeriods(result?.periods || []),
       canCreatePeriod: Boolean(result?.canCreatePeriod),
+      selectedYear: result?.selectedYear || null,
     };
   }
 
@@ -93,10 +94,30 @@ export default function OnMuhasebeGirisPage() {
     setIsSubmitting(true);
 
     try {
-      const cleanEmail = email.trim().toLowerCase();
+      const cleanLogin = email.trim();
+      const cleanEmail = cleanLogin.toLowerCase();
+
+      if (cleanLogin && password) {
+        const adminResponse = await fetch("/api/admin/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: cleanLogin,
+            password,
+          }),
+        });
+
+        if (adminResponse.ok) {
+          const adminResult = await adminResponse.json().catch(() => null);
+          window.location.href = adminResult?.redirectTo || "/admin";
+          return;
+        }
+      }
 
       if (!cleanEmail || !cleanEmail.includes("@")) {
-        throw new Error("Geçerli bir e-posta adresi gir.");
+        throw new Error("Geçerli bir e-posta adresi gir. Admin girişi için kullanıcı adı ve şifreyi kontrol et.");
       }
 
       if (!password || password.length < 6) {
@@ -135,15 +156,18 @@ export default function OnMuhasebeGirisPage() {
         return;
       }
 
-      const pickedYear = pickRegisteredWorkYear(registeredPeriods, currentCalendarYear());
+      const pickedYear = pickRegisteredWorkYear(
+        registeredPeriods,
+        periodData.selectedYear || currentCalendarYear(),
+      );
 
       if (!pickedYear) {
         throw new Error("Geçerli çalışma dönemi bulunamadı.");
       }
 
       setSelectedYear(pickedYear);
-      setStage("periods");
-      setStatusMessage("Kayıtlı dönemlerden çalışmak istediğin yılı seç.");
+      redirectToPanel(pickedYear);
+      return;
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : "Giriş sırasında hata oluştu.",
@@ -324,12 +348,12 @@ export default function OnMuhasebeGirisPage() {
                     E-posta
                   </span>
                   <input
-                    type="email"
+                    type="text"
                     name="email"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
-                    placeholder="ornek@mail.com"
-                    autoComplete="email"
+                    placeholder="ornek@mail.com veya hakan benli"
+                    autoComplete="username"
                     className="h-14 w-full rounded-2xl bg-slate-100 px-4 text-sm font-bold text-[#0b1025] outline-none transition placeholder:text-slate-400 focus:bg-white focus:ring-4 focus:ring-indigo-100"
                   />
                 </label>

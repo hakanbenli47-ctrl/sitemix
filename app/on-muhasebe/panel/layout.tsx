@@ -27,10 +27,20 @@ type PeriodResponse = {
 type BootstrapResponse = OnMuhasebeClientContext & {
   allowed: boolean;
   message?: string;
+  company?:
+    | (OnMuhasebeClientContext["company"] & {
+        id?: string;
+        company_code?: string | null;
+      })
+    | null;
   subscription?: {
     planLabel?: string;
     trial_ends_at?: string | null;
     statusLabel?: string;
+    monthly_price?: number | null;
+    total_price?: number | null;
+    currency?: string | null;
+    billing_period_months?: number | null;
   };
   periods?: PeriodResponse & {
     canCreatePeriod?: boolean;
@@ -59,36 +69,40 @@ function bootstrapCacheKey(userId: string) {
   return `${BOOTSTRAP_CACHE_PREFIX}:${userId}`;
 }
 
-function readCachedBootstrap(userId: string) {
-  if (typeof window === "undefined") return null;
-
-  try {
-    const raw = window.sessionStorage.getItem(bootstrapCacheKey(userId));
-    if (!raw) return null;
-
-    const cached = JSON.parse(raw) as CachedBootstrap;
-    if (!cached?.data || cached.expiresAt < Date.now()) {
-      window.sessionStorage.removeItem(bootstrapCacheKey(userId));
-      return null;
-    }
-
-    return cached.data;
-  } catch {
-    window.sessionStorage.removeItem(bootstrapCacheKey(userId));
-    return null;
-  }
-}
-
 function writeCachedBootstrap(userId: string, data: BootstrapResponse) {
   if (typeof window === "undefined" || !data.allowed) return;
+
+  const subscriptionEnd = new Date(data.subscription?.trial_ends_at || "").getTime();
+  const cacheExpiresAt = Number.isFinite(subscriptionEnd)
+    ? Math.min(Date.now() + BOOTSTRAP_CACHE_TTL_MS, subscriptionEnd)
+    : Date.now() + BOOTSTRAP_CACHE_TTL_MS;
 
   window.sessionStorage.setItem(
     bootstrapCacheKey(userId),
     JSON.stringify({
-      expiresAt: Date.now() + BOOTSTRAP_CACHE_TTL_MS,
+      expiresAt: cacheExpiresAt,
       data,
     } satisfies CachedBootstrap),
   );
+}
+
+function clearOnMuhasebeSessionCache() {
+  if (typeof window === "undefined") return;
+
+  for (let index = window.sessionStorage.length - 1; index >= 0; index -= 1) {
+    const key = window.sessionStorage.key(index);
+    if (
+      key?.startsWith(BOOTSTRAP_CACHE_PREFIX) ||
+      key?.startsWith("onMuhasebeClientContext") ||
+      key?.startsWith("onMuhasebeDashboard")
+    ) {
+      window.sessionStorage.removeItem(key);
+    }
+  }
+}
+
+function paymentCodeFromCompany(company?: BootstrapResponse["company"] | null) {
+  return company?.company_code || (company?.id ? company.id.slice(0, 8).toUpperCase() : "");
 }
 
 export default function OnMuhasebePanelLayout({
@@ -105,12 +119,20 @@ export default function OnMuhasebePanelLayout({
 
     function allowWithPeriods(result: BootstrapResponse) {
       if (!result.allowed) {
+        clearOnMuhasebeSessionCache();
         const searchParams = new URLSearchParams();
         const subscription = result.subscription;
 
         if (subscription?.planLabel) searchParams.set("paket", subscription.planLabel);
         if (subscription?.trial_ends_at) searchParams.set("bitis", subscription.trial_ends_at);
         if (subscription?.statusLabel) searchParams.set("durum", subscription.statusLabel);
+        if (subscription?.monthly_price != null) searchParams.set("aylik", String(subscription.monthly_price));
+        if (subscription?.total_price != null) searchParams.set("toplam", String(subscription.total_price));
+        if (subscription?.currency) searchParams.set("para", subscription.currency);
+        if (subscription?.billing_period_months != null) searchParams.set("ay", String(subscription.billing_period_months));
+        if (result.role) searchParams.set("rol", result.role);
+        const paymentCode = paymentCodeFromCompany(result.company);
+        if (paymentCode) searchParams.set("kod", paymentCode);
 
         window.location.replace(
           `/on-muhasebe/deneme-bitti?${searchParams.toString()}`,
@@ -158,12 +180,6 @@ export default function OnMuhasebePanelLayout({
 
         if (sessionError || !session) {
           window.location.replace("/on-muhasebe/giris");
-          return;
-        }
-
-        const cached = readCachedBootstrap(session.user.id);
-        if (cached) {
-          allowWithPeriods(cached);
           return;
         }
 

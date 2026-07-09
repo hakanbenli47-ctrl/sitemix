@@ -16,6 +16,8 @@ type Staff = {
   createdAt: string;
 };
 
+const STAFF_MONTHLY_PRICE = 99;
+
 const permissionItems: Array<{
   key: OnMuhasebeModuleKey;
   label: string;
@@ -105,6 +107,24 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
+function formatMoney(value: number) {
+  return new Intl.NumberFormat("tr-TR", {
+    style: "currency",
+    currency: "TRY",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+async function readApiResult(response: Response) {
+  const result = await response.json().catch(() => null);
+
+  if (!result) {
+    throw new Error("Sunucudan geçerli cevap alınamadı. Lütfen tekrar dene.");
+  }
+
+  return result;
+}
+
 export default function OnMuhasebePersonelPage() {
   const [staff, setStaff] = useState<Staff[]>([]);
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
@@ -124,6 +144,11 @@ export default function OnMuhasebePersonelPage() {
     () => staff.find((item) => item.id === selectedStaffId) || null,
     [selectedStaffId, staff],
   );
+  const activeStaffCount = useMemo(
+    () => staff.filter((item) => item.status === "active").length,
+    [staff],
+  );
+  const staffMonthlyTotal = activeStaffCount * STAFF_MONTHLY_PRICE;
 
   async function authHeaders() {
     const {
@@ -152,7 +177,7 @@ export default function OnMuhasebePersonelPage() {
         headers,
         cache: "no-store",
       });
-      const result = await response.json();
+      const result = await readApiResult(response);
 
       if (!response.ok) {
         throw new Error(result.message || "Personel listesi alınamadı.");
@@ -228,7 +253,7 @@ export default function OnMuhasebePersonelPage() {
           permissions,
         }),
       });
-      const result = await response.json();
+      const result = await readApiResult(response);
 
       if (!response.ok) {
         throw new Error(result.message || "Personel kaydedilemedi.");
@@ -293,6 +318,20 @@ export default function OnMuhasebePersonelPage() {
             {errorMessage}
           </div>
         ) : null}
+
+        <div className="mt-5 grid gap-3 rounded-2xl bg-white p-5 shadow-sm sm:grid-cols-[1fr_auto] sm:items-center">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-indigo-600">
+              Personel Paketi
+            </p>
+            <p className="mt-2 text-sm font-bold leading-6 text-slate-500">
+              Her aktif personel için ana firma paketine aylık {formatMoney(STAFF_MONTHLY_PRICE)} eklenir. Personel hesabına ayrı ödeme yansıtılmaz.
+            </p>
+          </div>
+          <div className="rounded-2xl bg-slate-100 px-5 py-4 text-sm font-black text-slate-950">
+            {activeStaffCount} x {formatMoney(STAFF_MONTHLY_PRICE)} = {formatMoney(staffMonthlyTotal)} / ay
+          </div>
+        </div>
 
         <div className="mt-5 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
           <form
@@ -470,6 +509,9 @@ export default function OnMuhasebePersonelPage() {
                       ].join(" ")}
                     >
                       {item.status === "active" ? "Aktif" : "Pasif"}
+                    </span>
+                    <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700">
+                      {item.status === "active" ? `${formatMoney(STAFF_MONTHLY_PRICE)} / ay` : "Ücrete dahil değil"}
                     </span>
                     {permissionItems
                       .filter((permission) => item.permissions[permission.key])

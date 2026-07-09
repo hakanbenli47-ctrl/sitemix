@@ -385,6 +385,7 @@ function topluSatirHatalari(
 
 export default function CariPage() {
   const [company, setCompany] = useState<Company | null>(null);
+  const [isOwner, setIsOwner] = useState(false);
   const [cariler, setCariler] = useState<CariHesap[]>([]);
   const [hareketler, setHareketler] = useState<CariHareket[]>([]);
   const [form, setForm] = useState<CariForm>(bosForm);
@@ -399,6 +400,7 @@ export default function CariPage() {
   const [isTopluSaving, setIsTopluSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const acilisBakiyesiKilitli = Boolean(duzenlenenCariId && !isOwner);
 
   const bakiyeHaritasi = useMemo(() => {
     return cariler.reduce<Record<string, BakiyeBilgisi>>((acc, cari) => {
@@ -506,6 +508,7 @@ export default function CariPage() {
     try {
       const context = await getOnMuhasebeClientContext();
       const companyData = context.company;
+      setIsOwner(context.isOwner);
 
       const { data: cariData, error: cariError } = await supabaseClient
         .from("cari_hesaplar")
@@ -581,6 +584,13 @@ export default function CariPage() {
   }
 
   function formGuncelle<K extends keyof CariForm>(key: K, value: CariForm[K]) {
+    if (
+      acilisBakiyesiKilitli &&
+      (key === "acilis_bakiyesi" || key === "acilis_bakiye_tipi")
+    ) {
+      return;
+    }
+
     setForm((currentForm) => ({ ...currentForm, [key]: value }));
   }
 
@@ -738,6 +748,17 @@ export default function CariPage() {
 
     try {
       if (duzenlenenCariId) {
+        if (!isOwner) {
+          const mevcutCari = cariler.find((cari) => cari.id === duzenlenenCariId);
+
+          if (!mevcutCari) {
+            throw new Error("Düzenlenen cari bulunamadı. Listeyi yenileyip tekrar dene.");
+          }
+
+          kayit.acilis_bakiyesi = Number(mevcutCari.acilis_bakiyesi || 0);
+          kayit.acilis_bakiye_tipi = mevcutCari.acilis_bakiye_tipi;
+        }
+
         const { error } = await supabaseClient
           .from("cari_hesaplar")
           .update(kayit)
@@ -1268,6 +1289,12 @@ export default function CariPage() {
               </button>
             </div>
 
+            {acilisBakiyesiKilitli ? (
+              <div className="mt-5 rounded-[1.5rem] bg-amber-50 px-4 py-3 text-sm font-black leading-6 text-amber-800">
+                Personel mevcut cari kartını düzenlerken açılış bakiyesini değiştiremez. Bu alanı sadece yönetici güncelleyebilir.
+              </div>
+            ) : null}
+
             <div className="mt-5 grid gap-3 rounded-[1.5rem] bg-indigo-50 p-4 sm:grid-cols-[1fr_auto] sm:items-center">
               <p className="text-sm font-bold leading-6 text-indigo-800">
                 Müşteri için “Müşteri”, tedarikçi için “Tedarikçi” seç. Açılış
@@ -1406,13 +1433,14 @@ export default function CariPage() {
     <input
       inputMode="decimal"
       value={form.acilis_bakiyesi}
+      disabled={acilisBakiyesiKilitli}
       onChange={(event) =>
         formGuncelle("acilis_bakiyesi", paraGirisiTemizle(event.target.value))
       }
       onBlur={(event) =>
         formGuncelle("acilis_bakiyesi", paraGirisiFormatla(event.target.value))
       }
-      className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-11 text-sm font-bold outline-none transition focus:border-indigo-500 focus:bg-white"
+      className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-11 text-sm font-bold outline-none transition focus:border-indigo-500 focus:bg-white disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
      placeholder="0"
     />
     <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm font-black text-slate-400">
@@ -1425,13 +1453,14 @@ export default function CariPage() {
                 <span className="text-xs font-black text-slate-500">Bakiye Tipi</span>
                 <select
                   value={form.acilis_bakiye_tipi}
+                  disabled={acilisBakiyesiKilitli}
                   onChange={(event) =>
                     formGuncelle(
                       "acilis_bakiye_tipi",
                       event.target.value as AcilisBakiyeTipi,
                     )
                   }
-                  className="min-h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold outline-none transition focus:border-indigo-500 focus:bg-white"
+                  className="min-h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold outline-none transition focus:border-indigo-500 focus:bg-white disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
                 >
                   <option value="borc_yok">Borç yok</option>
                   <option value="borclu">Cari bize borçlu</option>

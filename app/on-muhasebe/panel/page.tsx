@@ -281,8 +281,9 @@ export default function OnMuhasebePanelPage() {
   const subscription = data?.subscription || null;
   const trialDaysLeft = useMemo(
     () =>
-      subscription?.trialDaysLeft ??
-      getOnMuhasebeDaysLeft(subscription?.trial_ends_at),
+      subscription?.trialDaysLeft != null
+        ? subscription.trialDaysLeft
+        : getOnMuhasebeDaysLeft(subscription?.trial_ends_at),
     [subscription?.trialDaysLeft, subscription?.trial_ends_at],
   );
 
@@ -344,6 +345,21 @@ export default function OnMuhasebePanelPage() {
         const result = await response.json();
 
         if (!response.ok) {
+          if (response.status === 403 && result?.allowed === false) {
+            const searchParams = new URLSearchParams();
+            const subscription = result.subscription;
+            if (subscription?.planLabel) searchParams.set("paket", subscription.planLabel);
+            if (subscription?.trial_ends_at) searchParams.set("bitis", subscription.trial_ends_at);
+            if (subscription?.statusLabel) searchParams.set("durum", subscription.statusLabel);
+            if (subscription?.monthly_price != null) searchParams.set("aylik", String(subscription.monthly_price));
+            if (subscription?.total_price != null) searchParams.set("toplam", String(subscription.total_price));
+            if (subscription?.currency) searchParams.set("para", subscription.currency);
+            if (subscription?.billing_period_months != null) searchParams.set("ay", String(subscription.billing_period_months));
+            if (result?.role) searchParams.set("rol", result.role);
+            window.location.href = `/on-muhasebe/deneme-bitti?${searchParams.toString()}`;
+            return;
+          }
+
           throw new Error(result.message || "Panel özeti yüklenemedi.");
         }
 
@@ -514,7 +530,7 @@ export default function OnMuhasebePanelPage() {
                 onClick={() => setMenuOpen(false)}
                 className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-xl font-black text-slate-950 transition hover:bg-slate-200"
               >
-                ×
+                x
               </button>
             </div>
 
@@ -569,7 +585,7 @@ export default function OnMuhasebePanelPage() {
                   className="inline-flex min-h-[50px] items-center justify-between rounded-[1.25rem] bg-slate-100 px-5 text-sm font-black text-slate-950 transition hover:bg-slate-200"
                 >
                   <span>{label}</span>
-                  <span className="text-slate-400">→</span>
+                  <span className="text-slate-400">&gt;</span>
                 </Link>
               ))}
 
@@ -580,7 +596,7 @@ export default function OnMuhasebePanelPage() {
                 className="inline-flex min-h-[50px] items-center justify-between rounded-[1.25rem] bg-emerald-50 px-5 text-sm font-black text-emerald-700 transition hover:bg-emerald-100"
               >
                 <span>Destek / WhatsApp</span>
-                <span>↗</span>
+                <span>&gt;</span>
               </a>
             </div>
 
@@ -891,7 +907,7 @@ export default function OnMuhasebePanelPage() {
                   {item.action}
                 </span>
                 <span className="text-lg font-black text-slate-300 transition group-hover:translate-x-1 group-hover:text-slate-950">
-                  →
+                  &gt;
                 </span>
               </div>
             </Link>
@@ -1118,7 +1134,7 @@ export default function OnMuhasebePanelPage() {
           onClick={() => setMenuOpen(true)}
           className="flex min-h-12 min-w-12 items-center justify-center rounded-full bg-white text-sm font-black text-slate-950"
         >
-          ≡
+          Menü
         </button>
       </nav>
     </main>

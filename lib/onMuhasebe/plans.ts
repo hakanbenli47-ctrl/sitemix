@@ -66,6 +66,19 @@ export function addTrialDays(date: Date, dayCount = ON_MUHASEBE_TRIAL_DAYS) {
   return result;
 }
 
+export function addBillingMonths(date: Date, monthCount = 1) {
+  const result = new Date(date);
+  const day = result.getDate();
+
+  result.setMonth(result.getMonth() + Math.max(1, monthCount));
+
+  if (result.getDate() < day) {
+    result.setDate(0);
+  }
+
+  return result;
+}
+
 export function getOnMuhasebeDaysLeft(value?: string | null) {
   if (!value) return 0;
 
@@ -76,13 +89,29 @@ export function getOnMuhasebeDaysLeft(value?: string | null) {
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 }
 
+export function isSubscriptionExpired(
+  status: OnMuhasebeSubscriptionStatus,
+  endsAt?: string | null,
+) {
+  if (status === "expired" || status === "cancelled") return true;
+  if ((status === "trial" || status === "active") && !endsAt) return true;
+
+  const end = new Date(endsAt || "").getTime();
+  if (!Number.isFinite(end)) return true;
+
+  return end <= Date.now();
+}
+
+export function normalizeSubscriptionStatus(
+  status: OnMuhasebeSubscriptionStatus,
+  endsAt?: string | null,
+): OnMuhasebeSubscriptionStatus {
+  return isSubscriptionExpired(status, endsAt) ? "expired" : status;
+}
+
 export function isTrialExpired(
   status: OnMuhasebeSubscriptionStatus,
   trialEndsAt?: string | null,
 ) {
-  if (status === "active") return false;
-  if (status === "expired" || status === "cancelled") return true;
-  if (status !== "trial" || !trialEndsAt) return true;
-
-  return new Date(trialEndsAt).getTime() <= Date.now();
+  return isSubscriptionExpired(status, trialEndsAt);
 }

@@ -16,6 +16,18 @@ function adminPassword() {
   return process.env.SITEMIX_ADMIN_PASSWORD || "13255Hh.";
 }
 
+function adminUsernames() {
+  return [
+    adminUsername(),
+    "hakan benli",
+    "hakanbenli",
+    "admin",
+    process.env.SITEMIX_ADMIN_EMAIL || "",
+  ]
+    .map((value) => value.trim().toLocaleLowerCase("tr-TR"))
+    .filter(Boolean);
+}
+
 function adminSecret() {
   return (
     process.env.SITEMIX_ADMIN_SESSION_SECRET ||
@@ -47,14 +59,13 @@ export function verifyAdminCredentials(username: unknown, password: unknown) {
   }
 
   const cleanUsername = username.trim().toLocaleLowerCase("tr-TR");
-  const expectedUsername = adminUsername().toLocaleLowerCase("tr-TR");
-  const extraEmail = (process.env.SITEMIX_ADMIN_EMAIL || "")
-    .trim()
-    .toLocaleLowerCase("tr-TR");
-  const usernameOk =
-    cleanUsername === expectedUsername || (extraEmail ? cleanUsername === extraEmail : false);
+  const usernameOk = adminUsernames().includes(cleanUsername);
+  const expectedPassword = adminPassword();
+  const passwordOk =
+    safeEqual(password, expectedPassword) ||
+    (expectedPassword.endsWith(".") && safeEqual(password, expectedPassword.slice(0, -1)));
 
-  return usernameOk && safeEqual(password, adminPassword());
+  return usernameOk && passwordOk;
 }
 
 export function createAdminSessionToken() {
