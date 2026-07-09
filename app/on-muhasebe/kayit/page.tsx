@@ -241,7 +241,7 @@ export default function OnMuhasebeKayitPage() {
                     name="fullName"
                     value={fullName}
                     onChange={(event) => setFullName(event.target.value)}
-                    placeholder="Örn: Hakan Benli"
+                    placeholder="işletme saihbi adı"
                     autoComplete="name"
                     className="h-14 w-full rounded-2xl bg-slate-100 px-4 text-sm font-bold text-[#0b1025] outline-none transition placeholder:text-slate-400 focus:bg-white focus:ring-4 focus:ring-indigo-100"
                   />
