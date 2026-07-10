@@ -309,6 +309,7 @@ export default function OnMuhasebePanelPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [introOpen, setIntroOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -320,18 +321,6 @@ export default function OnMuhasebePanelPage() {
         : getOnMuhasebeDaysLeft(subscription?.trial_ends_at),
     [subscription?.trialDaysLeft, subscription?.trial_ends_at],
   );
-
-  const moduleMetrics = useMemo(() => {
-    if (!data) return null;
-
-    return {
-      cari: `${data.summary.aktifCari} aktif / ${formatMoney(data.summary.tahsilEdilecek)} alacak`,
-      stok: `${data.summary.aktifUrun} kart / ${data.summary.kritikStok} kritik`,
-      kasa: `${formatMoney(data.summary.kasaBakiyesi)} / ${data.summary.kasaHesapSayisi} hesap`,
-      fis: `${formatMoney(data.summary.buAySatis)} satış / ${formatMoney(data.summary.buAyAlis)} alış`,
-      rapor: `${formatMoney(data.summary.buAyNet)} aylık net`,
-    };
-  }, [data]);
 
   const visibleQuickActions = useMemo(() => {
     if (!data) return [];
@@ -797,40 +786,23 @@ export default function OnMuhasebePanelPage() {
             <div className="absolute bottom-[-110px] left-[-80px] h-64 w-64 rounded-full bg-cyan-500/20 blur-3xl" />
             <div className="relative">
               <p className="text-xs font-black uppercase tracking-[0.22em] text-white/40">
-                Günlük kontrol
+                Hoş geldiniz
               </p>
               <h1 className="mt-3 break-words text-2xl font-black tracking-[-0.04em] sm:text-4xl lg:text-5xl">
-                {company.name}
+                Sitemix Ön Muhasebe
               </h1>
               <p className="mt-3 max-w-2xl text-sm font-bold leading-6 text-white/55">
-                Bugünün kasa girişini, açık carileri, kritik stokları ve fiş
-                hareketlerini tek ekrandan takip et.
+                Günlük işlemlerinize sık kullanılan alanlardan hızlıca ulaşın.
+                Finansal bilgileriniz siz istemeden ana ekranda gösterilmez.
               </p>
 
-              <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                <div className="rounded-[1.35rem] bg-white/10 p-4">
-                  <p className="text-xs font-black text-white/40">Kasa</p>
-                  <p className="mt-2 break-words text-xl font-black text-white sm:text-2xl">
-                    {formatMoney(summary.kasaBakiyesi)}
-                  </p>
-                </div>
-                <div className="rounded-[1.35rem] bg-white/10 p-4">
-                  <p className="text-xs font-black text-white/40">
-                    Tahsil Edilecek
-                  </p>
-                  <p className="mt-2 break-words text-xl font-black text-white sm:text-2xl">
-                    {formatMoney(summary.tahsilEdilecek)}
-                  </p>
-                </div>
-                <div className="rounded-[1.35rem] bg-white/10 p-4">
-                  <p className="text-xs font-black text-white/40">
-                    Kritik Stok
-                  </p>
-                  <p className="mt-2 text-2xl font-black text-white">
-                    {summary.kritikStok}
-                  </p>
-                </div>
-              </div>
+              <button
+                type="button"
+                onClick={() => setDetailsOpen((current) => !current)}
+                className="mt-7 inline-flex min-h-12 items-center justify-center rounded-full bg-white px-6 text-sm font-black text-slate-950 transition hover:bg-indigo-50"
+              >
+                {detailsOpen ? "Detayları Gizle" : "Detayları Göster"}
+              </button>
             </div>
           </div>
 
@@ -838,10 +810,10 @@ export default function OnMuhasebePanelPage() {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">
-                  Bugün
+                  Gizli özet
                 </p>
                 <h2 className="mt-2 text-2xl font-black tracking-[-0.05em]">
-                  Hızlı Özet
+                  Önemli Bilgiler
                 </h2>
               </div>
               <span className="rounded-full bg-indigo-50 px-4 py-2 text-xs font-black text-indigo-700">
@@ -849,31 +821,12 @@ export default function OnMuhasebePanelPage() {
               </span>
             </div>
 
-            <div className="mt-5 grid gap-3">
-              <div className="flex items-center justify-between rounded-[1.35rem] bg-emerald-50 p-4">
-                <span className="text-sm font-black text-emerald-700">
-                  Kasa Girişi
-                </span>
-                <strong className="text-lg font-black text-emerald-700">
-                  {formatMoney(summary.bugunKasaGiris)}
-                </strong>
-              </div>
-              <div className="flex items-center justify-between rounded-[1.35rem] bg-red-50 p-4">
-                <span className="text-sm font-black text-red-700">
-                  Kasa Çıkışı
-                </span>
-                <strong className="text-lg font-black text-red-700">
-                  {formatMoney(summary.bugunKasaCikis)}
-                </strong>
-              </div>
-              <div className="flex items-center justify-between rounded-[1.35rem] bg-slate-100 p-4">
-                <span className="text-sm font-black text-slate-700">
-                  Bu Ay Net
-                </span>
-                <strong className="text-lg font-black text-slate-950">
-                  {formatMoney(summary.buAyNet)}
-                </strong>
-              </div>
+            <div className="mt-5 rounded-[1.35rem] bg-slate-100 p-5">
+              <p className="text-sm font-black text-slate-800">Mahremiyet öncelikli görünüm</p>
+              <p className="mt-2 text-xs font-bold leading-5 text-slate-500">
+                Kasa, cari, satış ve stok özetleri yalnızca Detayları Göster
+                düğmesine bastığınızda açılır.
+              </p>
             </div>
             <button
               type="button"
@@ -885,62 +838,59 @@ export default function OnMuhasebePanelPage() {
           </div>
         </div>
 
-        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-5 grid grid-cols-3 gap-2 sm:gap-3 lg:grid-cols-4">
           {visibleQuickActions.map((action) => (
             <Link
               key={action.title}
               href={action.href}
               prefetch
-              className="group rounded-[1.6rem] bg-white p-5 shadow-lg shadow-slate-200 transition hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-300"
+              className="group rounded-[1.25rem] bg-white p-3 shadow-lg shadow-slate-200 transition hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-300 sm:rounded-[1.6rem] sm:p-5"
             >
               <div
                 className={[
-                  "mb-5 flex h-11 w-11 items-center justify-center rounded-2xl text-lg font-black text-white",
+                  "mb-3 flex h-9 w-9 items-center justify-center rounded-xl text-base font-black text-white sm:mb-5 sm:h-11 sm:w-11 sm:rounded-2xl sm:text-lg",
                   action.tone,
                 ].join(" ")}
               >
                 +
               </div>
-              <p className="text-xl font-black tracking-[-0.04em]">
+              <p className="text-sm font-black tracking-[-0.04em] sm:text-xl">
                 {action.title}
               </p>
-              <p className="mt-1 text-xs font-bold leading-5 text-slate-500">
+              <p className="mt-1 hidden text-xs font-bold leading-5 text-slate-500 sm:block">
                 {action.desc}
               </p>
-              <span className="mt-5 inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600 transition group-hover:bg-slate-950 group-hover:text-white">
+              <span className="mt-3 inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-black text-slate-600 transition group-hover:bg-slate-950 group-hover:text-white sm:mt-5 sm:px-3 sm:text-xs">
                 Başla
               </span>
             </Link>
           ))}
         </div>
 
-        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="mt-5 grid grid-cols-3 gap-2 sm:gap-3 lg:grid-cols-5">
           {visibleModuleCards.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               prefetch
-              className="group rounded-[1.6rem] bg-white p-5 shadow-lg shadow-slate-200 transition hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-300"
+              className="group rounded-[1.25rem] bg-white p-3 shadow-lg shadow-slate-200 transition hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-300 sm:rounded-[1.6rem] sm:p-5"
             >
               <div
                 className={[
-                  "flex h-12 w-12 items-center justify-center rounded-2xl text-base font-black shadow-lg",
+                  "flex h-9 w-9 items-center justify-center rounded-xl text-sm font-black shadow-lg sm:h-12 sm:w-12 sm:rounded-2xl sm:text-base",
                   toneClasses(item.tone),
                 ].join(" ")}
               >
                 {item.icon}
               </div>
-              <p className="mt-5 text-xl font-black tracking-[-0.04em]">
+              <p className="mt-3 text-sm font-black tracking-[-0.04em] sm:mt-5 sm:text-xl">
                 {item.title}
               </p>
-              <p className="mt-1 min-h-10 text-xs font-bold leading-5 text-slate-500">
+              <p className="mt-1 hidden min-h-10 text-xs font-bold leading-5 text-slate-500 sm:block">
                 {item.desc}
               </p>
-              <p className="mt-4 rounded-[1rem] bg-slate-100 px-3 py-2 text-xs font-black text-slate-700">
-                {moduleMetrics?.[item.metricKey] || "-"}
-              </p>
-              <div className="mt-4 flex items-center justify-between">
-                <span className="rounded-full bg-slate-950 px-3 py-1 text-xs font-black text-white">
+              <div className="mt-3 flex items-center justify-between sm:mt-4">
+                <span className="rounded-full bg-slate-950 px-2.5 py-1 text-[10px] font-black text-white sm:px-3 sm:text-xs">
                   {item.action}
                 </span>
                 <span className="text-lg font-black text-slate-300 transition group-hover:translate-x-1 group-hover:text-slate-950">
@@ -951,6 +901,7 @@ export default function OnMuhasebePanelPage() {
           ))}
         </div>
 
+        {detailsOpen ? <>
         <div className="mt-5 grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
           <div className="rounded-[2rem] bg-white p-5 shadow-xl shadow-slate-200 sm:p-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -1255,6 +1206,7 @@ export default function OnMuhasebePanelPage() {
             </div>
           </div>
         )}
+        </> : null}
       </section>
 
       <nav className="fixed bottom-4 left-1/2 z-30 flex w-[calc(100%-2rem)] max-w-md -translate-x-1/2 items-center justify-between rounded-full bg-slate-950/95 px-3 py-3 shadow-2xl shadow-slate-400 backdrop-blur-xl lg:hidden">

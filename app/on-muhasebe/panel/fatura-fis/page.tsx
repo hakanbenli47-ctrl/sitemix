@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
@@ -148,16 +148,16 @@ type FisEditLog = {
 };
 
 const fisEtiketleri: Record<FisTuru, string> = {
-  satis: "SatÄ±ÅŸ FiÅŸi",
-  alis: "AlÄ±ÅŸ FiÅŸi",
+  satis: "Satış Fişi",
+  alis: "Alış Fişi",
 };
 
 const whatsappDestekLink =
   "https://wa.me/905515550302?text=Sitemix%20On%20Muhasebe%20fatura%20fi%C5%9F%20olu%C5%9Fturma%20i%C3%A7in%20destek%20istiyorum.";
 
 const fisKisaAciklama: Record<FisTuru, string> = {
-  satis: "MÃ¼ÅŸteriye satÄ±ÅŸ kaydÄ± oluÅŸturur. ÃœrÃ¼n stoÄŸu dÃ¼ÅŸer, cari borcu artar.",
-  alis: "TedarikÃ§iden alÄ±ÅŸ kaydÄ± oluÅŸturur. ÃœrÃ¼n stoÄŸu artar, firmaya Ã¶denecek bakiye artar.",
+  satis: "Müşteriye satış kaydı oluşturur. Ürün stoğu düşer, cari borcu artar.",
+  alis: "Tedarikçiden alış kaydı oluşturur. Ürün stoğu artar, firmaya ödenecek bakiye artar.",
 };
 
 function bugununTarihi(workYear = new Date().getFullYear()) {
@@ -279,7 +279,7 @@ function metniAraFormatinaCevir(value: string) {
     .toLocaleLowerCase("tr-TR")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/Ä±/g, "i")
+    .replace(/ı/g, "i")
     .replace(/[^a-z0-9\s]/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
@@ -332,8 +332,8 @@ function hataMesajiAl(error: unknown, fallback: string) {
 
 function cariBakiyeEtiketi(value: number) {
   if (value > 0) return "Tahsil Edilecek";
-  if (value < 0) return "Ã–denecek";
-  return "Bakiye KapalÄ±";
+  if (value < 0) return "Ödenecek";
+  return "Bakiye Kapalı";
 }
 
 function bakiyeRengi(value: number) {
@@ -375,7 +375,7 @@ async function fisDuzenlemeLoglariniGetir(companyId: string, fisIds: string[]) {
     .limit(250);
 
   if (error) {
-    console.warn("FiÅŸ dÃ¼zenleme loglarÄ± alÄ±namadÄ±:", error);
+    console.warn("Fiş düzenleme logları alınamadı:", error);
     return new Map<string, KayitliFis["lastEdit"]>();
   }
 
@@ -388,7 +388,7 @@ async function fisDuzenlemeLoglariniGetir(companyId: string, fisIds: string[]) {
       actorName:
         log.metadata?.actor_name ||
         log.metadata?.actor_email ||
-        (log.actor_role === "owner" ? "YÃ¶netici" : "Personel"),
+        (log.actor_role === "owner" ? "Yönetici" : "Personel"),
       actorRole: log.actor_role,
       createdAt: log.created_at,
     });
@@ -590,11 +590,11 @@ export default function FaturaFisPage() {
           .limit(5000),
       ]);
 
-      if (cariResponse.error) throw new Error(hataMesajiAl(cariResponse.error, "Cariler alÄ±namadÄ±."));
-      if (urunResponse.error) throw new Error(hataMesajiAl(urunResponse.error, "ÃœrÃ¼nler alÄ±namadÄ±."));
-      if (fisResponse.error) throw new Error(hataMesajiAl(fisResponse.error, "FiÅŸ listesi alÄ±namadÄ±."));
+      if (cariResponse.error) throw new Error(hataMesajiAl(cariResponse.error, "Cariler alınamadı."));
+      if (urunResponse.error) throw new Error(hataMesajiAl(urunResponse.error, "Ürünler alınamadı."));
+      if (fisResponse.error) throw new Error(hataMesajiAl(fisResponse.error, "Fiş listesi alınamadı."));
       if (istatistikResponse.error) {
-        throw new Error(hataMesajiAl(istatistikResponse.error, "FiÅŸ istatistikleri alÄ±namadÄ±."));
+        throw new Error(hataMesajiAl(istatistikResponse.error, "Fiş istatistikleri alınamadı."));
       }
 
       setCariler((cariResponse.data || []) as CariHesap[]);
@@ -615,8 +615,8 @@ export default function FaturaFisPage() {
         })),
       );
     } catch (error) {
-      console.error("FiÅŸ ekranÄ± yÃ¼kleme hatasÄ±:", error);
-      setErrorMessage(hataMesajiAl(error, "FiÅŸ ekranÄ± yÃ¼klenirken hata oluÅŸtu."));
+      console.error("Fiş ekranı yükleme hatası:", error);
+      setErrorMessage(hataMesajiAl(error, "Fiş ekranı yüklenirken hata oluştu."));
     } finally {
       if (tamEkranYukleme) setIsLoading(false);
     }
@@ -744,22 +744,22 @@ export default function FaturaFisPage() {
   function formHatalari() {
     const hatalar: string[] = [];
 
-    if (!company) hatalar.push("Firma bilgisi bulunamadÄ±.");
-    if (!form.cari_id) hatalar.push(form.fis_turu === "satis" ? "MÃ¼ÅŸteri seÃ§melisin." : "TedarikÃ§i seÃ§melisin.");
-    if (!form.fis_tarihi) hatalar.push("FiÅŸ tarihi seÃ§melisin.");
+    if (!company) hatalar.push("Firma bilgisi bulunamadı.");
+    if (!form.cari_id) hatalar.push(form.fis_turu === "satis" ? "Müşteri seçmelisin." : "Tedarikçi seçmelisin.");
+    if (!form.fis_tarihi) hatalar.push("Fiş tarihi seçmelisin.");
     if (form.fis_tarihi && (form.fis_tarihi < yearRange.start || form.fis_tarihi > yearRange.end)) {
-      hatalar.push(`${workYear} Ã§alÄ±ÅŸma yÄ±lÄ±nda sadece ${yearRange.start} - ${yearRange.end} arasÄ± fiÅŸ kesebilirsin.`);
+      hatalar.push(`${workYear} çalışma yılında sadece ${yearRange.start} - ${yearRange.end} arası fiş kesebilirsin.`);
     }
 
     const doluSatirlar = satirHesaplari.filter((satir) => satir.urun && satir.miktar > 0);
 
-    if (doluSatirlar.length === 0) hatalar.push("En az bir Ã¼rÃ¼n veya hizmet seÃ§melisin.");
+    if (doluSatirlar.length === 0) hatalar.push("En az bir ürün veya hizmet seçmelisin.");
 
     doluSatirlar.forEach((satir) => {
       if (!satir.urun) return;
 
       if (satir.birimFiyat <= 0) {
-        hatalar.push(`${satir.urun.urun_adi} iÃ§in birim fiyat 0'dan bÃ¼yÃ¼k olmalÄ±.`);
+        hatalar.push(`${satir.urun.urun_adi} için birim fiyat 0'dan büyük olmalı.`);
       }
 
       if (
@@ -769,12 +769,12 @@ export default function FaturaFisPage() {
         satir.miktar > Number(satir.urun.mevcut_stok || 0)
       ) {
         hatalar.push(
-          `${satir.urun.urun_adi} iÃ§in stok yetersiz. Mevcut: ${miktarFormatla(Number(satir.urun.mevcut_stok || 0))} ${satir.urun.birim}`,
+          `${satir.urun.urun_adi} için stok yetersiz. Mevcut: ${miktarFormatla(Number(satir.urun.mevcut_stok || 0))} ${satir.urun.birim}`,
         );
       }
     });
 
-    if (toplamlar.genelToplam <= 0) hatalar.push("FiÅŸ toplamÄ± 0'dan bÃ¼yÃ¼k olmalÄ±.");
+    if (toplamlar.genelToplam <= 0) hatalar.push("Fiş toplamı 0'dan büyük olmalı.");
 
     return hatalar;
   }
@@ -787,7 +787,7 @@ export default function FaturaFisPage() {
       const actorName =
         context.profile?.full_name ||
         context.user.email ||
-        (context.isOwner ? "YÃ¶netici" : "Personel");
+        (context.isOwner ? "Yönetici" : "Personel");
 
       const { error } = await supabaseClient.from("on_muhasebe_personel_hareketleri").insert({
         company_id: company.id,
@@ -795,8 +795,8 @@ export default function FaturaFisPage() {
         actor_role: context.role,
         module_key: "fatura",
         action_type: "guncelle",
-        title: "FiÅŸ dÃ¼zenlendi",
-        detail: `${fisNo} fiÅŸi gÃ¼ncellendi.`,
+        title: "Fiş düzenlendi",
+        detail: `${fisNo} fişi güncellendi.`,
         entity_table: "fatura_fisleri",
         entity_id: fisId,
         amount: genelToplam,
@@ -810,7 +810,7 @@ export default function FaturaFisPage() {
 
       if (error) throw error;
     } catch (error) {
-      console.warn("FiÅŸ dÃ¼zenleme logu yazÄ±lamadÄ±:", error);
+      console.warn("Fiş düzenleme logu yazılamadı:", error);
     }
   }
 
@@ -901,7 +901,7 @@ export default function FaturaFisPage() {
       const editActorName =
         clientContext?.profile?.full_name ||
         clientContext?.user.email ||
-        (clientContext?.isOwner ? "YÃ¶netici" : "Personel");
+        (clientContext?.isOwner ? "Yönetici" : "Personel");
       const kayitliFis: KayitliFis = {
         id: sonuc.id,
         company_id: company.id,
@@ -953,8 +953,8 @@ export default function FaturaFisPage() {
       setSonKayitliFis(kayitliFis);
       setSuccessMessage(
         duzenlenenFisId
-          ? `${sonuc.fis_no} gÃ¼ncellendi. Stok ve cari bakiyesi yeni fiÅŸe gÃ¶re tekrar iÅŸlendi.`
-          : `${fisEtiketleri[form.fis_turu]} kaydedildi. Form kapatÄ±ldÄ±; PDF veya WhatsApp iÅŸlemini son kayÄ±ttan yapabilirsin.`,
+          ? `${sonuc.fis_no} güncellendi. Stok ve cari bakiyesi yeni fişe göre tekrar işlendi.`
+          : `${fisEtiketleri[form.fis_turu]} kaydedildi. Form kapatıldı; PDF veya WhatsApp işlemini son kayıttan yapabilirsin.`,
       );
       setDuzenlenenFisId(null);
       setFormAcik(false);
@@ -964,8 +964,8 @@ export default function FaturaFisPage() {
       setUrunArama("");
       await verileriYukle(false, false);
     } catch (error) {
-      console.error("FiÅŸ kaydetme hatasÄ±:", error);
-      setErrorMessage(hataMesajiAl(error, "FiÅŸ kaydedilemedi."));
+      console.error("Fiş kaydetme hatası:", error);
+      setErrorMessage(hataMesajiAl(error, "Fiş kaydedilemedi."));
     } finally {
       setIsSaving(false);
     }
@@ -975,15 +975,15 @@ export default function FaturaFisPage() {
     const kalanEtiketi = cariBakiyeEtiketi(Number(fis.cari_bakiye_sonra || 0));
 
     return [
-      `${company?.name || "Sitemix Ã–n Muhasebe"} - ${fisEtiketleri[fis.fis_turu]}`,
-      `FiÅŸ No: ${fis.fis_no}`,
+      `${company?.name || "Sitemix Ön Muhasebe"} - ${fisEtiketleri[fis.fis_turu]}`,
+      `Fiş No: ${fis.fis_no}`,
       `Tarih: ${tarihFormatla(fis.fis_tarihi)}`,
       `Cari: ${fis.cari?.unvan || "-"}`,
-      `FiÅŸ ToplamÄ±: ${paraFormatla(Number(fis.genel_toplam || 0))}`,
-      `Ã–nceki Bakiye: ${cariBakiyeEtiketi(Number(fis.cari_bakiye_once || 0))} ${paraFormatla(Math.abs(Number(fis.cari_bakiye_once || 0)))}`,
+      `Fiş Toplamı: ${paraFormatla(Number(fis.genel_toplam || 0))}`,
+      `Önceki Bakiye: ${cariBakiyeEtiketi(Number(fis.cari_bakiye_once || 0))} ${paraFormatla(Math.abs(Number(fis.cari_bakiye_once || 0)))}`,
       `Yeni Bakiye: ${kalanEtiketi} ${paraFormatla(Math.abs(Number(fis.cari_bakiye_sonra || 0)))}`,
       fis.aciklama ? `Not: ${fis.aciklama}` : "",
-      "PDF fiÅŸi ayrÄ±ca iletilmiÅŸtir.",
+      "PDF fişi ayrıca iletilmiştir.",
     ]
       .filter(Boolean)
       .join("\n");
@@ -1038,11 +1038,11 @@ export default function FaturaFisPage() {
             <div class="ust">
               <div>
                 <div class="firma">${htmlEscape(hazirlayanAdi)}</div>
-                <div class="firma-alt">İşlemi yapan / Firma Kodu: ${htmlEscape(company?.company_code || "-")}</div>
+                <div class="firma-alt">Islemi yapan / Firma Kodu: ${htmlEscape(company?.company_code || "-")}</div>
               </div>
               <div class="baslik">
                 <h1>${htmlEscape(fisEtiketleri[fis.fis_turu])}</h1>
-                <p>FiÅŸ No: ${htmlEscape(fis.fis_no)}</p>
+                <p>Fiş No: ${htmlEscape(fis.fis_no)}</p>
                 <p>Tarih: ${htmlEscape(tarihFormatla(fis.fis_tarihi))}</p>
               </div>
             </div>
@@ -1050,18 +1050,18 @@ export default function FaturaFisPage() {
             <div class="bilgiler">
               <div class="bilgi"><small>Cari</small><strong>${htmlEscape(fis.cari?.unvan || "-")}</strong></div>
               <div class="bilgi"><small>Cari Kodu</small><strong>${htmlEscape(fis.cari?.cari_kodu || "-")}</strong></div>
-              <div class="bilgi"><small>Ã–nceki Bakiye</small><strong>${htmlEscape(cariBakiyeEtiketi(Number(fis.cari_bakiye_once || 0)))} ${htmlEscape(paraFormatla(Math.abs(Number(fis.cari_bakiye_once || 0))))}</strong></div>
+              <div class="bilgi"><small>Önceki Bakiye</small><strong>${htmlEscape(cariBakiyeEtiketi(Number(fis.cari_bakiye_once || 0)))} ${htmlEscape(paraFormatla(Math.abs(Number(fis.cari_bakiye_once || 0))))}</strong></div>
               <div class="bilgi"><small>Yeni Bakiye</small><strong>${htmlEscape(cariBakiyeEtiketi(Number(fis.cari_bakiye_sonra || 0)))} ${htmlEscape(paraFormatla(Math.abs(Number(fis.cari_bakiye_sonra || 0))))}</strong></div>
             </div>
 
             <table>
               <thead>
                 <tr>
-                  <th>ÃœrÃ¼n / Hizmet</th>
+                  <th>Ürün / Hizmet</th>
                   <th class="right">Miktar</th>
                   <th class="right">Birim Fiyat</th>
                   <th class="right">KDV</th>
-                  <th class="right">SatÄ±r ToplamÄ±</th>
+                  <th class="right">Satır Toplamı</th>
                 </tr>
               </thead>
               <tbody>
@@ -1093,16 +1093,16 @@ export default function FaturaFisPage() {
               <div class="imza-kutu">
                 <div class="imza-baslik">Teslim Eden</div>
                 <div class="imza-ad">${htmlEscape(fis.fis_turu === "satis" ? hazirlayanAdi : fis.cari?.unvan || "Tedarikçi")}</div>
-                <div class="imza-cizgi">Ad Soyad / Ä°mza</div>
+                <div class="imza-cizgi">Ad Soyad / İmza</div>
               </div>
               <div class="imza-kutu">
                 <div class="imza-baslik">Teslim Alan</div>
                 <div class="imza-ad">${htmlEscape(fis.fis_turu === "satis" ? fis.cari?.unvan || "Müşteri" : hazirlayanAdi)}</div>
-                <div class="imza-cizgi">Ad Soyad / Ä°mza</div>
+                <div class="imza-cizgi">Ad Soyad / İmza</div>
               </div>
             </div>
 
-            <div class="alt">Bu fiÅŸ Ã¶deme/tahsilat makbuzu deÄŸildir. Kasa iÅŸlemleri ayrÄ± makbuz Ã¼zerinden takip edilir.</div>
+            <div class="alt">Bu fiş ödeme/tahsilat makbuzu değildir. Kasa işlemleri ayrı makbuz üzerinden takip edilir.</div>
           </div>
         </body>
       </html>
@@ -1118,7 +1118,7 @@ export default function FaturaFisPage() {
       .eq("fis_id", fis.id)
       .order("created_at", { ascending: true });
 
-    if (error) throw new Error(hataMesajiAl(error, "FiÅŸ kalemleri alÄ±namadÄ±."));
+    if (error) throw new Error(hataMesajiAl(error, "Fiş kalemleri alınamadı."));
 
     return {
       ...fis,
@@ -1132,12 +1132,12 @@ export default function FaturaFisPage() {
     const pencere = window.open("", "_blank", "width=980,height=900");
 
     if (!pencere) {
-      setErrorMessage("PDF Ã¶n izlemesi aÃ§Ä±lamadÄ±. TarayÄ±cÄ± pop-up iznini kontrol et.");
+      setErrorMessage("PDF ön izlemesi açılamadı. Tarayıcı pop-up iznini kontrol et.");
       return;
     }
 
     pencere.document.open();
-    pencere.document.write("<p style='font-family:Arial;padding:24px'>PDF hazÄ±rlanÄ±yor...</p>");
+    pencere.document.write("<p style='font-family:Arial;padding:24px'>PDF hazırlanıyor...</p>");
     pencere.document.close();
 
     try {
@@ -1153,8 +1153,8 @@ export default function FaturaFisPage() {
       }, 350);
     } catch (error) {
       pencere.close();
-      console.error("PDF oluÅŸturma hatasÄ±:", error);
-      setErrorMessage(hataMesajiAl(error, "PDF oluÅŸturulamadÄ±."));
+      console.error("PDF oluşturma hatası:", error);
+      setErrorMessage(hataMesajiAl(error, "PDF oluşturulamadı."));
     }
   }
 
@@ -1163,7 +1163,7 @@ export default function FaturaFisPage() {
     const telefon = telefonuWhatsappFormatinaCevir(fis.cari?.telefon);
 
     if (!telefon) {
-      setErrorMessage("Bu caride telefon numarasÄ± yok. Ã–nce cari kartÄ±na telefon eklemelisin.");
+      setErrorMessage("Bu caride telefon numarası yok. Önce cari kartına telefon eklemelisin.");
       return;
     }
 
@@ -1179,7 +1179,7 @@ export default function FaturaFisPage() {
 
   async function fisiDuzenlemeyeAc(fis: KayitliFis) {
     if (fis.durum === "iptal") {
-      setErrorMessage("Ä°ptal edilmiÅŸ fiÅŸ dÃ¼zenlenemez. AynÄ± bilgilerle yeni giriÅŸ aÃ§abilirsin.");
+      setErrorMessage("İptal edilmiş fiş düzenlenemez. Aynı bilgilerle yeni giriş açabilirsin.");
       return;
     }
 
@@ -1212,10 +1212,10 @@ setForm({
       setUrunArama("");
       setFormAcik(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
-      setSuccessMessage(`${guncelFis.fis_no} dÃ¼zenleme iÃ§in aÃ§Ä±ldÄ±. Kaydedince eski stok/cari etkisi geri alÄ±nÄ±r ve yeni hali iÅŸlenir.`);
+      setSuccessMessage(`${guncelFis.fis_no} düzenleme için açıldı. Kaydedince eski stok/cari etkisi geri alınır ve yeni hali işlenir.`);
     } catch (error) {
-      console.error("FiÅŸ dÃ¼zenleme aÃ§ma hatasÄ±:", error);
-      setErrorMessage(hataMesajiAl(error, "FiÅŸ dÃ¼zenleme iÃ§in aÃ§Ä±lamadÄ±."));
+      console.error("Fiş düzenleme açma hatası:", error);
+      setErrorMessage(hataMesajiAl(error, "Fiş düzenleme için açılamadı."));
     }
   }
 
@@ -1223,7 +1223,7 @@ setForm({
     if (!company) return;
     if (fis.durum === "iptal") return;
 
-    const onay = window.confirm(`${fis.fis_no} iptal edilecek. Stok ve cari etkisi geri alÄ±nacak. Devam edilsin mi?`);
+    const onay = window.confirm(`${fis.fis_no} iptal edilecek. Stok ve cari etkisi geri alınacak. Devam edilsin mi?`);
     if (!onay) return;
 
     setErrorMessage("");
@@ -1233,11 +1233,11 @@ setForm({
       await faturaFisApi("DELETE", undefined, { id: fis.id });
 
       if (duzenlenenFisId === fis.id) formuKapat();
-      setSuccessMessage(`${fis.fis_no} iptal edildi. Stok ve cari bakiyesi geri alÄ±ndÄ±.`);
+      setSuccessMessage(`${fis.fis_no} iptal edildi. Stok ve cari bakiyesi geri alındı.`);
       await verileriYukle(false, false);
     } catch (error) {
-      console.error("FiÅŸ iptal hatasÄ±:", error);
-      setErrorMessage(hataMesajiAl(error, "FiÅŸ iptal edilemedi."));
+      console.error("Fiş iptal hatası:", error);
+      setErrorMessage(hataMesajiAl(error, "Fiş iptal edilemedi."));
     }
   }
 
@@ -1269,10 +1269,10 @@ setForm({
       setCariArama("");
       setUrunArama("");
       setFormAcik(true);
-      setSuccessMessage("FiÅŸ bilgileri yeni giriÅŸ olarak aÃ§Ä±ldÄ±. Bu iÅŸlem eski fiÅŸi deÄŸiÅŸtirmez; yeni fiÅŸ kaydÄ± oluÅŸturur.");
+      setSuccessMessage("Fiş bilgileri yeni giriş olarak açıldı. Bu işlem eski fişi değiştirmez; yeni fiş kaydı oluşturur.");
     } catch (error) {
-      console.error("FiÅŸten yeni giriÅŸ aÃ§ma hatasÄ±:", error);
-      setErrorMessage(hataMesajiAl(error, "FiÅŸ bilgileri aÃ§Ä±lamadÄ±."));
+      console.error("Fişten yeni giriş açma hatası:", error);
+      setErrorMessage(hataMesajiAl(error, "Fiş bilgileri açılamadı."));
     }
   }
 
@@ -1281,7 +1281,7 @@ setForm({
       <main className="flex min-h-screen items-center justify-center bg-[#f3f6fb] px-5 text-slate-950">
         <div className="rounded-[2rem] bg-white p-8 text-center shadow-xl shadow-slate-200">
           <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-slate-100 border-t-violet-600" />
-          <p className="mt-5 text-sm font-black text-slate-600">FiÅŸ ekranÄ± yÃ¼kleniyor...</p>
+          <p className="mt-5 text-sm font-black text-slate-600">Fiş ekranı yükleniyor...</p>
         </div>
       </main>
     );
@@ -1296,9 +1296,9 @@ setForm({
               F
             </span>
             <span className="leading-tight">
-              <span className="block text-base font-black tracking-[-0.03em]">Fatura / FiÅŸ</span>
+              <span className="block text-base font-black tracking-[-0.03em]">Fatura / Fiş</span>
               <span className="block text-xs font-extrabold text-slate-500">
-                {company?.company_code || "Sitemix Ã–n Muhasebe"}
+                {company?.company_code || "Sitemix Ön Muhasebe"}
               </span>
             </span>
           </Link>
@@ -1324,14 +1324,14 @@ setForm({
               onClick={() => fisOlusturmaAc("satis")}
               className="hidden min-h-11 items-center justify-center rounded-full bg-violet-600 px-5 text-xs font-black text-white transition hover:bg-violet-700 sm:inline-flex"
             >
-              SatÄ±ÅŸ FiÅŸi
+              Satış Fişi
             </button>
             <button
               type="button"
               onClick={() => fisOlusturmaAc("alis")}
               className="hidden min-h-11 items-center justify-center rounded-full bg-slate-950 px-5 text-xs font-black text-white transition hover:bg-slate-800 sm:inline-flex"
             >
-              AlÄ±ÅŸ FiÅŸi
+              Alış Fişi
             </button>
           </div>
         </div>
@@ -1340,15 +1340,15 @@ setForm({
       <section className="mx-auto max-w-7xl px-5 py-6 lg:px-8 lg:py-8">
         <div className="grid gap-4 lg:grid-cols-3">
           <div className="rounded-[2rem] bg-slate-950 p-5 text-white shadow-xl shadow-slate-300">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-white/40">BugÃ¼n</p>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-white/40">Bugün</p>
             <p className="mt-2 text-xs font-bold text-white/50">{donemler.gun.etiket}</p>
             <div className="mt-5 grid grid-cols-2 gap-3">
               <div>
-                <p className="text-xs font-bold text-white/40">SatÄ±ÅŸ</p>
+                <p className="text-xs font-bold text-white/40">Satış</p>
                 <p className="mt-1 text-xl font-black">{paraFormatla(istatistikler.bugun.satis)}</p>
               </div>
               <div>
-                <p className="text-xs font-bold text-white/40">AlÄ±ÅŸ</p>
+                <p className="text-xs font-bold text-white/40">Alış</p>
                 <p className="mt-1 text-xl font-black">{paraFormatla(istatistikler.bugun.alis)}</p>
               </div>
             </div>
@@ -1359,11 +1359,11 @@ setForm({
             <p className="mt-2 text-xs font-bold text-slate-400">{tarihFormatla(ayBaslangici(workYear))} - {donemler.gun.etiket}</p>
             <div className="mt-5 grid grid-cols-3 gap-3">
               <div>
-                <p className="text-xs font-bold text-slate-400">SatÄ±ÅŸ</p>
+                <p className="text-xs font-bold text-slate-400">Satış</p>
                 <p className="mt-1 text-sm font-black">{paraFormatla(istatistikler.ay.satis)}</p>
               </div>
               <div>
-                <p className="text-xs font-bold text-slate-400">AlÄ±ÅŸ</p>
+                <p className="text-xs font-bold text-slate-400">Alış</p>
                 <p className="mt-1 text-sm font-black">{paraFormatla(istatistikler.ay.alis)}</p>
               </div>
               <div>
@@ -1374,15 +1374,15 @@ setForm({
           </div>
 
           <div className="rounded-[2rem] bg-white p-5 shadow-xl shadow-slate-200">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Bu YÄ±l</p>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Bu Yıl</p>
             <p className="mt-2 text-xs font-bold text-slate-400">{tarihFormatla(yilBaslangici(workYear))} - {donemler.gun.etiket}</p>
             <div className="mt-5 grid grid-cols-3 gap-3">
               <div>
-                <p className="text-xs font-bold text-slate-400">SatÄ±ÅŸ</p>
+                <p className="text-xs font-bold text-slate-400">Satış</p>
                 <p className="mt-1 text-sm font-black">{paraFormatla(istatistikler.yil.satis)}</p>
               </div>
               <div>
-                <p className="text-xs font-bold text-slate-400">AlÄ±ÅŸ</p>
+                <p className="text-xs font-bold text-slate-400">Alış</p>
                 <p className="mt-1 text-sm font-black">{paraFormatla(istatistikler.yil.alis)}</p>
               </div>
               <div>
@@ -1396,10 +1396,10 @@ setForm({
         <div className="mt-5 rounded-[2rem] bg-white p-5 shadow-xl shadow-slate-200 sm:p-7">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-violet-600">AlÄ±ÅŸ / SatÄ±ÅŸ FiÅŸi</p>
-              <h1 className="mt-2 text-3xl font-black tracking-[-0.05em] sm:text-4xl">Stok ve cari hareketi aynÄ± kayÄ±tla oluÅŸur</h1>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-violet-600">Alış / Satış Fişi</p>
+              <h1 className="mt-2 text-3xl font-black tracking-[-0.05em] sm:text-4xl">Stok ve cari hareketi aynı kayıtla oluşur</h1>
               <p className="mt-3 max-w-3xl text-sm font-bold leading-6 text-slate-500">
-                Bu ekranda sadece fiÅŸ oluÅŸturulur. Nakit tahsilat ve Ã¶deme iÅŸlemleri kasa ekranÄ±ndan yapÄ±lÄ±r. BÃ¶ylece satÄ±ÅŸ/alÄ±ÅŸ kaydÄ± ile para hareketi birbirine karÄ±ÅŸmaz.
+                Bu ekranda sadece fiş oluşturulur. Nakit tahsilat ve ödeme işlemleri kasa ekranından yapılır. Böylece satış/alış kaydı ile para hareketi birbirine karışmaz.
               </p>
             </div>
 
@@ -1409,14 +1409,14 @@ setForm({
                 onClick={() => fisOlusturmaAc("satis")}
                 className="min-h-14 rounded-2xl bg-violet-600 px-5 text-sm font-black text-white shadow-lg shadow-violet-100 transition hover:bg-violet-700"
               >
-                SatÄ±ÅŸ FiÅŸi OluÅŸtur
+                Satış Fişi Oluştur
               </button>
               <button
                 type="button"
                 onClick={() => fisOlusturmaAc("alis")}
                 className="min-h-14 rounded-2xl bg-slate-950 px-5 text-sm font-black text-white transition hover:bg-slate-800"
               >
-                AlÄ±ÅŸ FiÅŸi OluÅŸtur
+                Alış Fişi Oluştur
               </button>
             </div>
           </div>
@@ -1438,12 +1438,12 @@ setForm({
           <div className="mt-5 rounded-[2rem] border border-emerald-100 bg-emerald-50 p-5 shadow-lg shadow-emerald-100 sm:p-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">Son Kaydedilen FiÅŸ</p>
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">Son Kaydedilen Fiş</p>
                 <h2 className="mt-2 text-2xl font-black tracking-[-0.04em] text-slate-950">
-                  {sonKayitliFis.fis_no} Â· {sonKayitliFis.cari?.unvan || "-"}
+                  {sonKayitliFis.fis_no} · {sonKayitliFis.cari?.unvan || "-"}
                 </h2>
                 <p className="mt-2 text-sm font-bold text-slate-600">
-                  {fisEtiketleri[sonKayitliFis.fis_turu]} Â· {tarihFormatla(sonKayitliFis.fis_tarihi)} Â· {paraFormatla(Number(sonKayitliFis.genel_toplam || 0))}
+                  {fisEtiketleri[sonKayitliFis.fis_turu]} · {tarihFormatla(sonKayitliFis.fis_tarihi)} · {paraFormatla(Number(sonKayitliFis.genel_toplam || 0))}
                 </p>
               </div>
               <div className="grid gap-2 sm:grid-cols-3 lg:min-w-[520px]">
@@ -1452,21 +1452,21 @@ setForm({
                   onClick={() => fisPdfAc(sonKayitliFis)}
                   className="min-h-12 rounded-full bg-slate-950 px-5 text-xs font-black text-white transition hover:bg-slate-800"
                 >
-                  PDF OluÅŸtur
+                  PDF Oluştur
                 </button>
                 <button
                   type="button"
                   onClick={() => fisiWhatsappIleGonder(sonKayitliFis)}
                   className="min-h-12 rounded-full bg-emerald-600 px-5 text-xs font-black text-white transition hover:bg-emerald-700"
                 >
-                  WhatsApp AÃ§
+                  WhatsApp Aç
                 </button>
                 <button
                   type="button"
                   onClick={() => fistenYeniGirisAc(sonKayitliFis)}
                   className="min-h-12 rounded-full bg-white px-5 text-xs font-black text-slate-900 shadow-sm transition hover:bg-slate-50"
                 >
-                  Yeni GiriÅŸe Kopyala
+                  Yeni Girişe Kopyala
                 </button>
               </div>
             </div>
@@ -1477,10 +1477,10 @@ setForm({
           <section>
             {!formAcik ? (
               <div className="rounded-[2rem] bg-white p-8 text-center shadow-xl shadow-slate-200">
-                <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Yeni KayÄ±t</p>
-                <h2 className="mt-3 text-2xl font-black tracking-[-0.05em]">FiÅŸ oluÅŸturmak iÃ§in iÅŸlem tÃ¼rÃ¼ seÃ§</h2>
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Yeni Kayıt</p>
+                <h2 className="mt-3 text-2xl font-black tracking-[-0.05em]">Fiş oluşturmak için işlem türü seç</h2>
                 <p className="mx-auto mt-3 max-w-xl text-sm font-bold leading-6 text-slate-500">
-                  KaydettiÄŸin fiÅŸ stok hareketini ve cari bakiyeyi iÅŸler. KayÄ±t sonrasÄ± form otomatik kapanÄ±r ve temizlenir.
+                  Kaydettiğin fiş stok hareketini ve cari bakiyeyi işler. Kayıt sonrası form otomatik kapanır ve temizlenir.
                 </p>
                 <div className="mx-auto mt-6 grid max-w-xl gap-3 sm:grid-cols-2">
                   <button
@@ -1488,14 +1488,14 @@ setForm({
                     onClick={() => fisOlusturmaAc("satis")}
                     className="min-h-16 rounded-2xl bg-violet-600 px-5 text-sm font-black text-white shadow-lg shadow-violet-100 transition hover:bg-violet-700"
                   >
-                    SatÄ±ÅŸ FiÅŸi OluÅŸtur
+                    Satış Fişi Oluştur
                   </button>
                   <button
                     type="button"
                     onClick={() => fisOlusturmaAc("alis")}
                     className="min-h-16 rounded-2xl bg-slate-950 px-5 text-sm font-black text-white transition hover:bg-slate-800"
                   >
-                    AlÄ±ÅŸ FiÅŸi OluÅŸtur
+                    Alış Fişi Oluştur
                   </button>
                 </div>
               </div>
@@ -1503,8 +1503,8 @@ setForm({
               <form onSubmit={fisiKaydet} className="rounded-[2rem] bg-white p-5 shadow-xl shadow-slate-200 sm:p-7">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <p className="text-xs font-black uppercase tracking-[0.2em] text-violet-600">{duzenlemeModu ? "FiÅŸ DÃ¼zenleme" : "Yeni FiÅŸ"}</p>
-                    <h2 className="mt-2 text-2xl font-black tracking-[-0.05em]">{duzenlemeModu ? "FiÅŸi gÃ¼ncelle" : `${fisEtiketleri[form.fis_turu]} oluÅŸtur`}</h2>
+                    <p className="text-xs font-black uppercase tracking-[0.2em] text-violet-600">{duzenlemeModu ? "Fiş Düzenleme" : "Yeni Fiş"}</p>
+                    <h2 className="mt-2 text-2xl font-black tracking-[-0.05em]">{duzenlemeModu ? "Fişi güncelle" : `${fisEtiketleri[form.fis_turu]} oluştur`}</h2>
                     <p className="mt-2 text-sm font-bold leading-6 text-slate-500">{fisKisaAciklama[form.fis_turu]}</p>
                   </div>
                   <button
@@ -1534,7 +1534,7 @@ setForm({
                       >
                         <span className="block text-sm font-black">{fisEtiketleri[fisTuru]}</span>
                         <span className={aktif ? "mt-1 block text-xs font-bold text-white/70" : "mt-1 block text-xs font-bold text-slate-400"}>
-                          {fisTuru === "satis" ? "Stok dÃ¼ÅŸer, cari borÃ§lanÄ±r" : "Stok artar, firma borÃ§lanÄ±r"}
+                          {fisTuru === "satis" ? "Stok düşer, cari borçlanır" : "Stok artar, firma borçlanır"}
                         </span>
                       </button>
                     );
@@ -1543,7 +1543,7 @@ setForm({
 
                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
                   <label className="block">
-                    <span className="text-xs font-black uppercase tracking-[0.12em] text-slate-400">FiÅŸ Tarihi</span>
+                    <span className="text-xs font-black uppercase tracking-[0.12em] text-slate-400">Fiş Tarihi</span>
                     <input
                       type="date"
                       min={yearRange.start}
@@ -1555,9 +1555,9 @@ setForm({
                   </label>
 
                   <div className="rounded-2xl bg-slate-50 p-4">
-                    <p className="text-xs font-black uppercase tracking-[0.12em] text-slate-400">FiÅŸ Bakiyesi</p>
-                    <p className="mt-2 text-sm font-bold text-slate-500">Nakit/tahsilat bu ekranda iÅŸlenmez.</p>
-                    <p className="mt-1 text-xs font-bold text-slate-400">Kasa iÅŸlemi gerekiyorsa kasa modÃ¼lÃ¼nden makbuz oluÅŸtur.</p>
+                    <p className="text-xs font-black uppercase tracking-[0.12em] text-slate-400">Fiş Bakiyesi</p>
+                    <p className="mt-2 text-sm font-bold text-slate-500">Nakit/tahsilat bu ekranda işlenmez.</p>
+                    <p className="mt-1 text-xs font-bold text-slate-400">Kasa işlemi gerekiyorsa kasa modülünden makbuz oluştur.</p>
                   </div>
                 </div>
 
@@ -1566,7 +1566,7 @@ setForm({
                     <div>
                       <p className="text-xs font-black uppercase tracking-[0.12em] text-slate-400">Cari</p>
                       <p className="mt-1 text-sm font-black text-slate-800">
-                        {form.fis_turu === "satis" ? "MÃ¼ÅŸteri seÃ§" : "TedarikÃ§i seÃ§"}
+                        {form.fis_turu === "satis" ? "Müşteri seç" : "Tedarikçi seç"}
                       </p>
                     </div>
                     {seciliCari ? (
@@ -1575,7 +1575,7 @@ setForm({
                         onClick={cariSecimiTemizle}
                         className="rounded-full bg-white px-4 py-2 text-xs font-black text-slate-600 shadow-sm"
                       >
-                        DeÄŸiÅŸtir
+                        Değiştir
                       </button>
                     ) : null}
                   </div>
@@ -1601,7 +1601,7 @@ setForm({
                         type="text"
                         value={cariArama}
                         onChange={(event) => setCariArama(event.target.value)}
-                        placeholder="Cari unvanÄ±, kodu veya telefon ara"
+                        placeholder="Cari unvanı, kodu veya telefon ara"
                         className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold outline-none transition focus:border-violet-400"
                       />
 
@@ -1625,7 +1625,7 @@ setForm({
                         ))}
 
                         {filtreliCariler.length === 0 ? (
-                          <p className="rounded-[1.1rem] bg-white p-3 text-sm font-bold text-slate-400">Uygun cari bulunamadÄ±.</p>
+                          <p className="rounded-[1.1rem] bg-white p-3 text-sm font-bold text-slate-400">Uygun cari bulunamadı.</p>
                         ) : null}
                       </div>
                     </div>
@@ -1633,12 +1633,12 @@ setForm({
                 </div>
 
                 <div className="mt-5 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs font-black uppercase tracking-[0.12em] text-slate-400">ÃœrÃ¼n / Hizmet Ara</p>
+                  <p className="text-xs font-black uppercase tracking-[0.12em] text-slate-400">Ürün / Hizmet Ara</p>
                   <input
                     type="text"
                     value={urunArama}
                     onChange={(event) => setUrunArama(event.target.value)}
-                    placeholder="ÃœrÃ¼n adÄ± veya kodu ara"
+                    placeholder="Ürün adı veya kodu ara"
                     className="mt-3 h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold outline-none transition focus:border-violet-400"
                   />
 
@@ -1654,7 +1654,7 @@ setForm({
                           <span>
                             <span className="block text-sm font-black text-slate-950">{urun.urun_adi}</span>
                             <span className="mt-1 block text-xs font-bold text-slate-400">
-                              {urun.urun_kodu} Â· Stok: {urun.urun_tipi === "hizmet" ? "Hizmet" : `${miktarFormatla(Number(urun.mevcut_stok || 0))} ${urun.birim}`}
+                              {urun.urun_kodu} · Stok: {urun.urun_tipi === "hizmet" ? "Hizmet" : `${miktarFormatla(Number(urun.mevcut_stok || 0))} ${urun.birim}`}
                             </span>
                           </span>
                           <span className="text-right text-xs font-black text-slate-600">
@@ -1664,7 +1664,7 @@ setForm({
                       ))}
 
                       {filtreliUrunler.length === 0 ? (
-                        <p className="rounded-[1.1rem] bg-white p-3 text-sm font-bold text-slate-400">ÃœrÃ¼n bulunamadÄ±.</p>
+                        <p className="rounded-[1.1rem] bg-white p-3 text-sm font-bold text-slate-400">Ürün bulunamadı.</p>
                       ) : null}
                     </div>
                   ) : null}
@@ -1675,11 +1675,11 @@ setForm({
                     <div key={satir.satir_id} className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <p className="text-xs font-black text-slate-400">SatÄ±r {index + 1}</p>
-                          <p className="mt-1 text-sm font-black text-slate-950">{satir.urun?.urun_adi || "ÃœrÃ¼n seÃ§ilmedi"}</p>
+                          <p className="text-xs font-black text-slate-400">Satır {index + 1}</p>
+                          <p className="mt-1 text-sm font-black text-slate-950">{satir.urun?.urun_adi || "Ürün seçilmedi"}</p>
                           {satir.urun ? (
                             <p className="mt-1 text-xs font-bold text-slate-400">
-                              {satir.urun.urun_kodu} Â· {satir.urun.urun_tipi === "hizmet" ? "Hizmet" : `Stok: ${miktarFormatla(Number(satir.urun.mevcut_stok || 0))} ${satir.urun.birim}`}
+                              {satir.urun.urun_kodu} · {satir.urun.urun_tipi === "hizmet" ? "Hizmet" : `Stok: ${miktarFormatla(Number(satir.urun.mevcut_stok || 0))} ${satir.urun.birim}`}
                             </p>
                           ) : null}
                         </div>
@@ -1728,7 +1728,7 @@ setForm({
                         </label>
 
                         <div className="rounded-2xl bg-slate-950 p-3 text-white">
-                          <p className="text-[10px] font-black uppercase tracking-[0.12em] text-white/40">SatÄ±r ToplamÄ±</p>
+                          <p className="text-[10px] font-black uppercase tracking-[0.12em] text-white/40">Satır Toplamı</p>
                           <p className="mt-2 text-sm font-black">{paraFormatla(satir.satirToplami)}</p>
                         </div>
                       </div>
@@ -1741,7 +1741,7 @@ setForm({
                   onClick={satirEkle}
                   className="mt-4 inline-flex min-h-11 items-center justify-center rounded-full bg-slate-100 px-5 text-xs font-black text-slate-700 transition hover:bg-slate-200"
                 >
-                  SatÄ±r Ekle
+                  Satır Ekle
                 </button>
 
                 <label className="mt-5 block">
@@ -1750,7 +1750,7 @@ setForm({
                     value={form.aciklama}
                     onChange={(event) => formGuncelle("aciklama", event.target.value)}
                     rows={3}
-                    placeholder="FiÅŸ aÃ§Ä±klamasÄ±"
+                    placeholder="Fiş açıklaması"
                     className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold outline-none transition focus:border-violet-400 focus:bg-white"
                   />
                 </label>
@@ -1761,7 +1761,7 @@ setForm({
                     disabled={isSaving}
                     className="inline-flex min-h-12 items-center justify-center rounded-full bg-violet-600 px-6 text-sm font-black text-white shadow-lg shadow-violet-100 transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {isSaving ? "Kaydediliyor..." : duzenlemeModu ? "FiÅŸi GÃ¼ncelle" : `${fisEtiketleri[form.fis_turu]} Kaydet`}
+                    {isSaving ? "Kaydediliyor..." : duzenlemeModu ? "Fişi Güncelle" : `${fisEtiketleri[form.fis_turu]} Kaydet`}
                   </button>
 
                   <button
@@ -1769,7 +1769,7 @@ setForm({
                     onClick={formuKapat}
                     className="inline-flex min-h-12 items-center justify-center rounded-full bg-slate-100 px-6 text-sm font-black text-slate-700 transition hover:bg-slate-200"
                   >
-                    VazgeÃ§
+                    Vazgeç
                   </button>
                 </div>
               </form>
@@ -1778,8 +1778,8 @@ setForm({
 
           <aside className="space-y-5">
             <div className="rounded-[2rem] bg-white p-5 shadow-xl shadow-slate-200 sm:p-7">
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-violet-600">AnlÄ±k FiÅŸ Ã–zeti</p>
-              <h3 className="mt-2 text-2xl font-black tracking-[-0.05em]">{formAcik ? fisEtiketleri[form.fis_turu] : "FiÅŸ seÃ§ilmedi"}</h3>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-violet-600">Anlık Fiş Özeti</p>
+              <h3 className="mt-2 text-2xl font-black tracking-[-0.05em]">{formAcik ? fisEtiketleri[form.fis_turu] : "Fiş seçilmedi"}</h3>
 
               <div className="mt-5 space-y-3">
                 <div className="flex items-center justify-between rounded-[1.25rem] bg-slate-50 p-4">
@@ -1791,7 +1791,7 @@ setForm({
                   <strong className="text-sm font-black">{paraFormatla(toplamlar.kdvToplam)}</strong>
                 </div>
                 <div className="flex items-center justify-between rounded-[1.25rem] bg-slate-950 p-4 text-white">
-                  <span className="text-sm font-bold text-white/60">FiÅŸ ToplamÄ±</span>
+                  <span className="text-sm font-bold text-white/60">Fiş Toplamı</span>
                   <strong className="text-lg font-black">{paraFormatla(toplamlar.genelToplam)}</strong>
                 </div>
               </div>
@@ -1800,7 +1800,7 @@ setForm({
                 <p className="text-xs font-black uppercase tracking-[0.12em] text-slate-400">Cari Bakiye</p>
                 <div className="mt-4 grid grid-cols-2 gap-3">
                   <div>
-                    <p className="text-xs font-bold text-slate-400">Ã–nce</p>
+                    <p className="text-xs font-bold text-slate-400">Önce</p>
                     <p className={["mt-1 text-sm font-black", bakiyeRengi(toplamlar.oncekiBakiye)].join(" ")}>
                       {cariBakiyeEtiketi(toplamlar.oncekiBakiye)}
                     </p>
@@ -1818,10 +1818,10 @@ setForm({
             </div>
 
             <div className="rounded-[2rem] bg-white p-5 shadow-xl shadow-slate-200 sm:p-7">
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Son FiÅŸler</p>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Son Fişler</p>
               <div className="mt-4 space-y-3">
                 {sonFisler.length === 0 ? (
-                  <p className="rounded-[1.25rem] bg-slate-50 p-4 text-sm font-bold text-slate-500">HenÃ¼z fiÅŸ yok.</p>
+                  <p className="rounded-[1.25rem] bg-slate-50 p-4 text-sm font-bold text-slate-500">Henüz fiş yok.</p>
                 ) : null}
 
                 {sonFisler.map((fis) => (
@@ -1830,12 +1830,12 @@ setForm({
                       <div>
                         <p className="text-sm font-black text-slate-950">{fis.fis_no}</p>
                         <p className="mt-1 text-xs font-bold text-slate-400">
-                          {fisEtiketleri[fis.fis_turu]} Â· {tarihFormatla(fis.fis_tarihi)} Â· {fis.durum === "iptal" ? "Ä°ptal" : "Aktif"}
+                          {fisEtiketleri[fis.fis_turu]} · {tarihFormatla(fis.fis_tarihi)} · {fis.durum === "iptal" ? "İptal" : "Aktif"}
                         </p>
                         <p className="mt-1 text-xs font-bold text-slate-500">{fis.cari?.unvan || "-"}</p>
                         {fis.lastEdit ? (
                           <p className="mt-1 text-xs font-black text-amber-600">
-                            Son dÃ¼zenleyen: {fis.lastEdit.actorName} Â· {tarihFormatla(fis.lastEdit.createdAt)}
+                            Son düzenleyen: {fis.lastEdit.actorName} · {tarihFormatla(fis.lastEdit.createdAt)}
                           </p>
                         ) : null}
                       </div>
@@ -1875,7 +1875,7 @@ setForm({
                         onClick={() => fisiDuzenlemeyeAc(fis)}
                         className="rounded-full bg-amber-50 px-3 py-2 text-xs font-black text-amber-700 disabled:cursor-not-allowed disabled:opacity-40"
                       >
-                        DÃ¼zenle
+                        Düzenle
                       </button>
                       <button
                         type="button"
@@ -1883,7 +1883,7 @@ setForm({
                         onClick={() => fisiIptalEt(fis)}
                         className="rounded-full bg-red-50 px-3 py-2 text-xs font-black text-red-700 disabled:cursor-not-allowed disabled:opacity-40"
                       >
-                        Ä°ptal
+                        İptal
                       </button>
                     </div>
                   </div>
@@ -1896,10 +1896,10 @@ setForm({
         <section className="mt-6 rounded-[2rem] bg-white p-5 shadow-xl shadow-slate-200 sm:p-7">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-violet-600">FiÅŸ Hareketleri</p>
-              <h2 className="mt-2 text-2xl font-black tracking-[-0.05em]">AlÄ±ÅŸ, satÄ±ÅŸ ve dÃ¼zenleme iÅŸlemleri</h2>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-violet-600">Fiş Hareketleri</p>
+              <h2 className="mt-2 text-2xl font-black tracking-[-0.05em]">Alış, satış ve düzenleme işlemleri</h2>
               <p className="mt-2 text-sm font-bold text-slate-500">
-                Liste fiÅŸ tarihine gÃ¶re sÄ±ralanÄ±r. Aktif fiÅŸler dÃ¼zenlenebilir veya iptal edilebilir; iptal edilen fiÅŸin stok ve cari etkisi geri alÄ±nÄ±r.
+                Liste fiş tarihine göre sıralanır. Aktif fişler düzenlenebilir veya iptal edilebilir; iptal edilen fişin stok ve cari etkisi geri alınır.
               </p>
             </div>
 
@@ -1909,15 +1909,15 @@ setForm({
                 onChange={(event) => setListeTuru(event.target.value as "tum" | FisTuru)}
                 className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-black outline-none focus:border-violet-400 focus:bg-white"
               >
-                <option value="tum">TÃ¼m fiÅŸler</option>
-                <option value="satis">SatÄ±ÅŸ</option>
-                <option value="alis">AlÄ±ÅŸ</option>
+                <option value="tum">Tüm fişler</option>
+                <option value="satis">Satış</option>
+                <option value="alis">Alış</option>
               </select>
               <input
                 type="search"
                 value={listeArama}
                 onChange={(event) => setListeArama(event.target.value)}
-                placeholder="FiÅŸ no, cari, tarih ara"
+                placeholder="Fiş no, cari, tarih ara"
                 className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold outline-none focus:border-violet-400 focus:bg-white"
               />
             </div>
@@ -1925,35 +1925,35 @@ setForm({
 
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
             <div className="rounded-[1.5rem] bg-violet-50 p-4">
-              <p className="text-xs font-black uppercase tracking-[0.12em] text-violet-500">Listelenen SatÄ±ÅŸ</p>
+              <p className="text-xs font-black uppercase tracking-[0.12em] text-violet-500">Listelenen Satış</p>
               <p className="mt-2 text-xl font-black text-slate-950">
                 {paraFormatla(listeFisleri.filter((fis) => fis.durum === "aktif" && fis.fis_turu === "satis").reduce((toplam, fis) => toplam + Number(fis.genel_toplam || 0), 0))}
               </p>
             </div>
             <div className="rounded-[1.5rem] bg-slate-50 p-4">
-              <p className="text-xs font-black uppercase tracking-[0.12em] text-slate-400">Listelenen AlÄ±ÅŸ</p>
+              <p className="text-xs font-black uppercase tracking-[0.12em] text-slate-400">Listelenen Alış</p>
               <p className="mt-2 text-xl font-black text-slate-950">
                 {paraFormatla(listeFisleri.filter((fis) => fis.durum === "aktif" && fis.fis_turu === "alis").reduce((toplam, fis) => toplam + Number(fis.genel_toplam || 0), 0))}
               </p>
             </div>
             <div className="rounded-[1.5rem] bg-slate-950 p-4 text-white">
-              <p className="text-xs font-black uppercase tracking-[0.12em] text-white/40">Aktif FiÅŸ SayÄ±sÄ±</p>
+              <p className="text-xs font-black uppercase tracking-[0.12em] text-white/40">Aktif Fiş Sayısı</p>
               <p className="mt-2 text-xl font-black">{listeFisleri.filter((fis) => fis.durum === "aktif").length}</p>
             </div>
           </div>
 
           <div className="mt-5 overflow-hidden rounded-[1.5rem] border border-slate-200">
             <div className="hidden grid-cols-[130px_110px_minmax(180px,1fr)_130px_130px_260px] bg-slate-50 px-4 py-3 text-[11px] font-black uppercase tracking-[0.12em] text-slate-400 lg:grid">
-              <span>FiÅŸ No</span>
+              <span>Fiş No</span>
               <span>Tarih</span>
               <span>Cari</span>
-              <span>TÃ¼r</span>
+              <span>Tür</span>
               <span className="text-right">Toplam</span>
-              <span className="text-right">Ä°ÅŸlem</span>
+              <span className="text-right">İşlem</span>
             </div>
 
             {listeFisleri.length === 0 ? (
-              <p className="p-5 text-sm font-bold text-slate-500">Aramana uygun fiÅŸ bulunamadÄ±.</p>
+              <p className="p-5 text-sm font-bold text-slate-500">Aramana uygun fiş bulunamadı.</p>
             ) : null}
 
             {listeFisleri.map((fis) => (
@@ -1974,7 +1974,7 @@ setForm({
                   <p className="mt-1 text-xs font-bold text-slate-400">{fis.cari?.cari_kodu || "Cari kodu yok"}</p>
                   {fis.lastEdit ? (
                     <p className="mt-1 text-xs font-black text-amber-600">
-                      Son dÃ¼zenleyen: {fis.lastEdit.actorName}
+                      Son düzenleyen: {fis.lastEdit.actorName}
                     </p>
                   ) : null}
                 </div>
@@ -1988,7 +1988,7 @@ setForm({
                     {fisEtiketleri[fis.fis_turu]}
                   </span>
                   {fis.durum === "iptal" ? (
-                    <span className="ml-2 inline-flex rounded-full bg-red-100 px-3 py-1 text-xs font-black text-red-700">Ä°ptal</span>
+                    <span className="ml-2 inline-flex rounded-full bg-red-100 px-3 py-1 text-xs font-black text-red-700">İptal</span>
                   ) : null}
                 </div>
                 <p className="text-left text-base font-black text-slate-950 lg:text-right">{paraFormatla(Number(fis.genel_toplam || 0))}</p>
@@ -1996,8 +1996,8 @@ setForm({
                   <button type="button" onClick={() => fisPdfAc(fis)} className="rounded-full bg-slate-100 px-3 py-2 text-xs font-black text-slate-700">PDF</button>
                   <button type="button" onClick={() => fisiWhatsappIleGonder(fis)} className="rounded-full bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700">WP</button>
                   <button type="button" onClick={() => fistenYeniGirisAc(fis)} className="rounded-full bg-violet-50 px-3 py-2 text-xs font-black text-violet-700">Kopya</button>
-                  <button type="button" disabled={fis.durum === "iptal"} onClick={() => fisiDuzenlemeyeAc(fis)} className="rounded-full bg-amber-50 px-3 py-2 text-xs font-black text-amber-700 disabled:cursor-not-allowed disabled:opacity-40">DÃ¼zenle</button>
-                  <button type="button" disabled={fis.durum === "iptal"} onClick={() => fisiIptalEt(fis)} className="rounded-full bg-red-50 px-3 py-2 text-xs font-black text-red-700 disabled:cursor-not-allowed disabled:opacity-40">Ä°ptal</button>
+                  <button type="button" disabled={fis.durum === "iptal"} onClick={() => fisiDuzenlemeyeAc(fis)} className="rounded-full bg-amber-50 px-3 py-2 text-xs font-black text-amber-700 disabled:cursor-not-allowed disabled:opacity-40">Düzenle</button>
+                  <button type="button" disabled={fis.durum === "iptal"} onClick={() => fisiIptalEt(fis)} className="rounded-full bg-red-50 px-3 py-2 text-xs font-black text-red-700 disabled:cursor-not-allowed disabled:opacity-40">İptal</button>
                 </div>
               </div>
             ))}

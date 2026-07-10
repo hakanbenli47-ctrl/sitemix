@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useState } from "react";
@@ -141,7 +141,7 @@ type YeniHesapForm = {
 
 const hareketEtiketleri: Record<HareketTuru, string> = {
   tahsilat: "Tahsilat",
-  odeme: "Ã–deme",
+  odeme: "Ödeme",
   gelir: "Gelir",
   gider: "Gider",
 };
@@ -150,22 +150,22 @@ const whatsappDestekLink =
   "https://wa.me/905515550302?text=Sitemix%20On%20Muhasebe%20kasa%20tahsilat%20ve%20%C3%B6deme%20i%C5%9Flemleri%20i%C3%A7in%20destek%20istiyorum.";
 
 const hareketAciklamalari: Record<HareketTuru, string> = {
-  tahsilat: "MÃ¼ÅŸteriden para alÄ±nÄ±r. Kasa artar, mÃ¼ÅŸterinin bakiyesi dÃ¼ÅŸer.",
-  odeme: "TedarikÃ§iye para Ã¶denir. Kasa azalÄ±r, Ã¶denecek bakiye dÃ¼ÅŸer.",
-  gelir: "Cari seÃ§meden doÄŸrudan para giriÅŸi kaydedilir.",
-  gider: "Cari seÃ§meden doÄŸrudan para Ã§Ä±kÄ±ÅŸÄ± kaydedilir.",
+  tahsilat: "Müşteriden para alınır. Kasa artar, müşterinin bakiyesi düşer.",
+  odeme: "Tedarikçiye para ödenir. Kasa azalır, ödenecek bakiye düşer.",
+  gelir: "Cari seçmeden doğrudan para girişi kaydedilir.",
+  gider: "Cari seçmeden doğrudan para çıkışı kaydedilir.",
 };
 
 const hesapTuruEtiketleri: Record<HesapTuru, string> = {
   nakit: "Nakit",
   banka: "Banka",
-  kredi_karti: "Kredi KartÄ±",
+  kredi_karti: "Kredi Kartı",
   pos: "POS",
 };
 
 const hareketFiltresiEtiketleri: Record<HareketFiltresi, string> = {
   son10: "Son 10",
-  bugun: "BugÃ¼n",
+  bugun: "Bugün",
   hafta: "Bu Hafta",
   ay: "Bu Ay",
 };
@@ -235,7 +235,7 @@ function metniAraFormatinaCevir(value: string) {
     .toLocaleLowerCase("tr-TR")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/Ä±/g, "i")
+    .replace(/ı/g, "i")
     .replace(/[^a-z0-9\s]/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
@@ -323,8 +323,8 @@ function kasaCikisiMi(hareketTuru: KasaHareket["hareket_turu"]) {
 
 function cariBakiyeEtiketi(value: number) {
   if (value > 0) return "";
-  if (value < 0) return "Ã–denecek";
-  return "KapalÄ±";
+  if (value < 0) return "Ödenecek";
+  return "Kapalı";
 }
 
 function cariBakiyeRengi(value: number) {
@@ -338,9 +338,9 @@ function kasaHareketBasligi(hareketTuru: KasaHareket["hareket_turu"]) {
     return hareketEtiketleri[hareketTuru as HareketTuru];
   }
 
-  if (hareketTuru === "transfer_giris") return "Transfer GiriÅŸ";
-  if (hareketTuru === "transfer_cikis") return "Transfer Ã‡Ä±kÄ±ÅŸ";
-  return "DÃ¼zeltme";
+  if (hareketTuru === "transfer_giris") return "Transfer Giriş";
+  if (hareketTuru === "transfer_cikis") return "Transfer Çıkış";
+  return "Düzeltme";
 }
 
 export default function KasaPage() {
@@ -553,13 +553,13 @@ export default function KasaPage() {
         .order("created_at", { ascending: true });
 
       if (hesapError) {
-        throw new Error("Kasa hesaplarÄ± alÄ±namadÄ±.");
+        throw new Error("Kasa hesapları alınamadı.");
       }
 
       let hesaplar = (hesapData || []) as KasaHesabi[];
 
       if (hesaplar.length === 0 && !context.isOwner) {
-        throw new Error("Kasa hesabÄ± henÃ¼z oluÅŸturulmamÄ±ÅŸ. YÃ¶netici ilk kasa/banka hesabÄ±nÄ± aÃ§malÄ±dÄ±r.");
+        throw new Error("Kasa hesabı henüz oluşturulmamış. Yönetici ilk kasa/banka hesabını açmalıdır.");
       }
 
       if (hesaplar.length === 0) {
@@ -575,7 +575,7 @@ export default function KasaPage() {
             },
             {
               company_id: companyData.id,
-              hesap_adi: "Banka HesabÄ±",
+              hesap_adi: "Banka Hesabı",
               hesap_turu: "banka",
               para_birimi: "TRY",
               acilis_bakiyesi: 0,
@@ -584,7 +584,7 @@ export default function KasaPage() {
           .select("id, company_id, hesap_adi, hesap_turu, banka_adi, iban, para_birimi, acilis_bakiyesi, aktif");
 
         if (createAccountError) {
-          throw new Error("VarsayÄ±lan kasa hesaplarÄ± oluÅŸturulamadÄ±.");
+          throw new Error("Varsayılan kasa hesapları oluşturulamadı.");
         }
 
         hesaplar = (createdAccounts || []) as KasaHesabi[];
@@ -624,9 +624,9 @@ export default function KasaPage() {
           .limit(100),
       ]);
 
-      if (cariResponse.error) throw new Error("Cariler alÄ±namadÄ±.");
-      if (kategoriResponse.error) throw new Error("Gelir/gider kategorileri alÄ±namadÄ±.");
-      if (hareketResponse.error) throw new Error("Kasa hareketleri alÄ±namadÄ±.");
+      if (cariResponse.error) throw new Error("Cariler alınamadı.");
+      if (kategoriResponse.error) throw new Error("Gelir/gider kategorileri alınamadı.");
+      if (hareketResponse.error) throw new Error("Kasa hareketleri alınamadı.");
 
       setCariler((cariResponse.data || []) as CariHesap[]);
       setKategoriler((kategoriResponse.data || []) as GelirGiderKategori[]);
@@ -640,7 +640,7 @@ export default function KasaPage() {
       );
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : "Kasa ekranÄ± yÃ¼klenirken hata oluÅŸtu.",
+        error instanceof Error ? error.message : "Kasa ekranı yüklenirken hata oluştu.",
       );
     } finally {
       setIsLoading(false);
@@ -707,29 +707,29 @@ export default function KasaPage() {
     setSuccessMessage("");
 
     if (!company) {
-      setErrorMessage("Firma bilgisi bulunamadÄ±.");
+      setErrorMessage("Firma bilgisi bulunamadı.");
       return;
     }
 
     if (!form.kasaHesapId) {
-      setErrorMessage("Nakit veya banka hesabÄ± seÃ§melisin.");
+      setErrorMessage("Nakit veya banka hesabı seçmelisin.");
       return;
     }
 
     if ((form.hareketTuru === "tahsilat" || form.hareketTuru === "odeme") && !form.cariId) {
-      setErrorMessage("Tahsilat ve Ã¶deme iÅŸlemlerinde cari seÃ§melisin.");
+      setErrorMessage("Tahsilat ve ödeme işlemlerinde cari seçmelisin.");
       return;
     }
 
     const tutar = paraSayiyaCevir(form.tutar);
 
     if (tutar <= 0) {
-      setErrorMessage("Tutar 0'dan bÃ¼yÃ¼k olmalÄ±.");
+      setErrorMessage("Tutar 0'dan büyük olmalı.");
       return;
     }
 
     if (form.islemTarihi < yearRange.start || form.islemTarihi > yearRange.end) {
-      setErrorMessage(`${workYear} Ã§alÄ±ÅŸma yÄ±lÄ±nda sadece ${yearRange.start} - ${yearRange.end} arasÄ± iÅŸlem girebilirsin.`);
+      setErrorMessage(`${workYear} çalışma yılında sadece ${yearRange.start} - ${yearRange.end} arası işlem girebilirsin.`);
       return;
     }
 
@@ -752,7 +752,7 @@ export default function KasaPage() {
         throw error;
       }
 
-      setSuccessMessage("Kasa iÅŸlemi kaydedildi.");
+      setSuccessMessage("Kasa işlemi kaydedildi.");
       setCariArama("");
       setForm((current) => ({
         ...current,
@@ -763,7 +763,7 @@ export default function KasaPage() {
       }));
       await verileriYukle(false);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Kasa iÅŸlemi kaydedilemedi.");
+      setErrorMessage(error instanceof Error ? error.message : "Kasa işlemi kaydedilemedi.");
     } finally {
       setIsSaving(false);
     }
@@ -774,17 +774,17 @@ export default function KasaPage() {
     setErrorMessage("");
     setSuccessMessage("");
     if (!canManageAccounts) {
-      setErrorMessage("Kasa/banka hesabÄ±nÄ± sadece yÃ¶netici oluÅŸturabilir. Personel para hareketi ekleyebilir ve hatalÄ± hareketi iptal edebilir.");
+      setErrorMessage("Kasa/banka hesabını sadece yönetici oluşturabilir. Personel para hareketi ekleyebilir ve hatalı hareketi iptal edebilir.");
       return;
     }
 
     if (!company) {
-      setErrorMessage("Firma bilgisi bulunamadÄ±.");
+      setErrorMessage("Firma bilgisi bulunamadı.");
       return;
     }
 
     if (!accountForm.hesapAdi.trim()) {
-      setErrorMessage("Hesap adÄ± zorunlu.");
+      setErrorMessage("Hesap adı zorunlu.");
       return;
     }
 
@@ -806,7 +806,7 @@ export default function KasaPage() {
         throw error;
       }
 
-      setSuccessMessage("Kasa/banka hesabÄ± eklendi.");
+      setSuccessMessage("Kasa/banka hesabı eklendi.");
       setAccountForm({
         hesapAdi: "",
         hesapTuru: "nakit",
@@ -820,7 +820,7 @@ export default function KasaPage() {
       const mesaj = error instanceof Error ? error.message : "Hesap eklenemedi.";
       setErrorMessage(
         mesaj.includes("duplicate") || mesaj.includes("unique")
-          ? "Bu hesap adÄ± zaten kullanÄ±lÄ±yor. FarklÄ± bir hesap adÄ± gir."
+          ? "Bu hesap adı zaten kullanılıyor. Farklı bir hesap adı gir."
           : mesaj,
       );
     } finally {
@@ -831,7 +831,7 @@ export default function KasaPage() {
   async function hareketiIptalEt(hareket: KasaHareketView) {
     if (!company || hareket.durum === "iptal") return;
 
-    const onay = window.confirm("Bu kasa hareketi iptal edilsin mi? Cari bakiyesi de geri alÄ±nÄ±r.");
+    const onay = window.confirm("Bu kasa hareketi iptal edilsin mi? Cari bakiyesi de geri alınır.");
     if (!onay) return;
 
     setIsCancelling(hareket.id);
@@ -863,10 +863,10 @@ export default function KasaPage() {
 
     return [
       `${belgeHazirlayanAdi()} - ${kasaFisBasligi(hareket)}`,
-      `FiÅŸ No: ${tahsilatFisNo(hareket)}`,
+      `Fiş No: ${tahsilatFisNo(hareket)}`,
       `Tarih: ${tarihFormatla(hareket.islem_tarihi)}`,
       `Cari: ${hareket.cari?.unvan || "-"}`,
-      `Ä°ÅŸlem Ã–ncesi Bakiye: ${cariBakiyeEtiketi(oncekiBakiye)} ${paraFormatla(Math.abs(oncekiBakiye))}`,
+      `İşlem Öncesi Bakiye: ${cariBakiyeEtiketi(oncekiBakiye)} ${paraFormatla(Math.abs(oncekiBakiye))}`,
       `Tahsilat: ${paraFormatla(Number(hareket.tutar || 0))}`,
       `Kalan Bakiye: ${cariBakiyeEtiketi(kalanBakiye)} ${paraFormatla(Math.abs(kalanBakiye))}`,
       hareket.aciklama ? `Not: ${hareket.aciklama}` : "",
@@ -921,11 +921,11 @@ export default function KasaPage() {
             <div class="ust">
               <div>
                 <div class="firma">${hazirlayanAdi}</div>
-                <div class="etiket">İşlemi yapan / Firma Kodu: ${company?.company_code || "-"}</div>
+                <div class="etiket">Islemi yapan / Firma Kodu: ${company?.company_code || "-"}</div>
               </div>
               <div class="baslik">
                 <h1>${fisBasligi}</h1>
-                <p>FiÅŸ No: ${fisNo}</p>
+                <p>Fiş No: ${fisNo}</p>
               </div>
             </div>
 
@@ -934,7 +934,7 @@ export default function KasaPage() {
               <div class="kutu"><small>Kasa / Banka</small><strong>${hareket.kasa_hesabi?.hesap_adi || "Kasa"}</strong></div>
               <div class="kutu"><small>Cari</small><strong>${hareket.cari?.unvan || "-"}</strong></div>
               <div class="kutu"><small>Cari Kodu</small><strong>${hareket.cari?.cari_kodu || "-"}</strong></div>
-              <div class="kutu"><small>Ä°ÅŸlem Ã–ncesi Bakiye</small><strong>${cariBakiyeEtiketi(oncekiBakiye)} ${paraFormatla(Math.abs(oncekiBakiye))}</strong></div>
+              <div class="kutu"><small>İşlem Öncesi Bakiye</small><strong>${cariBakiyeEtiketi(oncekiBakiye)} ${paraFormatla(Math.abs(oncekiBakiye))}</strong></div>
               <div class="kutu"><small>Kalan Bakiye</small><strong>${cariBakiyeEtiketi(kalanBakiye)} ${paraFormatla(Math.abs(kalanBakiye))}</strong></div>
             </div>
 
@@ -949,16 +949,16 @@ export default function KasaPage() {
               <div class="imza-kutu">
                 <div class="imza-baslik">Teslim Eden</div>
                 <div class="imza-ad">${hazirlayanAdi}</div>
-                <div class="imza-cizgi">Ad Soyad / Ä°mza</div>
+                <div class="imza-cizgi">Ad Soyad / İmza</div>
               </div>
               <div class="imza-kutu">
                 <div class="imza-baslik">Teslim Alan</div>
-                <div class="imza-ad">${hareket.cari?.unvan || "MÃ¼ÅŸteri"}</div>
-                <div class="imza-cizgi">Ad Soyad / Ä°mza</div>
+                <div class="imza-ad">${hareket.cari?.unvan || "Müşteri"}</div>
+                <div class="imza-cizgi">Ad Soyad / İmza</div>
               </div>
             </div>
 
-            <div class="alt">Bu fiÅŸ Sitemix Ã–n Muhasebe Ã¼zerinden oluÅŸturulmuÅŸtur.</div>
+            <div class="alt">Bu fiş Sitemix Ön Muhasebe üzerinden oluşturulmuştur.</div>
           </div>
         </body>
       </html>
@@ -969,7 +969,7 @@ export default function KasaPage() {
     const pencere = window.open("", "_blank", "width=820,height=900");
 
     if (!pencere) {
-      setErrorMessage("PDF penceresi aÃ§Ä±lamadÄ±. TarayÄ±cÄ± pop-up iznini kontrol et.");
+      setErrorMessage("PDF penceresi açılamadı. Tarayıcı pop-up iznini kontrol et.");
       return;
     }
 
@@ -987,7 +987,7 @@ export default function KasaPage() {
     const telefon = telefonuWhatsappFormatinaCevir(hareket.cari?.telefon);
 
     if (!telefon) {
-      setErrorMessage("Bu caride telefon numarasÄ± yok. Ã–nce cari kartÄ±na telefon eklemelisin.");
+      setErrorMessage("Bu caride telefon numarası yok. Önce cari kartına telefon eklemelisin.");
       return;
     }
 
@@ -1000,7 +1000,7 @@ export default function KasaPage() {
       <main className="flex min-h-screen items-center justify-center bg-[#f3f6fb] px-5 text-slate-950">
         <div className="rounded-[2rem] bg-white p-8 text-center shadow-xl shadow-slate-200">
           <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-slate-100 border-t-emerald-600" />
-          <p className="mt-5 text-sm font-black text-slate-600">Kasa ekranÄ± yÃ¼kleniyor...</p>
+          <p className="mt-5 text-sm font-black text-slate-600">Kasa ekranı yükleniyor...</p>
         </div>
       </main>
     );
@@ -1012,12 +1012,12 @@ export default function KasaPage() {
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 lg:px-8">
           <Link href="/on-muhasebe/panel" className="flex items-center gap-3">
             <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-600 text-sm font-black text-white shadow-lg shadow-emerald-200">
-              â‚º
+              ₺
             </span>
             <span className="leading-tight">
               <span className="block text-base font-black tracking-[-0.03em]">Kasa</span>
               <span className="block text-xs font-extrabold text-slate-500">
-                {company?.company_code || "Sitemix Ã–n Muhasebe"}
+                {company?.company_code || "Sitemix Ön Muhasebe"}
               </span>
             </span>
           </Link>
@@ -1058,12 +1058,12 @@ export default function KasaPage() {
 
           <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.22em] text-white/40">Kasa YÃ¶netimi</p>
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-white/40">Kasa Yönetimi</p>
               <h1 className="mt-3 text-3xl font-black tracking-[-0.05em] sm:text-5xl">
-                Nakit, banka ve cari tahsilatlarÄ±
+                Nakit, banka ve cari tahsilatları
               </h1>
               <p className="mt-4 max-w-2xl text-sm font-bold leading-6 text-white/60">
-                Tahsilat ve Ã¶deme iÅŸlemleri kasa hareketi oluÅŸturur. Cari seÃ§iliyse bakiye otomatik gÃ¼ncellenir.
+                Tahsilat ve ödeme işlemleri kasa hareketi oluşturur. Cari seçiliyse bakiye otomatik güncellenir.
               </p>
             </div>
 
@@ -1073,7 +1073,7 @@ export default function KasaPage() {
                 <p className="mt-2 text-2xl font-black text-white">{paraFormatla(ozet.toplam)}</p>
               </div>
               <div className="rounded-[1.35rem] bg-white/10 p-4">
-                <p className="text-xs font-black text-white/40">BugÃ¼n Net</p>
+                <p className="text-xs font-black text-white/40">Bugün Net</p>
                 <p className="mt-2 text-2xl font-black text-white">
                   {paraFormatla(ozet.bugunGiris - ozet.bugunCikis)}
                 </p>
@@ -1092,11 +1092,11 @@ export default function KasaPage() {
             <p className="mt-3 text-2xl font-black tracking-[-0.05em]">{paraFormatla(ozet.banka)}</p>
           </div>
           <div className="rounded-[1.6rem] bg-white p-5 shadow-lg shadow-slate-200">
-            <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">BugÃ¼n GiriÅŸ</p>
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Bugün Giriş</p>
             <p className="mt-3 text-2xl font-black tracking-[-0.05em] text-emerald-600">{paraFormatla(ozet.bugunGiris)}</p>
           </div>
           <div className="rounded-[1.6rem] bg-white p-5 shadow-lg shadow-slate-200">
-            <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">BugÃ¼n Ã‡Ä±kÄ±ÅŸ</p>
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Bugün Çıkış</p>
             <p className="mt-3 text-2xl font-black tracking-[-0.05em] text-red-600">{paraFormatla(ozet.bugunCikis)}</p>
           </div>
         </div>
@@ -1117,10 +1117,10 @@ export default function KasaPage() {
           <div className="rounded-[2rem] bg-white p-5 shadow-xl shadow-slate-200 sm:p-7">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-600">Yeni Ä°ÅŸlem</p>
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-600">Yeni İşlem</p>
                 <h2 className="mt-2 text-2xl font-black tracking-[-0.05em]">Kasa hareketi ekle</h2>
                 <p className="mt-2 max-w-2xl text-sm font-bold leading-6 text-slate-500">
-                  MÃ¼ÅŸteriden para alÄ±rken tahsilat, tedarikÃ§iye para verirken Ã¶deme seÃ§.
+                  Müşteriden para alırken tahsilat, tedarikçiye para verirken ödeme seç.
                 </p>
               </div>
             </div>
@@ -1142,7 +1142,7 @@ export default function KasaPage() {
                   >
                     <span className="block text-sm font-black">{hareketEtiketleri[hareketTuru]}</span>
                     <span className={aktif ? "mt-1 block text-xs font-bold text-white/70" : "mt-1 block text-xs font-bold text-slate-400"}>
-                      {hareketTuru === "tahsilat" || hareketTuru === "gelir" ? "Para giriÅŸi" : "Para Ã§Ä±kÄ±ÅŸÄ±"}
+                      {hareketTuru === "tahsilat" || hareketTuru === "gelir" ? "Para girişi" : "Para çıkışı"}
                     </span>
                   </button>
                 );
@@ -1192,12 +1192,12 @@ export default function KasaPage() {
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                           <p className="text-xs font-black uppercase tracking-[0.14em] text-emerald-700">
-                            SeÃ§ilen Cari
+                            Seçilen Cari
                           </p>
                           <p className="mt-1 text-base font-black text-slate-900">{seciliCari.unvan}</p>
                           <p className="mt-1 text-xs font-bold text-slate-500">
                             {seciliCari.cari_kodu}
-                            {seciliCari.telefon ? ` â€¢ ${seciliCari.telefon}` : ""}
+                            {seciliCari.telefon ? ` • ${seciliCari.telefon}` : ""}
                           </p>
                         </div>
 
@@ -1216,7 +1216,7 @@ export default function KasaPage() {
                             onClick={cariSecimiTemizle}
                             className="rounded-full bg-white px-4 py-2 text-xs font-black text-slate-700 shadow-sm transition hover:bg-slate-100"
                           >
-                            DeÄŸiÅŸtir
+                            Değiştir
                           </button>
                         </div>
                       </div>
@@ -1228,8 +1228,8 @@ export default function KasaPage() {
                         onChange={cariAramaGuncelle}
                         placeholder={
                           form.hareketTuru === "tahsilat"
-                            ? "MÃ¼ÅŸteri adÄ±, kodu veya telefon yaz"
-                            : "TedarikÃ§i adÄ±, kodu veya telefon yaz"
+                            ? "Müşteri adı, kodu veya telefon yaz"
+                            : "Tedarikçi adı, kodu veya telefon yaz"
                         }
                         autoComplete="off"
                         className="min-h-[52px] rounded-[1.25rem] border border-slate-200 bg-white px-4 text-sm font-black outline-none transition focus:border-emerald-500"
@@ -1239,10 +1239,10 @@ export default function KasaPage() {
                         {aramayaGoreFiltreliCariler.length === 0 ? (
                           <div className="rounded-[1rem] bg-white p-4 text-sm font-bold text-slate-500">
                             {cariArama.trim()
-                              ? "Cari bulunamadÄ±. FarklÄ± bir kelime yaz."
+                              ? "Cari bulunamadı. Farklı bir kelime yaz."
                               : form.hareketTuru === "tahsilat"
-                                ? "Tahsilat iÃ§in mÃ¼ÅŸteri arayabilirsin."
-                                : "Ã–deme iÃ§in tedarikÃ§i arayabilirsin."}
+                                ? "Tahsilat için müşteri arayabilirsin."
+                                : "Ödeme için tedarikçi arayabilirsin."}
                           </div>
                         ) : null}
 
@@ -1260,7 +1260,7 @@ export default function KasaPage() {
                                 <span className="block text-sm font-black">{cari.unvan}</span>
                                 <span className="mt-1 block text-xs font-bold text-slate-400">
                                   {cari.cari_kodu}
-                                  {cari.telefon ? ` â€¢ ${cari.telefon}` : ""}
+                                  {cari.telefon ? ` • ${cari.telefon}` : ""}
                                 </span>
                               </span>
 
@@ -1285,7 +1285,7 @@ export default function KasaPage() {
                     onChange={(event) => formGuncelle("kategoriId", event.target.value)}
                     className="min-h-[52px] rounded-[1.25rem] border border-slate-200 bg-white px-4 text-sm font-black outline-none transition focus:border-emerald-500"
                   >
-                    <option value="">Kategori seÃ§meden devam et</option>
+                    <option value="">Kategori seçmeden devam et</option>
                     {filtreliKategoriler.map((kategori) => (
                       <option key={kategori.id} value={kategori.id}>
                         {kategori.kategori_adi}
@@ -1308,11 +1308,11 @@ export default function KasaPage() {
                 </label>
 
                 <label className="grid gap-2">
-                  <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">KÄ±sa Not</span>
+                  <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Kısa Not</span>
                   <input
                     value={form.aciklama}
                     onChange={(event) => formGuncelle("aciklama", event.target.value)}
-                    placeholder="Ã–rn: Haziran tahsilatÄ±"
+                    placeholder="Örn: Haziran tahsilatı"
                     className="min-h-[52px] rounded-[1.25rem] border border-slate-200 bg-white px-4 text-sm font-black outline-none transition focus:border-emerald-500"
                   />
                 </label>
@@ -1327,7 +1327,7 @@ export default function KasaPage() {
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs font-black text-slate-400">Ä°ÅŸlem SonrasÄ±</p>
+                    <p className="text-xs font-black text-slate-400">İşlem Sonrası</p>
                     <p className={["mt-1 text-lg font-black", cariBakiyeRengi(islemSonrasiCariBakiye)].join(" ")}>
                       {cariBakiyeEtiketi(islemSonrasiCariBakiye)} {paraFormatla(Math.abs(islemSonrasiCariBakiye))}
                     </p>
@@ -1340,7 +1340,7 @@ export default function KasaPage() {
                 disabled={isSaving}
                 className="inline-flex min-h-[54px] items-center justify-center rounded-full bg-emerald-600 px-6 text-sm font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isSaving ? "Kaydediliyor..." : "Ä°ÅŸlemi Kaydet"}
+                {isSaving ? "Kaydediliyor..." : "İşlemi Kaydet"}
               </button>
             </form>
           </div>
@@ -1359,7 +1359,7 @@ export default function KasaPage() {
                   <input
                     value={accountForm.hesapAdi}
                     onChange={(event) => hesapFormuGuncelle("hesapAdi", event.target.value)}
-                    placeholder="Hesap adÄ±"
+                    placeholder="Hesap adı"
                     className="min-h-[48px] rounded-[1rem] border border-transparent bg-white px-4 text-sm font-black outline-none focus:border-emerald-500"
                   />
 
@@ -1371,7 +1371,7 @@ export default function KasaPage() {
                     <option value="nakit">Nakit</option>
                     <option value="banka">Banka</option>
                     <option value="pos">POS</option>
-                    <option value="kredi_karti">Kredi KartÄ±</option>
+                    <option value="kredi_karti">Kredi Kartı</option>
                   </select>
 
                   {accountForm.hesapTuru !== "nakit" ? (
@@ -1379,7 +1379,7 @@ export default function KasaPage() {
                       <input
                         value={accountForm.bankaAdi}
                         onChange={(event) => hesapFormuGuncelle("bankaAdi", event.target.value)}
-                        placeholder="Banka adÄ±"
+                        placeholder="Banka adı"
                         className="min-h-[48px] rounded-[1rem] border border-transparent bg-white px-4 text-sm font-black outline-none focus:border-emerald-500"
                       />
                       <input
@@ -1395,7 +1395,7 @@ export default function KasaPage() {
                     value={accountForm.acilisBakiyesi}
                     onChange={hesapAcilisBakiyesiGuncelle}
                     inputMode="decimal"
-                    placeholder="AÃ§Ä±lÄ±ÅŸ bakiyesi"
+                    placeholder="Açılış bakiyesi"
                     className="min-h-[48px] rounded-[1rem] border border-transparent bg-white px-4 text-sm font-black outline-none focus:border-emerald-500"
                   />
 
@@ -1404,7 +1404,7 @@ export default function KasaPage() {
                     disabled={isAccountSaving}
                     className="min-h-[48px] rounded-full bg-slate-950 px-5 text-sm font-black text-white disabled:opacity-60"
                   >
-                    {isAccountSaving ? "Ekleniyor..." : "HesabÄ± Kaydet"}
+                    {isAccountSaving ? "Ekleniyor..." : "Hesabı Kaydet"}
                   </button>
                 </form>
               ) : null}
@@ -1417,7 +1417,7 @@ export default function KasaPage() {
                         <p className="text-sm font-black">{hesap.hesap_adi}</p>
                         <p className="mt-1 text-xs font-bold text-slate-500">
                           {hesapTuruEtiketleri[hesap.hesap_turu]}
-                          {hesap.banka_adi ? ` â€¢ ${hesap.banka_adi}` : ""}
+                          {hesap.banka_adi ? ` • ${hesap.banka_adi}` : ""}
                         </p>
                       </div>
                       <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-slate-600">
@@ -1435,7 +1435,7 @@ export default function KasaPage() {
             <div className="rounded-[2rem] bg-white p-5 shadow-xl shadow-slate-200 sm:p-6">
               <div className="flex flex-col gap-4">
                 <div>
-                  <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Son Ä°ÅŸlemler</p>
+                  <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Son İşlemler</p>
                   <h2 className="mt-2 text-2xl font-black tracking-[-0.05em]">Hareketler</h2>
                 </div>
 
@@ -1477,12 +1477,12 @@ export default function KasaPage() {
                         <div>
                           <p className="text-sm font-black">
                             {kasaHareketBasligi(hareket.hareket_turu)}
-                            {iptal ? " / Ä°ptal" : ""}
+                            {iptal ? " / İptal" : ""}
                           </p>
                           <p className="mt-1 text-xs font-bold leading-5 text-slate-500">
-                            {tarihFormatla(hareket.islem_tarihi)} â€¢ {hareket.kasa_hesabi?.hesap_adi || "Kasa"}
-                            {hareket.cari ? ` â€¢ ${hareket.cari.unvan}` : ""}
-                            {hareket.kategori ? ` â€¢ ${hareket.kategori.kategori_adi}` : ""}
+                            {tarihFormatla(hareket.islem_tarihi)} • {hareket.kasa_hesabi?.hesap_adi || "Kasa"}
+                            {hareket.cari ? ` • ${hareket.cari.unvan}` : ""}
+                            {hareket.kategori ? ` • ${hareket.kategori.kategori_adi}` : ""}
                           </p>
                         </div>
                         <p className={["shrink-0 text-base font-black", giris ? "text-emerald-600" : "text-red-600"].join(" ")}>
@@ -1504,7 +1504,7 @@ export default function KasaPage() {
                               onClick={() => setTahsilatFisOnizleme(hareket)}
                               className="rounded-full bg-emerald-600 px-4 py-2 text-xs font-black text-white transition hover:bg-emerald-700"
                             >
-                              Tahsilat FiÅŸi
+                              Tahsilat Fişi
                             </button>
                           ) : null}
 
@@ -1514,7 +1514,7 @@ export default function KasaPage() {
                             disabled={isCancelling === hareket.id}
                             className="rounded-full bg-white px-4 py-2 text-xs font-black text-slate-500 transition hover:text-red-600 disabled:opacity-50"
                           >
-                            {isCancelling === hareket.id ? "Ä°ptal ediliyor..." : "Ä°ptal Et"}
+                            {isCancelling === hareket.id ? "İptal ediliyor..." : "İptal Et"}
                           </button>
                         </div>
                       ) : null}
@@ -1532,10 +1532,10 @@ export default function KasaPage() {
           <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] bg-white p-5 shadow-2xl sm:p-7">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-600">Ã–n Ä°zleme</p>
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-600">Ön İzleme</p>
                 <h3 className="mt-2 text-2xl font-black tracking-[-0.05em]">{kasaFisBasligi(tahsilatFisOnizleme)}</h3>
                 <p className="mt-1 text-xs font-bold text-slate-400">
-                  FiÅŸ No: {tahsilatFisNo(tahsilatFisOnizleme)}
+                  Fiş No: {tahsilatFisNo(tahsilatFisOnizleme)}
                 </p>
               </div>
 
@@ -1557,7 +1557,7 @@ export default function KasaPage() {
                   </p>
                   <p className="mt-1 text-xs font-bold text-slate-400">
                     {tahsilatFisOnizleme.cari?.cari_kodu || "-"}
-                    {tahsilatFisOnizleme.cari?.telefon ? ` â€¢ ${tahsilatFisOnizleme.cari.telefon}` : ""}
+                    {tahsilatFisOnizleme.cari?.telefon ? ` • ${tahsilatFisOnizleme.cari.telefon}` : ""}
                   </p>
                 </div>
 
@@ -1572,7 +1572,7 @@ export default function KasaPage() {
                 </div>
 
                 <div className="rounded-[1rem] bg-white p-4">
-                  <p className="text-xs font-black text-slate-400">Ä°ÅŸlem Ã–ncesi Bakiye</p>
+                  <p className="text-xs font-black text-slate-400">İşlem Öncesi Bakiye</p>
                   <p className={["mt-1 text-xl font-black", cariBakiyeRengi(hareketCariBakiyesiOnce(tahsilatFisOnizleme))].join(" ")}>
                     {cariBakiyeEtiketi(hareketCariBakiyesiOnce(tahsilatFisOnizleme))} {paraFormatla(Math.abs(hareketCariBakiyesiOnce(tahsilatFisOnizleme)))}
                   </p>
@@ -1605,15 +1605,15 @@ export default function KasaPage() {
                 <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Teslim Eden</p>
                 <p className="mt-2 text-sm font-black text-slate-900">{belgeHazirlayanAdi()}</p>
                 <div className="mt-8 border-t border-slate-300 pt-2 text-center text-xs font-bold text-slate-400">
-                  Ad Soyad / Ä°mza
+                  Ad Soyad / İmza
                 </div>
               </div>
 
               <div className="min-h-28 rounded-[1.25rem] border border-slate-200 bg-white p-4">
                 <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Teslim Alan</p>
-                <p className="mt-2 text-sm font-black text-slate-900">{tahsilatFisOnizleme.cari?.unvan || "MÃ¼ÅŸteri"}</p>
+                <p className="mt-2 text-sm font-black text-slate-900">{tahsilatFisOnizleme.cari?.unvan || "Müşteri"}</p>
                 <div className="mt-8 border-t border-slate-300 pt-2 text-center text-xs font-bold text-slate-400">
-                  Ad Soyad / Ä°mza
+                  Ad Soyad / İmza
                 </div>
               </div>
             </div>
@@ -1624,7 +1624,7 @@ export default function KasaPage() {
                 onClick={() => tahsilatFisiPdfAc(tahsilatFisOnizleme)}
                 className="min-h-12 flex-1 rounded-full bg-slate-950 px-5 text-sm font-black text-white transition hover:bg-slate-800"
               >
-                PDF / YazdÄ±r
+                PDF / Yazdır
               </button>
 
               <button
@@ -1633,17 +1633,17 @@ export default function KasaPage() {
                 disabled={!telefonuWhatsappFormatinaCevir(tahsilatFisOnizleme.cari?.telefon)}
                 className="min-h-12 flex-1 rounded-full bg-emerald-600 px-5 text-sm font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
               >
-                WhatsApp&apos;ta GÃ¶nder
+                WhatsApp&apos;ta Gönder
               </button>
             </div>
 
             {!telefonuWhatsappFormatinaCevir(tahsilatFisOnizleme.cari?.telefon) ? (
               <p className="mt-3 text-xs font-bold leading-5 text-slate-400">
-                Bu caride telefon numarasÄ± olmadÄ±ÄŸÄ± iÃ§in WhatsApp gÃ¶nderimi kapalÄ±. PDF oluÅŸturabilirsin.
+                Bu caride telefon numarası olmadığı için WhatsApp gönderimi kapalı. PDF oluşturabilirsin.
               </p>
             ) : (
               <p className="mt-3 text-xs font-bold leading-5 text-slate-400">
-                WhatsApp mesajÄ± tahsilat bilgilerini gÃ¶nderir. PDF dosyasÄ±nÄ± otomatik eklemek iÃ§in ayrÄ±ca dosyayÄ± manuel seÃ§men gerekir.
+                WhatsApp mesajı tahsilat bilgilerini gönderir. PDF dosyasını otomatik eklemek için ayrıca dosyayı manuel seçmen gerekir.
               </p>
             )}
           </div>
