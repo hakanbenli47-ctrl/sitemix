@@ -947,7 +947,7 @@ export default function OnMuhasebePanelPage() {
         </div>
       ) : null}
 
-      <section className="mx-auto max-w-7xl px-4 py-4 pb-40 sm:px-5 sm:py-6 lg:px-8 lg:py-8">
+    <section className="mx-auto max-w-7xl px-4 py-4 sm:px-5 sm:py-6 lg:px-8 lg:py-8">
         <div>
           <div className="relative min-h-[270px] overflow-hidden rounded-[2rem] bg-slate-950 p-6 text-white shadow-xl shadow-slate-300 sm:min-h-[330px] sm:p-9 lg:p-12">
             <div className="absolute right-[-90px] top-[-90px] h-64 w-64 rounded-full bg-indigo-500/30 blur-3xl" />
@@ -1406,24 +1406,7 @@ export default function OnMuhasebePanelPage() {
         </> : null}
       </section>
 
-      <nav className="fixed bottom-4 left-1/2 z-30 flex w-[calc(100%-2rem)] max-w-md -translate-x-1/2 items-center justify-between rounded-full bg-slate-950/95 px-3 py-3 shadow-2xl shadow-slate-400 backdrop-blur-xl lg:hidden">
-        {visibleModuleCards.slice(0, 4).map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className="flex min-h-12 min-w-12 items-center justify-center rounded-full text-sm font-black text-white/75 transition hover:bg-white/10 hover:text-white"
-          >
-            {item.icon}
-          </Link>
-        ))}
-        <button
-          type="button"
-          onClick={() => setMenuOpen(true)}
-          className="flex min-h-12 min-w-12 items-center justify-center rounded-full bg-white text-sm font-black text-slate-950"
-        >
-          Menü
-        </button>
-      </nav>
+     
     </main>
   );
 }
