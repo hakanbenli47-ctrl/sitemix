@@ -13,28 +13,22 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1,
     },
     {
-      url: `${siteUrl}/#hizmetler`,
+      url: `${siteUrl}/on-muhasebe`,
       lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.8,
+      changeFrequency: "weekly",
+      priority: 0.95,
     },
     {
-      url: `${siteUrl}/#paketler`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.8,
-    },
-    {
-      url: `${siteUrl}/#referanslar`,
+      url: `${siteUrl}/on-muhasebe/giris`,
       lastModified: now,
       changeFrequency: "monthly",
       priority: 0.7,
     },
     {
-      url: `${siteUrl}/#iletisim`,
+      url: `${siteUrl}/on-muhasebe/kayit`,
       lastModified: now,
       changeFrequency: "monthly",
-      priority: 0.9,
+      priority: 0.8,
     },
   ];
 }

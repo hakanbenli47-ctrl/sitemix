@@ -1,10 +1,95 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 
+const siteUrl = "https://www.sitemix.com.tr";
+const pageUrl = `${siteUrl}/on-muhasebe`;
+const pageTitle = "Sitemix Ön Muhasebe | Cari, Stok ve Kasa Takip Programı";
+const pageDescription =
+  "Küçük işletmeler için cari, stok, kasa, gelir-gider, tahsilat, ödeme, PDF çıktı, WhatsApp bilgilendirme ve yedekleme destekli ön muhasebe programı. 7 gün ücretsiz deneyin.";
+
 export const metadata: Metadata = {
-  title: "Sitemix Ön Muhasebe | Cari, Stok ve Kasa Takip Programı",
-  description:
-    "Küçük işletmeler için cari, stok, kasa, gelir-gider, tahsilat, ödeme, PDF çıktı, WhatsApp bilgilendirme ve yedekleme destekli ön muhasebe programı. 7 gün ücretsiz deneyin.",
+  title: pageTitle,
+  description: pageDescription,
+  keywords: [
+    "Sitemix Ön Muhasebe",
+    "ön muhasebe programı",
+    "cari takip programı",
+    "stok takip programı",
+    "kasa takip programı",
+    "küçük işletme muhasebe programı",
+    "online ön muhasebe",
+    "satış fişi programı",
+    "tahsilat takip programı",
+  ],
+  alternates: {
+    canonical: pageUrl,
+  },
+  openGraph: {
+    type: "website",
+    locale: "tr_TR",
+    url: pageUrl,
+    siteName: "Sitemix",
+    title: pageTitle,
+    description: pageDescription,
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Sitemix Ön Muhasebe Programı",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: pageTitle,
+    description: pageDescription,
+    images: ["/og-image.jpg"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+};
+
+const softwareApplicationSchema = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "Sitemix Ön Muhasebe",
+  applicationCategory: "BusinessApplication",
+  operatingSystem: "Web",
+  url: pageUrl,
+  brand: {
+    "@type": "Brand",
+    name: "Sitemix",
+  },
+  offers: [
+    {
+      "@type": "Offer",
+      price: "399",
+      priceCurrency: "TRY",
+      availability: "https://schema.org/InStock",
+      description: "Aylık Sitemix Ön Muhasebe paketi",
+    },
+  ],
+  description: pageDescription,
+  featureList: [
+    "Cari takip",
+    "Stok takip",
+    "Kasa takip",
+    "Satış ve alış fişi",
+    "PDF çıktı",
+    "WhatsApp bilgilendirme",
+    "Personel yetkilendirme",
+    "Yedekleme",
+  ],
 };
 
 const navItems = [
@@ -208,7 +293,14 @@ const faqs = [
 
 export default function OnMuhasebePage() {
   return (
-    <main className="min-h-screen overflow-hidden bg-[#eef2ff] text-[#0b1025]">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(softwareApplicationSchema),
+        }}
+      />
+      <main className="min-h-screen overflow-hidden bg-[#eef2ff] text-[#0b1025]">
       <header className="sticky top-0 z-50 border-b border-[#111827]/10 bg-white/85 backdrop-blur-2xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 lg:px-8">
           <Link href="/" className="group flex items-center gap-3">
@@ -887,6 +979,7 @@ export default function OnMuhasebePage() {
           </div>
         </div>
       </footer>
-    </main>
+      </main>
+    </>
   );
 }

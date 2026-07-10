@@ -4,6 +4,14 @@ import "./globals.css";
 
 const siteUrl = "https://www.sitemix.com.tr";
 
+const websiteSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "Sitemix",
+  alternateName: ["Sitemix Ön Muhasebe", "Sitemix Web"],
+  url: siteUrl,
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
 
@@ -111,6 +119,13 @@ export default function RootLayout({
   return (
     <html lang="tr">
       <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(websiteSchema),
+          }}
+        />
+
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=AW-18187004518"
           strategy="afterInteractive"
