@@ -130,6 +130,52 @@ function paymentStatusText(company: Company) {
   return "Bildirim yok";
 }
 
+function customerPhone(company: Company) {
+  return company.owner.phone || company.phone || "";
+}
+
+function normalizeWhatsAppPhone(value?: string | null) {
+  let digits = String(value || "").replace(/\D/g, "");
+  if (!digits) return "";
+
+  if (digits.startsWith("00")) {
+    digits = digits.slice(2);
+  }
+
+  if (digits.startsWith("0") && digits.length === 11) {
+    digits = `90${digits.slice(1)}`;
+  } else if (digits.length === 10) {
+    digits = `90${digits}`;
+  }
+
+  return digits.length >= 10 ? digits : "";
+}
+
+function onboardingWhatsAppMessage(company: Company) {
+  const name = company.owner.name && company.owner.name !== "-" ? company.owner.name : "Merhaba";
+  const companyName = company.name || "isletmeniz";
+  const companyCode = company.code || company.paymentCode || "-";
+
+  return [
+    `Merhaba ${name}, ben Sitemix On Muhasebe'den Hakan.`,
+    `${companyName} icin on muhasebe paneliniz hazir.`,
+    "",
+    "7 gun ucretsiz kullanim sureniz vardir. Bu surecte cari ve stoklarinizi toplu sekilde eklemenize yardimci olabiliriz.",
+    "Cari takip, stok takip, kasa islemleri, satis/alis fisi, PDF/WhatsApp paylasimi, personel yetkileri ve gunluk raporlar panel icinde hazir.",
+    "",
+    `Firma kodunuz: ${companyCode}`,
+    "Giris adresi: https://www.sitemix.com.tr/on-muhasebe/giris",
+    "",
+    "Takildiginiz yerde bu WhatsApp hattindan yazabilirsiniz.",
+  ].join("\n");
+}
+
+function onboardingWhatsAppHref(company: Company) {
+  const phone = normalizeWhatsAppPhone(customerPhone(company));
+  if (!phone) return "";
+  return `https://wa.me/${phone}?text=${encodeURIComponent(onboardingWhatsAppMessage(company))}`;
+}
+
 export default function SitemixAdminPage() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [query, setQuery] = useState("");
@@ -435,6 +481,8 @@ export default function SitemixAdminPage() {
             filteredCompanies.map((company) => {
               const isExpanded = expandedCompanyId === company.id;
               const hasPendingPayment = company.paymentNotification?.status === "pending";
+              const whatsappHref = onboardingWhatsAppHref(company);
+              const whatsappPhone = customerPhone(company);
 
               return (
                 <article key={company.id} className="rounded-2xl bg-white p-4 shadow-sm transition hover:shadow-md">
@@ -511,6 +559,25 @@ export default function SitemixAdminPage() {
                         >
                           {company.owner.accessStatus === "active" ? "Pasife Al" : "Aktif Et"}
                         </button>
+                        {whatsappHref ? (
+                          <a
+                            href={whatsappHref}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex min-h-11 items-center justify-center rounded-full bg-emerald-600 px-5 text-sm font-black text-white hover:bg-emerald-700"
+                            title={`WhatsApp: ${whatsappPhone}`}
+                          >
+                            Hazir WhatsApp Mesaji Gonder
+                          </a>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled
+                            className="inline-flex min-h-11 items-center justify-center rounded-full bg-slate-200 px-5 text-sm font-black text-slate-500"
+                          >
+                            WhatsApp icin telefon yok
+                          </button>
+                        )}
                       </div>
 
                       <div className="mt-4 grid gap-4 xl:grid-cols-3">
