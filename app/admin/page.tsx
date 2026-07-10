@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 type Company = {
   id: string;
@@ -67,6 +67,14 @@ function formatDate(value?: string | null) {
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) return "-";
   return new Intl.DateTimeFormat("tr-TR", { dateStyle: "medium" }).format(date);
+}
+
+function formatDateTime(value?: Date | null) {
+  if (!value) return "Henüz yenilenmedi";
+  return new Intl.DateTimeFormat("tr-TR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(value);
 }
 
 function formatMoney(value?: number | null, currency = "TRY") {
@@ -183,6 +191,9 @@ export default function SitemixAdminPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const busyIdRef = useRef<string | null>(null);
+  const isRefreshingRef = useRef(false);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
   const [expandedCompanyId, setExpandedCompanyId] = useState<string | null>(null);
   const [ownerEmailDrafts, setOwnerEmailDrafts] = useState<Record<string, string>>({});
   const [ownerPasswordDrafts, setOwnerPasswordDrafts] = useState<Record<string, string>>({});
@@ -254,8 +265,13 @@ export default function SitemixAdminPage() {
     };
   }, [companies]);
 
-  async function loadCompanies() {
-    setErrorMessage("");
+  async function loadCompanies(options: { silent?: boolean } = {}) {
+    if (isRefreshingRef.current) return;
+    isRefreshingRef.current = true;
+
+    if (!options.silent) {
+      setErrorMessage("");
+    }
 
     try {
       const response = await fetch("/api/admin/companies", { cache: "no-store" });
@@ -266,17 +282,32 @@ export default function SitemixAdminPage() {
       }
 
       setCompanies(result.companies || []);
+      setLastUpdatedAt(new Date());
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Admin paneli yüklenemedi.",
-      );
+      if (!options.silent) {
+        setErrorMessage(
+          error instanceof Error ? error.message : "Admin paneli yüklenemedi.",
+        );
+      }
     } finally {
+      isRefreshingRef.current = false;
       setIsLoading(false);
     }
   }
 
   useEffect(() => {
+    busyIdRef.current = busyId;
+  }, [busyId]);
+
+  useEffect(() => {
     loadCompanies();
+    const intervalId = window.setInterval(() => {
+      if (!busyIdRef.current) {
+        loadCompanies({ silent: true });
+      }
+    }, 30000);
+
+    return () => window.clearInterval(intervalId);
   }, []);
 
   async function runAction(companyId: string, payload: Record<string, unknown>) {
@@ -409,13 +440,18 @@ export default function SitemixAdminPage() {
             placeholder="Firma, kod, yetkili, e-posta veya telefon ara"
             className="min-h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold outline-none transition focus:border-indigo-500"
           />
-          <button
-            type="button"
-            onClick={loadCompanies}
-            className="inline-flex min-h-12 items-center justify-center rounded-full bg-white px-5 text-sm font-black text-slate-950 shadow-sm hover:bg-slate-50"
-          >
-            Yenile
-          </button>
+          <div className="grid gap-2 sm:grid-cols-[auto_auto] sm:items-center md:grid-cols-1">
+            <button
+              type="button"
+              onClick={() => loadCompanies()}
+              className="inline-flex min-h-12 items-center justify-center rounded-full bg-white px-5 text-sm font-black text-slate-950 shadow-sm hover:bg-slate-50"
+            >
+              Yenile
+            </button>
+            <span className="text-center text-xs font-black text-slate-500">
+              Son güncelleme: {formatDateTime(lastUpdatedAt)}
+            </span>
+          </div>
         </div>
 
         {message ? (
