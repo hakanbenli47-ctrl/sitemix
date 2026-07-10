@@ -301,7 +301,7 @@ export async function GET(request: Request) {
     if (profileResponse.error) throw profileResponse.error;
     if (subscriptionResponse.error) throw subscriptionResponse.error;
     if (!subscriptionResponse.data) {
-      throw new Error("Paket bilgisi bulunamadÄ±.");
+      throw new Error("Paket bilgisi bulunamadı.");
     }
     const subscription = subscriptionResponse.data;
     const activeStaffCount = await getActiveStaffCount(company.id);
@@ -335,8 +335,8 @@ export async function GET(request: Request) {
           role: context.role,
           message:
             context.role === "staff"
-              ? "FirmanÄ±n aylÄ±k paketi sonlanmÄ±ÅŸtÄ±r. Ã–deme yapÄ±ldÄ±ÄŸÄ±nda sisteminiz aÃ§Ä±lacaktÄ±r."
-              : "Paket sÃ¼resi dolmuÅŸ veya firma eriÅŸimi pasif.",
+              ? "Firmanın aylık paketi sonlanmıştır. Ödeme yapıldığında sisteminiz açılacaktır."
+              : "Paket süresi dolmuş veya firma erişimi pasif.",
           subscription: {
             ...subscription,
             billing_period_months: billing.billingPeriodMonths,
@@ -401,11 +401,12 @@ export async function GET(request: Request) {
       return sum + numberValue(urun.mevcut_stok) * numberValue(urun.maliyet_fiyati);
     }, 0);
 
-    const kritikStok = urunler.filter((urun) => {
+    const kritikUrunler = urunler.filter((urun) => {
       if (urun.urun_tipi === "hizmet") return false;
       const kritik = numberValue(urun.kritik_stok);
       return kritik > 0 && numberValue(urun.mevcut_stok) <= kritik;
-    }).length;
+    });
+    const kritikStok = kritikUrunler.length;
 
     const bugunKasaGiris = kasaHareketleri.reduce((sum, hareket) => {
       if (hareket.durum !== "tamamlandi" || hareket.islem_tarihi !== today) return sum;
@@ -515,7 +516,7 @@ export async function GET(request: Request) {
       ...(canFatura ? fisler.slice(0, 6).map((fis) => ({
         id: `fis-${fis.id}`,
         title: fis.fis_no,
-        type: fis.fis_turu === "satis" ? "SatÄ±ÅŸ FiÅŸi" : "AlÄ±ÅŸ FiÅŸi",
+        type: fis.fis_turu === "satis" ? "Satış Fişi" : "Alış Fişi",
         date: fis.fis_tarihi,
         amount: numberValue(fis.genel_toplam),
         tone: fis.fis_turu === "satis" ? "violet" : "slate",
@@ -564,6 +565,21 @@ export async function GET(request: Request) {
         kasaHesapSayisi: canKasa ? kasaHesaplari.length : 0,
       },
       topProduct: canFatura ? enCokSatilan : null,
+      criticalProducts: canStok
+        ? kritikUrunler
+            .sort(
+              (a, b) =>
+                numberValue(a.mevcut_stok) - numberValue(b.mevcut_stok),
+            )
+            .slice(0, 6)
+            .map((urun) => ({
+              id: urun.id,
+              urunAdi: urun.urun_adi,
+              birim: urun.birim,
+              mevcutStok: numberValue(urun.mevcut_stok),
+              kritikStok: numberValue(urun.kritik_stok),
+            }))
+        : [],
       todaySoldProducts: canFatura ? todaySoldProducts : [],
       topSoldProducts: canFatura ? topSoldProducts : [],
       upcomingReceivables: canCari ? upcomingReceivables : [],
@@ -603,7 +619,7 @@ export async function GET(request: Request) {
         message:
           error instanceof Error
             ? error.message
-            : "Panel Ã¶zeti yÃ¼klenirken hata oluÅŸtu.",
+            : "Panel özeti yüklenirken hata oluştu.",
       },
       { status: 500 },
     );
