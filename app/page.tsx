@@ -4,7 +4,7 @@ import { useState, type ReactNode } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 
 const phone = "905515550302";
-const instagramUrl = "https://www.instagram.com/siteyap.site/";
+
 const accountingUrl = "/on-muhasebe";
 
 const wp = {
@@ -628,66 +628,7 @@ export default function Home() {
               ))}
             </motion.div>
 
-            <motion.div
-              variants={rise}
-              initial="hidden"
-              animate="show"
-              className="mt-7 overflow-hidden rounded-[28px] border border-[#102018]/10 bg-white/62 shadow-xl shadow-black/5"
-            >
-              <a
-                href={instagramUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex flex-col gap-4 px-5 py-5 transition hover:bg-white md:flex-row md:items-center md:justify-between md:px-7"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#102018] text-white shadow-lg shadow-black/10">
-                    <svg
-                      viewBox="0 0 24 24"
-                      className="h-5 w-5"
-                      fill="none"
-                      aria-hidden="true"
-                    >
-                      <rect
-                        x="3"
-                        y="3"
-                        width="18"
-                        height="18"
-                        rx="5"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      />
-                      <circle
-                        cx="12"
-                        cy="12"
-                        r="4"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      />
-                      <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" />
-                    </svg>
-                  </div>
-
-                  <div>
-                    <p className="text-xs font-black uppercase tracking-[0.18em] text-[#1f6b43]">
-                      Sitemix Instagram
-                    </p>
-
-                    <p className="mt-1 text-lg font-black tracking-[-0.04em] text-[#102018]">
-                      Güncel işlerimizi Instagram’dan da takip edin.
-                    </p>
-
-                    <p className="mt-1 text-sm font-bold text-[#102018]/52">
-                      @stmxx2026
-                    </p>
-                  </div>
-                </div>
-
-                <div className="inline-flex min-h-[46px] items-center justify-center rounded-full bg-[#102018] px-5 text-sm font-black text-white">
-                  <span className="text-white">Instagram’a Git</span>
-                </div>
-              </a>
-            </motion.div>
+            
 
             <motion.div
               variants={rise}
