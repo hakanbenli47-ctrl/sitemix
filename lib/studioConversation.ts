@@ -1,6 +1,6 @@
 import { sectorCatalog } from "@/lib/sitemixStudio";
 
-export type BriefField = "sector" | "businessName" | "location" | "services" | "goal" | "contact" | "style" | "pageMode";
+export type BriefField = "sector" | "businessName" | "location" | "services" | "goal" | "contact" | "style" | "photos" | "pageMode";
 
 export type StudioBrief = {
   sectorId?: string;
@@ -13,6 +13,7 @@ export type StudioBrief = {
   whatsapp?: string;
   contactSkipped?: boolean;
   style?: string;
+  photoPreference?: "upload" | "placeholder" | "later";
   pageMode?: "single" | "multi";
   lastQuestion?: BriefField;
   notes: string[];
@@ -30,7 +31,7 @@ export type ConversationResult = {
 
 export const emptyStudioBrief: StudioBrief = { services: [], notes: [] };
 
-const requiredFields: BriefField[] = ["sector", "businessName", "location", "services", "goal", "contact", "style", "pageMode"];
+const requiredFields: BriefField[] = ["sector", "businessName", "location", "services", "goal", "contact", "style", "photos", "pageMode"];
 
 const greetings = /^(merhaba|selam|selamlar|hey|iyi günler|iyi akşamlar|günaydın|mrb)[.!\s]*$/i;
 const buildRequest = /(taslağ[ıi]?|siteyi|sitemi).*(oluştur|hazırla|göster)|(oluştur|hazırla).*(taslağ[ıi]?|siteyi|sitemi)|^hazırım$|^başla$/i;
@@ -94,6 +95,7 @@ function fieldDone(brief: StudioBrief, field: BriefField) {
   if (field === "sector") return Boolean(brief.sectorLabel);
   if (field === "services") return brief.services.length > 0;
   if (field === "contact") return Boolean(brief.phone || brief.whatsapp || brief.contactSkipped);
+  if (field === "photos") return Boolean(brief.photoPreference);
   return Boolean(brief[field]);
 }
 
@@ -136,6 +138,10 @@ function questionFor(field: BriefField, brief: StudioBrief) {
       reply: "Ziyaretçiler sitene girdiğinde nasıl bir his alsın? Bir tarz veya renk tercihin varsa söyle.",
       quickReplies: ["Modern ve sade", "Şık ve lüks", "Kurumsal ve güven veren", "Koyu ve güçlü", "Sana bırakıyorum"],
     },
+    photos: {
+      reply: "Sitenin gerçek ve güven veren görünmesi için işletmenden en az bir fotoğraf önemli. Logo, mekân, ekip veya tamamlanmış çalışma görselin var mı? Taslak açılınca sana doğru yükleme alanını göstereceğim.",
+      quickReplies: ["Şimdi yükleyeceğim", "Önce görselsiz taslağı göreyim", "Fotoğrafları sonra ekleyeceğim"],
+    },
     pageMode: {
       reply: "Son bir karar: hızlı ve akıcı tek sayfalı bir site mi, hizmetleri ayrı anlatan çok sayfalı bir site mi istersin?",
       quickReplies: ["Tek sayfalı", "Çok sayfalı", "Sen öner"],
@@ -152,6 +158,7 @@ function summary(brief: StudioBrief) {
     `🎯 ${brief.goal}`,
     `☎️ ${brief.whatsapp || brief.phone || "İletişim numarası daha sonra eklenecek"}`,
     `🎨 ${brief.style}`,
+    `📷 ${brief.photoPreference === "upload" ? "Görseller taslaktan sonra yüklenecek" : brief.photoPreference === "later" ? "Görseller daha sonra eklenecek" : "Görsel alanları hazır bırakılacak"}`,
     `📄 ${brief.pageMode === "multi" ? "Çok sayfalı yapı" : "Tek sayfalı yapı"}`,
     "Bu özete göre ilk taslağı oluşturmamı ister misin?",
   ].join("\n");
@@ -177,6 +184,8 @@ export function advanceStudioConversation(current: StudioBrief, rawMessage: stri
             ? "style"
             : /sayfa yap/i.test(value) && /değiştir/i.test(value)
               ? "pageMode"
+              : /fotoğraf|görsel|logo/i.test(value) && /değiştir/i.test(value)
+                ? "photos"
               : /sektör/i.test(value) && /değiştir/i.test(value)
                 ? "sector"
                 : undefined;
@@ -191,6 +200,8 @@ export function advanceStudioConversation(current: StudioBrief, rawMessage: stri
       brief.phone = undefined;
       brief.whatsapp = undefined;
       brief.contactSkipped = false;
+    } else if (requestedChange === "photos") {
+      brief.photoPreference = undefined;
     } else {
       brief[requestedChange] = undefined;
     }
@@ -299,6 +310,13 @@ export function advanceStudioConversation(current: StudioBrief, rawMessage: stri
     learned.push(`Tarz: ${brief.style}`);
   }
 
+  if (brief.lastQuestion === "photos" || /fotoğraf|görsel|logo/i.test(value)) {
+    if (/şimdi yükle|yükleyeceğim|hazır/.test(value)) brief.photoPreference = "upload";
+    else if (/sonra/.test(value)) brief.photoPreference = "later";
+    else if (/görselsiz|örnek alan|yer tutucu|önce.*taslak/.test(value)) brief.photoPreference = "placeholder";
+    if (brief.photoPreference) learned.push(`Görseller: ${brief.photoPreference === "upload" ? "Taslak açılınca yüklenecek" : brief.photoPreference === "later" ? "Daha sonra eklenecek" : "Alanları hazır bırakılacak"}`);
+  }
+
   if (/çok\s*sayfa|çok\s*sayfalı/i.test(value)) {
     brief.pageMode = "multi";
     learned.push("Yapı: Çok sayfalı");
@@ -359,6 +377,7 @@ export function composeStudioPrompt(brief: StudioBrief) {
     `Telefon: ${brief.phone || "Daha sonra eklenecek"}.`,
     `WhatsApp: ${brief.whatsapp || brief.phone || "Daha sonra eklenecek"}.`,
     `Görsel tarz: ${brief.style}.`,
+    `Görsel tercihi: ${brief.photoPreference === "upload" ? "Taslak açılınca gerçek görseller yüklenecek" : brief.photoPreference === "later" ? "Görseller daha sonra eklenecek" : "Görsel alanları hazır bırakılacak"}.`,
     `Site yapısı: ${brief.pageMode === "multi" ? "çok sayfalı" : "tek sayfalı"}.`,
   ].join(" ");
 }

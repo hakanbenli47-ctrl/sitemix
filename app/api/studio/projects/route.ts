@@ -40,6 +40,14 @@ function errorResponse(error: unknown) {
 export async function GET(request: Request) {
   try {
     const user = await requireStudioUser(request);
+    const previewCutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    await supabaseAdmin
+      .from("studio_projects")
+      .delete()
+      .eq("owner_id", user.id)
+      .eq("status", "draft")
+      .is("management_mode", null)
+      .lt("created_at", previewCutoff);
     const { data, error } = await supabaseAdmin
       .from("studio_projects")
       .select("id, owner_id, title, slug, sector, prompt, status, management_mode, payment_status, current_version, published_at, created_at, updated_at")
@@ -97,7 +105,7 @@ export async function POST(request: Request) {
     const history = conversation.length ? conversation : [{ role: "user" as const, content: prompt }];
     await supabaseAdmin.from("studio_messages").insert([
       ...history.map((message) => ({ project_id: data.id, owner_id: user.id, role: message.role, content: message.content })),
-      { project_id: data.id, owner_id: user.id, role: "assistant", content: `${generated.sector} için ilk taslağı hazırladım. Ön izlemeden renkleri, bölümleri ve sayfa yapısını birlikte değiştirebiliriz.` },
+      { project_id: data.id, owner_id: user.id, role: "assistant", content: `${generated.sector} için ilk ön izlemeyi hazırladım. Her bölümün metnini, sırasını ve görünümünü konuşarak değiştirebilir; gerçek işletme görsellerini içerik alanından yükleyebilirsin.` },
     ]);
 
     await supabaseAdmin.from("studio_versions").insert({
@@ -105,7 +113,7 @@ export async function POST(request: Request) {
       owner_id: user.id,
       version_number: 1,
       snapshot: generated,
-      change_note: "İlk taslak oluşturuldu",
+      change_note: "İlk geçici ön izleme oluşturuldu",
     });
 
     return NextResponse.json({ project: data }, { status: 201 });

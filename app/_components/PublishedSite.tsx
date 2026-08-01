@@ -5,9 +5,9 @@ export default function PublishedSite({ site, preview = false, slug }: { site: S
   return (
     <main className="min-h-screen bg-white">
       {preview ? (
-        <div className="sticky top-0 z-50 flex items-center justify-between bg-[#11121b] px-4 py-3 text-xs font-black text-white">
-          <span>SiteMix ön izleme</span>
-          <a href="/studio" className="rounded-full bg-white px-4 py-2" style={{ color: "#11121b" }}>Studio’ya dön</a>
+        <div className="sticky top-0 z-50 flex flex-col items-center justify-between gap-2 border-b border-amber-200/15 bg-[#11121b] px-4 py-2.5 text-[10px] font-black text-white sm:flex-row">
+          <span><strong className="mr-2 text-amber-300">Geçici ön izleme</strong> Google’da görünür olmak ve sitenin silinmemesi için 7 gün içinde paket seç.</span>
+          <a href="/studio" className="shrink-0 rounded-full bg-white px-4 py-2" style={{ color: "#11121b" }}>Paketi seç / düzenle</a>
         </div>
       ) : null}
       <SitePreview site={site} slug={preview ? undefined : slug} />

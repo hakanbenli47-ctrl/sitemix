@@ -7,6 +7,8 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   try {
     const user = await requireStudioUser(request);
+    const previewCutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    await supabaseAdmin.from("studio_projects").delete().eq("owner_id", user.id).eq("status", "draft").is("management_mode", null).lt("created_at", previewCutoff);
     const { data: projects, error } = await supabaseAdmin.from("studio_projects").select("*").eq("owner_id", user.id).order("updated_at", { ascending: false });
     if (error) throw error;
     const ids = (projects || []).map((item) => item.id);
@@ -24,4 +26,3 @@ export async function GET(request: Request) {
     return NextResponse.json({ message: isMissingStudioTable(error) ? "Studio veritabanı henüz kurulmamış." : error instanceof Error ? error.message : "Hesap bilgileri alınamadı." }, { status: isMissingStudioTable(error) ? 503 : 401 });
   }
 }
-

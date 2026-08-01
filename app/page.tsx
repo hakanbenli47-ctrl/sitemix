@@ -2,7 +2,7 @@ import SitemixLanding from "@/app/_components/SitemixLanding";
 import PublishedSite from "@/app/_components/PublishedSite";
 import { headers } from "next/headers";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import type { StudioSite } from "@/lib/sitemixStudio";
+import { upgradeStudioSite, type StudioSite } from "@/lib/sitemixStudio";
 
 export default async function HomePage() {
   const headerStore = await headers();
@@ -28,7 +28,7 @@ export default async function HomePage() {
         .eq("status", "published")
         .maybeSingle();
       if (project?.current_version) {
-        return <PublishedSite site={project.current_version as StudioSite} slug={project.slug} />;
+        return <PublishedSite site={upgradeStudioSite(project.current_version as StudioSite)} slug={project.slug} />;
       }
     }
   }

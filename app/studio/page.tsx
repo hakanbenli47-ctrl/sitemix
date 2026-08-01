@@ -3,8 +3,33 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import TextareaAutosize from "react-textarea-autosize";
+import {
+  ArrowUp,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  CircleDot,
+  ExternalLink,
+  FileText,
+  Globe2,
+  ImagePlus,
+  Laptop,
+  LayoutGrid,
+  LogOut,
+  MessageCircle,
+  Palette,
+  Plus,
+  Rocket,
+  Smartphone,
+  Sparkles,
+  Trash2,
+  Upload,
+  WandSparkles,
+} from "lucide-react";
 import SitePreview from "@/app/_components/SitePreview";
-import { applyStudioInstruction, describeStudioChanges, generateStudioSite, slugify, suggestStudioInstructions, type StudioProject, type StudioSite } from "@/lib/sitemixStudio";
+import { applyStudioInstruction, describeStudioChanges, generateStudioSite, getStudioVisualPrompt, slugify, suggestStudioInstructions, type StudioProject, type StudioSite } from "@/lib/sitemixStudio";
 import { advanceStudioConversation, composeStudioPrompt, emptyStudioBrief, getBriefProgress, type StudioBrief } from "@/lib/studioConversation";
 import { supabaseClient } from "@/lib/supabaseClient";
 
@@ -45,10 +70,15 @@ export default function StudioPage() {
   const [showDecision, setShowDecision] = useState(false);
   const [domain, setDomain] = useState("");
   const [domainBusy, setDomainBusy] = useState(false);
+  const [mediaBusy, setMediaBusy] = useState<"hero" | "logo" | "gallery" | null>(null);
   const [domainResult, setDomainResult] = useState<{ status: string; message: string; records?: Array<{ type: string; name: string; value: string }> } | null>(null);
   const createdPromptRef = useRef("");
 
   const site = project?.current_version || null;
+  const isTemporaryPreview = Boolean(project && !project.management_mode);
+  const previewDaysLeft = project?.created_at
+    ? Math.max(0, Math.ceil((new Date(project.created_at).getTime() + 7 * 24 * 60 * 60 * 1000 - Date.now()) / (24 * 60 * 60 * 1000)))
+    : 7;
 
   async function authorizedFetch(url: string, init?: RequestInit) {
     return fetch(url, {
@@ -56,7 +86,7 @@ export default function StudioPage() {
       headers: {
         ...(init?.headers || {}),
         Authorization: `Bearer ${accessToken}`,
-        ...(init?.body ? { "Content-Type": "application/json" } : {}),
+        ...(init?.body && !(init.body instanceof FormData) ? { "Content-Type": "application/json" } : {}),
       },
     });
   }
@@ -108,9 +138,9 @@ export default function StudioPage() {
       if (response.ok && result.project) {
         setProject(result.project);
         setProjects((current) => [result.project, ...current.filter((item) => item.id !== result.project.id)]);
-        setNotice("Projen hesabına kaydedildi.");
+        setNotice("Geçici ön izlemen hazır. Paket seçilmezse 7 gün sonra otomatik silinir.");
       } else if (result?.setupRequired) {
-        setNotice("Taslağın hazır. Veritabanı kurulumu tamamlanınca hesabına kalıcı olarak kaydedilecek.");
+        setNotice("Ön izlemen hazır. Veritabanı kurulumu tamamlanınca geçici olarak hesabına bağlanacak.");
       } else {
         throw new Error(result?.message || "Proje kaydedilemedi.");
       }
@@ -118,7 +148,7 @@ export default function StudioPage() {
       setNotice(error instanceof Error ? error.message : "Taslak yerel olarak hazırlandı.");
     } finally {
       window.setTimeout(() => {
-        setMessages((current) => [...current, { id: `a-${Date.now()}`, role: "assistant", content: "İlk taslak hazır. Şimdi ön izlemede gezebilir; renk, bölüm, içerik veya sayfa yapısını konuşarak değiştirebilirsin." }]);
+        setMessages((current) => [...current, { id: `a-${Date.now()}`, role: "assistant", content: "İlk ön izlemen hazır. Şimdi sitede gezebilir; her bölümün başlığını, metnini, butonunu, sırasını ve görünümünü yazarak değiştirebilirsin. Gerçek görünmesi için sıradaki adımda işletme fotoğraflarını eklemeni önereceğim." }]);
         setBusy(false);
       }, 650);
     }
@@ -300,6 +330,21 @@ export default function StudioPage() {
     setProject({ ...project, title: patch.businessName || project.title, current_version: { ...site, ...patch } });
   }
 
+  function updateSection(index: number, patch: Partial<StudioSite["sections"][number]>) {
+    if (!project || !site) return;
+    const sections = site.sections.map((section, sectionIndex) => sectionIndex === index ? { ...section, ...patch } : section);
+    setProject({ ...project, current_version: { ...site, sections } });
+  }
+
+  function moveSection(index: number, direction: -1 | 1) {
+    if (!project || !site) return;
+    const target = index + direction;
+    if (target < 0 || target >= site.sections.length) return;
+    const sections = [...site.sections];
+    [sections[index], sections[target]] = [sections[target], sections[index]];
+    setProject({ ...project, current_version: { ...site, sections } });
+  }
+
   async function saveContent() {
     if (!project || !site || project.id.startsWith("local-")) {
       setNotice("Değişiklikler ön izlemeye uygulandı.");
@@ -318,6 +363,48 @@ export default function StudioPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function uploadMedia(file: File, slot: "hero" | "logo" | "gallery") {
+    if (!project || !site || project.id.startsWith("local-")) {
+      setNotice("Görsel yüklemek için projenin hesabına kaydedilmesi gerekiyor.");
+      return;
+    }
+    setMediaBusy(slot);
+    try {
+      const form = new FormData();
+      form.set("projectId", project.id);
+      form.set("slot", slot);
+      form.set("file", file);
+      const response = await authorizedFetch("/api/studio/media", { method: "POST", body: form });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || !result?.url) throw new Error(result?.message || "Görsel yüklenemedi.");
+      const nextMedia = {
+        ...(site.media || {}),
+        ...(slot === "gallery"
+          ? { gallery: [...(site.media?.gallery || []), result.url].slice(0, 12) }
+          : { [slot]: result.url }),
+      };
+      const nextSite = { ...site, media: nextMedia };
+      setProject({ ...project, current_version: nextSite });
+      const saveResponse = await authorizedFetch(`/api/studio/projects/${project.id}`, { method: "PATCH", body: JSON.stringify({ action: "save", site: nextSite }) });
+      const saveResult = await saveResponse.json().catch(() => null);
+      if (!saveResponse.ok) throw new Error(saveResult?.message || "Görsel siteye kaydedilemedi.");
+      setProject(saveResult.project);
+      setNotice(slot === "gallery" ? "Görsel galeriye eklendi." : slot === "hero" ? "Ana ekran görseli güncellendi." : "Logo güncellendi.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Görsel yüklenemedi.");
+    } finally {
+      setMediaBusy(null);
+    }
+  }
+
+  function removeMedia(slot: "hero" | "logo" | "gallery", index?: number) {
+    if (!project || !site) return;
+    const media = { ...(site.media || {}) };
+    if (slot === "gallery") media.gallery = (media.gallery || []).filter((_, itemIndex) => itemIndex !== index);
+    else delete media[slot];
+    setProject({ ...project, current_version: { ...site, media } });
   }
 
   function whatsappHref(mode: "yearly" | "managed") {
@@ -340,7 +427,7 @@ export default function StudioPage() {
   async function chooseManagement(mode: "monthly" | "yearly" | "managed") {
     if (!project || !site) return;
     if (!project.id.startsWith("local-")) {
-      await authorizedFetch(`/api/studio/projects/${project.id}`, {
+      const response = await authorizedFetch(`/api/studio/projects/${project.id}`, {
         method: "PATCH",
         body: JSON.stringify({
           action: "management",
@@ -348,6 +435,17 @@ export default function StudioPage() {
           summary: { businessName: site.businessName, sector: site.sector, pageMode: site.pageMode, email: userEmail },
         }),
       });
+      const result = await response.json().catch(() => null);
+      if (!response.ok) {
+        setNotice(result?.message || "Paket tercihi kaydedilemedi.");
+        return;
+      }
+      if (result?.project) {
+        setProject(result.project);
+        setProjects((current) => current.map((item) => item.id === result.project.id ? result.project : item));
+      }
+    } else {
+      setProject({ ...project, management_mode: mode, status: mode === "monthly" ? "ready" : "request_received" });
     }
     if (mode === "monthly") {
       setShowDecision(false);
@@ -398,38 +496,44 @@ export default function StudioPage() {
         <header className="relative z-20 border-b border-white/7 bg-[#090a12]/78 backdrop-blur-2xl">
           <div className="mx-auto flex h-[72px] max-w-[1380px] items-center justify-between px-4 sm:px-7">
             <Link href="/" className="flex items-center gap-3"><span className="brand-orb"><span>S</span></span><div><strong className="block text-sm font-black">SiteMix Studio</strong><span className="text-[9px] font-black uppercase tracking-[.18em] text-white/30">Site görüşmesi</span></div></Link>
-            <div className="flex items-center gap-2"><span className="hidden text-[11px] font-bold text-white/30 sm:block">{userEmail}</span><button onClick={signOut} className="rounded-full border border-white/9 bg-white/[0.025] px-4 py-2.5 text-[11px] font-black text-white/50 transition hover:bg-white/7 hover:text-white">Çıkış</button></div>
+            <div className="flex items-center gap-2"><span className="hidden text-[11px] font-bold text-white/30 sm:block">{userEmail}</span><button onClick={signOut} className="inline-flex items-center gap-2 rounded-full border border-white/9 bg-white/[0.025] px-4 py-2.5 text-[11px] font-black text-white/50 transition hover:bg-white/7 hover:text-white"><LogOut size={13} />Çıkış</button></div>
           </div>
         </header>
 
-        <div className="relative z-10 mx-auto grid max-w-[1380px] gap-5 px-3 py-4 sm:px-7 sm:py-7 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="relative z-10 mx-auto grid max-w-[1540px] gap-5 px-3 py-4 sm:px-7 sm:py-7 xl:grid-cols-[230px_minmax(0,1fr)_350px]">
+          <aside className="hidden xl:block">
+            <div className="sticky top-[100px] space-y-4">
+              <div className="rounded-[26px] border border-white/8 bg-[#0d0e17]/88 p-4 shadow-[0_22px_70px_rgba(0,0,0,.22)] backdrop-blur-xl">
+                <div className="flex items-center gap-3 border-b border-white/7 pb-4"><span className="grid h-10 w-10 place-items-center rounded-2xl bg-[#8f7cff]/12 text-[#b2a7ff]"><LayoutGrid size={18} /></span><div><p className="text-[9px] font-black uppercase tracking-[.15em] text-white/25">Proje akışı</p><strong className="text-xs text-white/75">Yeni web sitesi</strong></div></div>
+                <div className="mt-4 space-y-1">
+                  <DiscoveryStep index="01" title="İşletmeni tanı" active={progress < 65} done={progress >= 65} />
+                  <DiscoveryStep index="02" title="Tasarımı belirle" active={progress >= 65 && progress < 100} done={progress === 100} />
+                  <DiscoveryStep index="03" title="Canlı ön izleme" active={false} done={false} />
+                  <DiscoveryStep index="04" title="Yönetim ve yayın" active={false} done={false} />
+                </div>
+              </div>
+              <div className="rounded-[24px] border border-[#78ebc8]/12 bg-[#78ebc8]/[0.045] p-4"><div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[.15em] text-[#8bf1d2]"><Sparkles size={13} /> Akıllı öneri</div><p className="mt-3 text-[11px] font-medium leading-5 text-white/38">Kısa cevap verebilirsin. Eksik kalan noktalar için sana seçenekler sunacağım.</p></div>
+            </div>
+          </aside>
           <section className="flex min-h-[calc(100svh-112px)] flex-col overflow-hidden rounded-[26px] border border-white/9 bg-[#0e0f18]/92 shadow-[0_30px_100px_rgba(0,0,0,.38)] sm:rounded-[32px]">
-            <div className="border-b border-white/7 px-4 py-4 sm:px-6 sm:py-5">
-              <div className="flex items-center justify-between gap-4"><div><p className="text-[10px] font-black uppercase tracking-[.17em] text-[#9484ff]">Akıllı site brifi</p><h1 className="mt-1.5 text-xl font-black tracking-[-.035em] sm:text-2xl">İşletmeni birlikte tanıyalım.</h1></div><div className="shrink-0 text-right"><strong className="block text-lg font-black text-[#8ff3d2]">%{progress}</strong><span className="text-[9px] font-bold uppercase tracking-[.12em] text-white/25">Hazır</span></div></div>
+            <div className="relative overflow-hidden border-b border-white/7 px-4 py-4 sm:px-6 sm:py-5">
+              <div className="pointer-events-none absolute -right-10 -top-20 h-44 w-44 rounded-full bg-[#7a61ff]/10 blur-3xl" />
+              <div className="relative flex items-center justify-between gap-4"><div className="flex items-center gap-3"><span className="studio-avatar studio-avatar-assistant !h-11 !w-11"><WandSparkles size={18} /></span><div><div className="flex items-center gap-2"><p className="text-[10px] font-black uppercase tracking-[.17em] text-[#a598ff]">SiteMix tasarım görüşmesi</p><span className="hidden rounded-full border border-[#7ee9c7]/15 bg-[#7ee9c7]/[0.055] px-2 py-1 text-[8px] font-black uppercase tracking-[.12em] text-[#8ff0d2] sm:inline-flex">Canlı</span></div><h1 className="mt-1.5 text-xl font-black tracking-[-.035em] sm:text-2xl">İşletmeni birlikte tanıyalım.</h1></div></div><div className="shrink-0 rounded-2xl border border-white/7 bg-white/[0.025] px-3.5 py-2.5 text-right"><strong className="block text-lg font-black text-[#8ff3d2]">%{progress}</strong><span className="text-[8px] font-bold uppercase tracking-[.12em] text-white/25">Brif hazır</span></div></div>
               <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/6"><motion.div animate={{ width: `${Math.max(progress, 4)}%` }} className="h-full rounded-full bg-gradient-to-r from-[#755cff] via-[#9c83ff] to-[#75efc7]" /></div>
             </div>
 
-            <div className="flex-1 space-y-4 overflow-y-auto px-4 py-6 sm:px-6">
-              {messages.map((message) => (
-                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} key={message.id} className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
-                  {message.role === "assistant" ? <span className="brand-orb mt-1 !h-8 !w-8 !shrink-0 !rounded-[11px] !text-[11px]"><span>S</span></span> : null}
-                  <div className={`max-w-[88%] whitespace-pre-line rounded-[20px] px-4 py-3.5 text-sm font-semibold leading-6 sm:max-w-[72%] ${message.role === "user" ? "rounded-br-md bg-gradient-to-br from-[#765cff] to-[#5a43d4] text-white shadow-[0_12px_30px_rgba(73,51,171,.22)]" : "rounded-bl-md border border-white/8 bg-white/[0.035] text-white/68"}`}>{message.content}</div>
-                </motion.div>
-              ))}
+            <div className="studio-conversation flex-1 space-y-5 overflow-y-auto px-4 py-6 sm:px-6 sm:py-7">
+              {messages.map((message) => <ConversationMessage key={message.id} message={message} />)}
               {busy ? <div className="ml-11 inline-flex gap-1 rounded-full border border-white/7 bg-white/[0.035] px-4 py-3"><span className="dot-typing" /><span className="dot-typing" /><span className="dot-typing" /></div> : null}
             </div>
 
-            <div className="border-t border-white/7 bg-[#0b0c14]/90 p-3 sm:p-4">
-              {quickReplies.length ? <div className="mb-3 flex gap-2 overflow-x-auto pb-1">{quickReplies.map((reply) => <button key={reply} type="button" onClick={() => void continueDiscovery(reply)} disabled={busy} className="shrink-0 rounded-full border border-white/9 bg-white/[0.035] px-4 py-2.5 text-[11px] font-black text-white/55 transition hover:border-[#8f7cff]/35 hover:bg-[#8f7cff]/10 hover:text-white disabled:opacity-40">{reply}</button>)}</div> : null}
-              <form onSubmit={sendDiscovery} className="flex items-end gap-2 rounded-[20px] border border-white/9 bg-white/[0.035] p-2 focus-within:border-[#8c79ff]/35 focus-within:bg-white/[0.05]">
-                <textarea value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); if (input.trim()) void continueDiscovery(input); } }} rows={2} maxLength={1200} placeholder="Cevabını doğal bir şekilde yaz..." className="min-h-12 flex-1 resize-none bg-transparent px-3 py-2 text-sm font-semibold leading-6 text-white outline-none placeholder:text-white/22" />
-                <button disabled={!input.trim() || busy} className="send-button grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-lg font-black text-[#090a12] disabled:opacity-30" aria-label="Yanıtı gönder">↑</button>
-              </form>
-              <p className="mt-2 px-2 text-[9px] font-medium text-white/20">SiteMix cevaplarını bu proje için hatırlar; taslak yalnızca sen onayladığında oluşturulur.</p>
+            <div className="border-t border-white/7 bg-[#090a12]/95 p-3 sm:p-4">
+              {quickReplies.length ? <div className="mb-3"><div className="mb-2 flex items-center gap-2 px-1 text-[9px] font-black uppercase tracking-[.14em] text-white/25"><Sparkles size={11} className="text-[#9d90ff]" /> Hazır cevaplar</div><PromptSuggestions items={quickReplies} onSelect={(reply) => void continueDiscovery(reply)} busy={busy} compact /></div> : null}
+              <StudioComposer value={input} onChange={setInput} onSubmit={sendDiscovery} busy={busy} label="Cevabını yaz" placeholder="İşletmen hakkında doğal bir şekilde yaz..." />
             </div>
           </section>
 
-          <aside className="hidden lg:block">
+          <aside className="hidden xl:block">
             <div className="sticky top-[100px] overflow-hidden rounded-[28px] border border-white/9 bg-[#0e0f18]/92 p-5 shadow-[0_25px_80px_rgba(0,0,0,.28)]">
               <div className="flex items-center justify-between"><div><p className="text-[10px] font-black uppercase tracking-[.16em] text-white/28">Canlı proje hafızası</p><h2 className="mt-2 text-2xl font-black tracking-[-.045em]">Seni anladıkça dolar.</h2></div><span className="grid h-12 w-12 place-items-center rounded-2xl bg-[#8f7cff]/12 text-lg font-black text-[#a99cff]">{brief.businessName ? brief.businessName.charAt(0) : "S"}</span></div>
               <p className="mt-3 text-xs font-medium leading-6 text-white/35">Her cevabın tasarım kararına dönüşür. Eksik bilgi varken rastgele site üretmeyiz.</p>
@@ -442,6 +546,7 @@ export default function StudioPage() {
                 <BriefMemory label="Ana hedef" value={brief.goal} />
                 <BriefMemory label="Telefon / WhatsApp" value={brief.whatsapp || brief.phone || (brief.contactSkipped ? "Daha sonra eklenecek" : undefined)} />
                 <BriefMemory label="Görsel tarz" value={brief.style} />
+                <BriefMemory label="Fotoğraflar" value={brief.photoPreference === "upload" ? "Taslak açılınca yüklenecek" : brief.photoPreference === "later" ? "Daha sonra eklenecek" : brief.photoPreference === "placeholder" ? "Alanlar hazır bırakılacak" : undefined} />
                 <BriefMemory label="Sayfa yapısı" value={brief.pageMode ? (brief.pageMode === "multi" ? "Çok sayfalı" : "Tek sayfalı") : undefined} />
               </div>
 
@@ -455,41 +560,59 @@ export default function StudioPage() {
 
   return (
     <main className="studio-app min-h-screen bg-[#090a12] text-white">
-      <header className="sticky top-0 z-50 flex h-[68px] items-center justify-between border-b border-white/8 bg-[#0b0c14]/88 px-3 backdrop-blur-2xl sm:px-5">
-        <div className="flex min-w-0 items-center gap-3"><Link href="/" className="brand-orb !h-10 !w-10 !rounded-[13px]"><span>S</span></Link><div className="min-w-0">{projects.length > 1 ? <select value={project.id} onChange={(event) => void openProject(event.target.value)} className="max-w-[180px] bg-transparent text-sm font-black text-white outline-none sm:max-w-[260px]">{projects.map((item) => <option key={item.id} value={item.id} className="bg-[#11121b]">{item.title}</option>)}</select> : <p className="truncate text-sm font-black">{site?.businessName}</p>}<p className="truncate text-[10px] font-bold text-white/32">{project.status === "published" ? "Yayında" : "Taslak"} · {site?.sector}</p></div></div>
+      <header className="sticky top-0 z-50 flex h-[72px] items-center justify-between border-b border-white/8 bg-[#090a12]/90 px-3 backdrop-blur-2xl sm:px-5">
+        <div className="flex min-w-0 items-center gap-3"><Link href="/" className="brand-orb !h-10 !w-10 !rounded-[13px]"><span>S</span></Link><div className="hidden h-7 w-px bg-white/8 sm:block" /><div className="min-w-0"><div className="flex items-center gap-2">{projects.length > 1 ? <select value={project.id} onChange={(event) => void openProject(event.target.value)} className="max-w-[180px] bg-transparent text-sm font-black text-white outline-none sm:max-w-[260px]">{projects.map((item) => <option key={item.id} value={item.id} className="bg-[#11121b]">{item.title}</option>)}</select> : <p className="truncate text-sm font-black">{site?.businessName}</p>}<span className="hidden rounded-full border border-white/8 bg-white/[0.035] px-2 py-1 text-[8px] font-black uppercase tracking-[.11em] text-white/32 sm:inline-flex">Studio</span></div><p className="flex items-center gap-1.5 truncate text-[10px] font-bold text-white/32"><span className={`h-1.5 w-1.5 rounded-full ${project.status === "published" ? "bg-[#79ecc9]" : "bg-[#f0bd72]"}`} />{project.status === "published" ? "Yayında" : isTemporaryPreview ? "Geçici ön izleme" : "Yayına hazırlanıyor"} · {site?.sector}</p></div></div>
         <div className="flex items-center gap-2">
-          <Link href="/" className="hidden rounded-full border border-white/10 px-4 py-2 text-xs font-black text-white/55 md:inline-flex">+ Yeni site</Link>
-          <a href={projectUrl} target="_blank" className="hidden rounded-full border border-white/10 px-4 py-2 text-xs font-black text-white/55 sm:inline-flex">Yeni sekmede aç</a>
-          <button type="button" onClick={() => setShowDecision(true)} className="send-button min-h-10 rounded-full px-4 text-xs font-black text-[#0a0b13] sm:px-5">Devam et</button>
+          <Link href="/" className="hidden h-10 items-center gap-2 rounded-full border border-white/9 bg-white/[0.025] px-4 text-[11px] font-black text-white/48 transition hover:bg-white/[0.06] hover:text-white md:inline-flex"><Plus size={14} /> Yeni site</Link>
+          <a href={projectUrl} target="_blank" className="hidden h-10 items-center gap-2 rounded-full border border-white/9 bg-white/[0.025] px-4 text-[11px] font-black text-white/48 transition hover:bg-white/[0.06] hover:text-white sm:inline-flex"><ExternalLink size={14} /> Ön izleme</a>
+          <button type="button" onClick={signOut} className="grid h-10 w-10 place-items-center rounded-full border border-white/9 bg-white/[0.025] text-white/42 transition hover:bg-white/[0.06] hover:text-white" aria-label="Çıkış yap"><LogOut size={15} /></button>
+          <button type="button" onClick={() => setShowDecision(true)} className="send-button inline-flex min-h-10 items-center gap-2 rounded-full px-4 text-xs font-black text-[#0a0b13] sm:px-5"><Rocket size={14} /> <span className="hidden sm:inline">Yayınlamaya geç</span><span className="sm:hidden">Devam</span></button>
         </div>
       </header>
 
+      {isTemporaryPreview ? <div className="relative z-40 flex min-h-10 items-center justify-center gap-3 border-b border-amber-300/15 bg-amber-300/[0.07] px-3 py-2 text-center text-[10px] font-bold text-amber-100/72"><span className="hidden h-1.5 w-1.5 rounded-full bg-amber-300 sm:block" /><span>Bu geçici bir ön izlemedir. Google’da görünür olmak ve siteni korumak için paket seçmelisin. Paket seçilmezse {previewDaysLeft} gün içinde silinir.</span><button type="button" onClick={() => setShowDecision(true)} className="shrink-0 rounded-full border border-amber-200/20 bg-amber-100/10 px-3 py-1.5 text-[9px] font-black text-amber-100">Paket seç</button></div> : null}
+
       {notice ? <div className="fixed left-1/2 top-[78px] z-[70] w-[calc(100%-24px)] max-w-lg -translate-x-1/2 rounded-2xl border border-white/10 bg-[#1a1b28]/95 px-4 py-3 text-center text-xs font-bold text-white/70 shadow-2xl backdrop-blur-xl" onClick={() => setNotice("")}>{notice}</div> : null}
 
-      <div className="grid min-h-[calc(100vh-68px)] lg:grid-cols-[410px_1fr]">
+      <div className="grid min-h-[calc(100vh-72px)] lg:grid-cols-[440px_1fr] xl:grid-cols-[470px_1fr]">
         <aside className={`${activeTab === "preview" ? "hidden lg:flex" : "flex"} min-h-0 flex-col border-r border-white/8 bg-[#0d0e17]`}>
-          <div className="flex gap-1 border-b border-white/8 p-2">
-            {(["chat", "content", "domain"] as StudioTab[]).map((tab) => <button key={tab} onClick={() => setActiveTab(tab)} className={`flex-1 rounded-xl px-3 py-2.5 text-[11px] font-black ${activeTab === tab ? "bg-white/10 text-white" : "text-white/35"}`}>{tab === "chat" ? "Sohbet" : tab === "content" ? "İçerik" : "Domain"}</button>)}
+          <div className="border-b border-white/8 px-3 pb-3 pt-4">
+            <div className="mb-3 flex items-center justify-between px-1"><div><p className="text-[9px] font-black uppercase tracking-[.16em] text-[#9f91ff]">Proje çalışma alanı</p><p className="mt-1 text-[11px] font-semibold text-white/28">Konuş, düzenle ve anında gör</p></div><span className="grid h-9 w-9 place-items-center rounded-xl border border-[#82ebca]/12 bg-[#82ebca]/[0.05] text-[#82ebca]"><Sparkles size={15} /></span></div>
+            <div className="grid grid-cols-3 gap-1 rounded-2xl border border-white/7 bg-black/15 p-1">
+              {([{ id: "chat", label: "Sohbet", icon: MessageCircle }, { id: "content", label: "İçerik", icon: FileText }, { id: "domain", label: "Domain", icon: Globe2 }] as const).map(({ id, label, icon: Icon }) => <button key={id} onClick={() => setActiveTab(id)} className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-[10px] font-black transition ${activeTab === id ? "bg-white/9 text-white shadow-[0_8px_20px_rgba(0,0,0,.18)]" : "text-white/30 hover:text-white/55"}`}><Icon size={13} />{label}</button>)}
+            </div>
           </div>
 
           {activeTab === "chat" ? (
-            <><div className="flex-1 space-y-4 overflow-y-auto p-4">
-              {messages.length === 0 ? <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 text-sm font-medium leading-7 text-white/45">Bu proje için renk, bölüm veya sayfa değişikliği isteyebilirsin.</div> : null}
-              {messages.map((message) => <div key={message.id} className={`max-w-[92%] rounded-2xl px-4 py-3 text-sm font-semibold leading-6 ${message.role === "user" ? "ml-auto bg-[#7e68ff] text-white" : "border border-white/8 bg-white/[0.04] text-white/62"}`}>{message.content}</div>)}
+            <><div className="studio-conversation flex-1 space-y-5 overflow-y-auto p-4 sm:p-5">
+              {messages.length === 0 ? <div className="studio-empty-state"><span className="grid h-11 w-11 place-items-center rounded-2xl bg-[#8f7cff]/12 text-[#b0a4ff]"><WandSparkles size={20} /></span><p className="mt-4 text-[10px] font-black uppercase tracking-[.15em] text-[#9f91ff]">Tasarım komut merkezi</p><h2 className="mt-2 text-xl font-black tracking-[-.04em]">Siteni yazarak yönet.</h2><p className="mt-2 text-xs font-medium leading-6 text-white/38">Renk, başlık, hareket, bölüm sırası, hizmetler veya sayfa yapısı için ne istediğini söyle.</p></div> : null}
+              {!site?.media?.hero ? <button type="button" onClick={() => setActiveTab("content")} className="group flex w-full items-start gap-3 rounded-[22px] border border-[#7ce8c5]/14 bg-[#7ce8c5]/[0.045] p-4 text-left transition hover:bg-[#7ce8c5]/[0.075]"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[#7ce8c5]/10 text-[#89efd2]"><ImagePlus size={18} /></span><span className="flex-1"><span className="block text-[9px] font-black uppercase tracking-[.15em] text-[#89efd2]">Sıradaki güçlü adım</span><strong className="mt-1.5 block text-sm">Ana ekran için gerçek fotoğraf ekle</strong><span className="mt-1.5 block text-[10px] font-medium leading-5 text-white/35">{getStudioVisualPrompt(site as StudioSite)} sitenin güvenini ve kalitesini belirgin biçimde yükseltir.</span></span><ChevronRight size={16} className="mt-3 text-white/25 transition group-hover:translate-x-1 group-hover:text-white/60" /></button> : null}
+              {messages.map((message) => <ConversationMessage key={message.id} message={message} />)}
               {busy ? <div className="inline-flex gap-1 rounded-full bg-white/6 px-4 py-3"><span className="dot-typing" /><span className="dot-typing" /><span className="dot-typing" /></div> : null}
             </div>
-            <form onSubmit={sendInstruction} className="border-t border-white/8 p-3">{editSuggestions.length ? <div className="mb-3 flex gap-2 overflow-x-auto pb-1">{editSuggestions.map((suggestion) => <button key={suggestion} type="button" onClick={() => void runInstruction(suggestion)} disabled={busy} className="shrink-0 rounded-full border border-[#8e7bff]/20 bg-[#8e7bff]/8 px-3.5 py-2 text-[10px] font-black text-[#b7adff] transition hover:bg-[#8e7bff]/15 disabled:opacity-40">{suggestion}</button>)}</div> : null}<textarea value={input} onChange={(event) => setInput(event.target.value)} rows={3} placeholder="Örn. Başlığı ortaya al, kısalt ve girişi daha premium yap..." className="w-full resize-none rounded-2xl border border-white/8 bg-white/[0.045] p-4 text-sm font-semibold leading-6 text-white outline-none placeholder:text-white/24 focus:border-white/18" /><button disabled={!input.trim() || busy} className="send-button mt-2 min-h-12 w-full rounded-full text-sm font-black text-[#0a0b13] disabled:opacity-40">İsteği uygula</button></form></>
+            <div className="border-t border-white/8 bg-[#090a12]/96 p-3"><div className="mb-3 flex items-center justify-between px-1"><span className="text-[9px] font-black uppercase tracking-[.15em] text-white/24">Önerilen düzenlemeler</span><span className="text-[9px] font-bold text-[#82ebca]/55">Ön izlemeye anında uygulanır</span></div><PromptSuggestions items={editSuggestions.slice(0, 4)} onSelect={(suggestion) => void runInstruction(suggestion)} busy={busy} compact /><div className={editSuggestions.length ? "mt-3" : ""}><StudioComposer value={input} onChange={setInput} onSubmit={sendInstruction} busy={busy} label="Tasarım komutu" placeholder="Başlığı kısalt, hizmetleri yukarı al, daha premium yap..." /></div></div></>
           ) : null}
 
           {activeTab === "content" && site ? (
             <div className="flex-1 space-y-4 overflow-y-auto p-4">
+              <div className="rounded-[22px] border border-white/8 bg-white/[0.025] p-4"><span className="grid h-10 w-10 place-items-center rounded-2xl bg-[#8f7cff]/12 text-[#b1a5ff]"><Palette size={17} /></span><h2 className="mt-4 text-lg font-black tracking-[-.035em]">İçerik ve görünüm</h2><p className="mt-1.5 text-[11px] font-medium leading-5 text-white/32">Temel bilgileri elle düzenleyebilir veya sohbetten doğal dille değiştirebilirsin.</p></div>
+              <div className="rounded-[22px] border border-[#78ebc8]/12 bg-[#78ebc8]/[0.035] p-4"><div className="flex items-start gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[#78ebc8]/10 text-[#86efd0]"><ImagePlus size={18} /></span><div><h3 className="text-sm font-black">Siten için gerçek görseller</h3><p className="mt-1.5 text-[11px] font-medium leading-5 text-white/38">{getStudioVisualPrompt(site)} yükle. Net, aydınlık ve mümkünse yatay görsel seç.</p></div></div>
+                <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                  <MediaUpload label={site.media?.hero ? "Ana görseli değiştir" : "Ana ekran görseli yükle"} busy={mediaBusy === "hero"} onFile={(file) => void uploadMedia(file, "hero")} />
+                  <MediaUpload label={site.media?.logo ? "Logoyu değiştir" : "Logo yükle"} busy={mediaBusy === "logo"} onFile={(file) => void uploadMedia(file, "logo")} />
+                </div>
+                {site.media?.hero ? <div className="relative mt-3 aspect-[16/7] overflow-hidden rounded-2xl border border-white/8 bg-cover bg-center" style={{ backgroundImage: `linear-gradient(to top, rgba(5,6,8,.55), transparent), url("${site.media.hero}")` }}><button type="button" onClick={() => removeMedia("hero")} className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-black/65 text-white/70" aria-label="Ana görseli kaldır"><Trash2 size={13} /></button><span className="absolute bottom-3 left-3 text-[9px] font-black uppercase tracking-[.13em] text-white/70">Ana ekran görseli</span></div> : null}
+                <div className="mt-4 flex items-center justify-between gap-3"><div><p className="text-[10px] font-black text-white/65">Çalışma galerisi</p><p className="mt-1 text-[9px] font-medium text-white/25">En fazla 12 gerçek çalışma fotoğrafı</p></div><MediaUpload label="Galeriye ekle" busy={mediaBusy === "gallery"} onFile={(file) => void uploadMedia(file, "gallery")} compact /></div>
+                {site.media?.gallery?.length ? <div className="mt-3 grid grid-cols-3 gap-2">{site.media.gallery.map((url, index) => <div key={`${url}-${index}`} className="group relative aspect-square overflow-hidden rounded-xl border border-white/8 bg-cover bg-center" style={{ backgroundImage: `url("${url}")` }}><button type="button" onClick={() => removeMedia("gallery", index)} className="absolute right-1.5 top-1.5 grid h-7 w-7 place-items-center rounded-full bg-black/70 text-white/70 opacity-100 sm:opacity-0 sm:transition sm:group-hover:opacity-100" aria-label={`Galeri görseli ${index + 1} kaldır`}><Trash2 size={12} /></button></div>)}</div> : <div className="mt-3 rounded-2xl border border-dashed border-white/8 px-4 py-5 text-center text-[10px] font-bold text-white/22">Henüz galeri görseli yüklenmedi.</div>}
+              </div>
               <EditorField label="İşletme adı" value={site.businessName} onChange={(value) => updateSite({ businessName: value })} />
               <EditorField label="Konum" value={site.location} onChange={(value) => updateSite({ location: value })} />
               <EditorField label="Telefon" value={site.phone} onChange={(value) => updateSite({ phone: value })} />
               <EditorField label="WhatsApp" value={site.whatsapp} onChange={(value) => updateSite({ whatsapp: value })} />
               <label className="block"><span className="mb-2 block text-xs font-black text-white/45">Site yapısı</span><select value={site.pageMode} onChange={(event) => updateSite({ pageMode: event.target.value as "single" | "multi" })} className="h-12 w-full rounded-xl border border-white/8 bg-[#161722] px-3 text-sm font-bold text-white outline-none"><option value="single">Tek sayfalı</option><option value="multi">Çok sayfalı</option></select></label>
               <div><span className="mb-2 block text-xs font-black text-white/45">Ana renk</span><div className="flex gap-2">{["#7c5cff", "#0eac83", "#3478f6", "#f0528a", "#e65f3d", "#df9f45"].map((color) => <button key={color} type="button" onClick={() => updateSite({ theme: { ...site.theme, accent: color } })} className="h-9 w-9 rounded-full border-2" style={{ background: color, borderColor: site.theme.accent === color ? "white" : "transparent" }} aria-label={`${color} rengini seç`} />)}</div></div>
-              <button type="button" onClick={saveContent} disabled={busy} className="send-button min-h-12 w-full rounded-full text-sm font-black text-[#0a0b13]">Değişiklikleri kaydet</button>
+              <div className="border-t border-white/8 pt-4"><div className="flex items-center justify-between"><div><span className="text-xs font-black text-white/62">Tüm site bölümleri</span><p className="mt-1 text-[10px] font-medium text-white/25">Başlık, açıklama, buton ve liste içeriklerini açıp düzenle.</p></div><span className="rounded-full bg-white/[0.045] px-2.5 py-1.5 text-[9px] font-black text-white/30">{site.sections.length} bölüm</span></div><div className="mt-3 space-y-2">{site.sections.map((section, index) => <SectionContentEditor key={section.id} section={section} index={index} total={site.sections.length} onChange={(patch) => updateSection(index, patch)} onMove={(direction) => moveSection(index, direction)} />)}</div></div>
+              <button type="button" onClick={saveContent} disabled={busy} className="send-button flex min-h-12 w-full items-center justify-center gap-2 rounded-full text-sm font-black text-[#0a0b13]"><Check size={16} />Değişiklikleri kaydet</button>
             </div>
           ) : null}
 
@@ -503,13 +626,13 @@ export default function StudioPage() {
         </aside>
 
         <section className={`${activeTab !== "preview" && activeTab !== "chat" && activeTab !== "content" && activeTab !== "domain" ? "hidden" : "flex"} min-w-0 flex-col bg-[#11121b]`}>
-          <div className="flex h-14 items-center justify-between border-b border-white/8 px-3 sm:px-5"><div className="flex gap-1"><button onClick={() => setPreviewMobile(false)} className={`rounded-lg px-3 py-2 text-[10px] font-black ${!previewMobile ? "bg-white/10" : "text-white/35"}`}>Masaüstü</button><button onClick={() => setPreviewMobile(true)} className={`rounded-lg px-3 py-2 text-[10px] font-black ${previewMobile ? "bg-white/10" : "text-white/35"}`}>Mobil</button></div><button onClick={() => setActiveTab("chat")} className="rounded-full border border-white/10 px-3 py-2 text-[10px] font-black text-white/55 lg:hidden">Sohbete dön</button></div>
+          <div className="flex h-14 items-center justify-between border-b border-white/8 px-3 sm:px-5"><div className="flex items-center gap-1 rounded-xl border border-white/7 bg-black/15 p-1"><button onClick={() => setPreviewMobile(false)} className={`flex items-center gap-2 rounded-lg px-3 py-2 text-[10px] font-black transition ${!previewMobile ? "bg-white/10 text-white" : "text-white/30"}`}><Laptop size={13} />Masaüstü</button><button onClick={() => setPreviewMobile(true)} className={`flex items-center gap-2 rounded-lg px-3 py-2 text-[10px] font-black transition ${previewMobile ? "bg-white/10 text-white" : "text-white/30"}`}><Smartphone size={13} />Mobil</button></div><div className="flex items-center gap-2"><span className="hidden items-center gap-2 text-[9px] font-black uppercase tracking-[.13em] text-white/22 sm:flex"><CircleDot size={10} className="text-[#82ebca]" /> Canlı ön izleme</span><button onClick={() => setActiveTab("chat")} className="rounded-full border border-white/10 px-3 py-2 text-[10px] font-black text-white/55 lg:hidden">Sohbete dön</button></div></div>
           <div className="flex flex-1 items-start justify-center overflow-auto p-2 sm:p-5 lg:p-8"><div className={`overflow-hidden rounded-[24px] border border-white/10 bg-white shadow-[0_35px_100px_rgba(0,0,0,.42)] transition-all ${previewMobile ? "w-[390px] max-w-full" : "w-full max-w-[1120px]"}`}>{site ? <SitePreview site={site} compact /> : null}</div></div>
         </section>
       </div>
 
       <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-white/10 bg-[#0d0e17]/94 p-2 backdrop-blur-xl lg:hidden">
-        {(["chat", "preview", "content", "domain"] as StudioTab[]).map((tab) => <button key={tab} onClick={() => setActiveTab(tab)} className={`rounded-xl py-2.5 text-[10px] font-black ${activeTab === tab ? "bg-white/10 text-white" : "text-white/35"}`}>{tab === "chat" ? "Sohbet" : tab === "preview" ? "Ön izleme" : tab === "content" ? "İçerik" : "Domain"}</button>)}
+        {([{ id: "chat", label: "Sohbet", icon: MessageCircle }, { id: "preview", label: "Ön izleme", icon: Laptop }, { id: "content", label: "İçerik", icon: FileText }, { id: "domain", label: "Domain", icon: Globe2 }] as const).map(({ id, label, icon: Icon }) => <button key={id} onClick={() => setActiveTab(id)} className={`flex flex-col items-center gap-1.5 rounded-xl py-2 text-[9px] font-black ${activeTab === id ? "bg-white/10 text-white" : "text-white/30"}`}><Icon size={15} />{label}</button>)}
       </nav>
 
       <AnimatePresence>{showDecision ? <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] overflow-y-auto bg-black/78 p-3 backdrop-blur-xl sm:p-6"><div className="mx-auto flex min-h-full max-w-5xl items-center"><motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="w-full rounded-[28px] border border-white/10 bg-[#13141e] p-5 shadow-2xl sm:rounded-[36px] sm:p-8"><div className="flex items-start justify-between"><div><p className="section-kicker">Ön izlemen hazır</p><h2 className="mt-3 text-3xl font-black tracking-[-0.05em] sm:text-5xl">Bundan sonra nasıl ilerleyelim?</h2></div><button onClick={() => setShowDecision(false)} className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/7 text-xl text-white/55">×</button></div><div className="mt-7 grid gap-3 lg:grid-cols-3">
@@ -527,6 +650,70 @@ function EditorField({ label, value, onChange, placeholder = "" }: { label: stri
 
 function BriefMemory({ label, value }: { label: string; value?: string }) {
   return <div className={`rounded-2xl border px-4 py-3.5 ${value ? "border-white/8 bg-white/[0.035]" : "border-dashed border-white/7 bg-transparent"}`}><div className="flex items-center justify-between gap-3"><span className="text-[9px] font-black uppercase tracking-[.13em] text-white/27">{label}</span><span className={`h-1.5 w-1.5 rounded-full ${value ? "bg-[#7ce8c5] shadow-[0_0_10px_#7ce8c5]" : "bg-white/12"}`} /></div><p className={`mt-1.5 line-clamp-2 text-xs font-bold leading-5 ${value ? "text-white/68" : "text-white/18"}`}>{value || "Henüz öğrenilmedi"}</p></div>;
+}
+
+function DiscoveryStep({ index, title, active, done }: { index: string; title: string; active: boolean; done: boolean }) {
+  return <div className={`flex items-center gap-3 rounded-2xl px-3 py-3 transition ${active ? "border border-[#8f7cff]/18 bg-[#8f7cff]/[0.07]" : "border border-transparent"}`}><span className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl text-[9px] font-black ${done ? "bg-[#82ebca]/12 text-[#82ebca]" : active ? "bg-[#8f7cff]/18 text-[#b5aaff]" : "bg-white/[0.025] text-white/18"}`}>{done ? <Check size={13} /> : index}</span><div><p className={`text-[11px] font-black ${active ? "text-white/72" : done ? "text-white/45" : "text-white/22"}`}>{title}</p><span className="text-[8px] font-bold uppercase tracking-[.11em] text-white/18">{done ? "Tamamlandı" : active ? "Şimdi" : "Sıradaki"}</span></div></div>;
+}
+
+function ConversationMessage({ message }: { message: ChatMessage }) {
+  const assistant = message.role === "assistant";
+  return (
+    <motion.div initial={{ opacity: 0, y: 10, scale: .985 }} animate={{ opacity: 1, y: 0, scale: 1 }} className={`group flex gap-3 ${assistant ? "justify-start" : "justify-end"}`}>
+      {assistant ? <span className="studio-avatar studio-avatar-assistant"><WandSparkles size={15} strokeWidth={2.2} /></span> : null}
+      <div className={`max-w-[88%] sm:max-w-[76%] ${assistant ? "" : "text-right"}`}>
+        <div className={`mb-1.5 flex items-center gap-2 px-1 text-[9px] font-black uppercase tracking-[.14em] text-white/24 ${assistant ? "" : "justify-end"}`}>
+          <span>{assistant ? "SiteMix tasarım danışmanı" : "Sen"}</span>
+          {assistant ? <span className="inline-flex items-center gap-1 text-[#82ebca]/70"><CircleDot size={9} /> Aktif</span> : null}
+        </div>
+        <div className={`studio-message whitespace-pre-line px-4 py-3.5 text-left text-sm font-semibold leading-6 ${assistant ? "studio-message-assistant text-white/72" : "studio-message-user text-white"}`}>{message.content}</div>
+      </div>
+      {!assistant ? <span className="studio-avatar studio-avatar-user">S</span> : null}
+    </motion.div>
+  );
+}
+
+function PromptSuggestions({ items, onSelect, busy, compact = false }: { items: string[]; onSelect: (value: string) => void; busy: boolean; compact?: boolean }) {
+  if (!items.length) return null;
+  return (
+    <div className={`grid gap-2 ${compact ? "sm:grid-cols-2" : "sm:grid-cols-2 xl:grid-cols-1"}`}>
+      {items.map((item, index) => (
+        <button key={item} type="button" onClick={() => onSelect(item)} disabled={busy} className="studio-suggestion group flex min-h-12 items-center gap-3 text-left disabled:opacity-40">
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl border border-white/8 bg-white/[0.035] text-[#ad9fff]"><Sparkles size={13} /></span>
+          <span className="flex-1 text-[11px] font-bold leading-4 text-white/58">{item}</span>
+          <ChevronRight size={14} className="text-white/18 transition group-hover:translate-x-0.5 group-hover:text-white/55" />
+          <span className="sr-only">Öneri {index + 1}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function StudioComposer({ value, onChange, onSubmit, busy, placeholder, label }: { value: string; onChange: (value: string) => void; onSubmit: (event: FormEvent<HTMLFormElement>) => void; busy: boolean; placeholder: string; label: string }) {
+  return (
+    <form onSubmit={onSubmit} className="studio-composer">
+      <div className="flex items-center justify-between gap-3 border-b border-white/[0.055] px-4 py-3">
+        <span className="inline-flex items-center gap-2 text-[9px] font-black uppercase tracking-[.16em] text-[#9f91ff]"><Sparkles size={12} />{label}</span>
+        <span className="text-[9px] font-bold text-white/18">{value.length}/1200</span>
+      </div>
+      <div className="flex items-end gap-3 p-3">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/7 bg-white/[0.025] text-white/25" aria-hidden="true"><Sparkles size={16} /></span>
+        <TextareaAutosize value={value} onChange={(event) => onChange(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); if (value.trim() && !busy) event.currentTarget.form?.requestSubmit(); } }} minRows={1} maxRows={6} maxLength={1200} placeholder={placeholder} className="min-h-10 flex-1 resize-none bg-transparent px-1 py-2 text-sm font-semibold leading-6 text-white outline-none placeholder:text-white/22" />
+        <button disabled={!value.trim() || busy} className="studio-send grid h-11 w-11 shrink-0 place-items-center rounded-[14px] text-[#090a12] disabled:cursor-not-allowed disabled:opacity-25" aria-label="Mesajı gönder"><ArrowUp size={18} strokeWidth={2.8} /></button>
+      </div>
+      <div className="flex items-center justify-between gap-3 px-4 pb-3 text-[9px] font-semibold text-white/18"><span>Enter gönderir · Shift + Enter yeni satır</span><span className="hidden sm:inline">Kararların projeye kaydedilir</span></div>
+    </form>
+  );
+}
+
+function MediaUpload({ label, busy, onFile, compact = false }: { label: string; busy: boolean; onFile: (file: File) => void; compact?: boolean }) {
+  return <label className={`inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/9 bg-white/[0.035] font-black text-white/55 transition hover:border-[#8f7cff]/25 hover:bg-[#8f7cff]/8 hover:text-white ${compact ? "min-h-9 px-3 text-[9px]" : "min-h-11 px-3 text-[10px]"}`}><Upload size={compact ? 12 : 14} />{busy ? "Yükleniyor..." : label}<input type="file" accept="image/jpeg,image/png,image/webp,image/avif" disabled={busy} className="sr-only" onChange={(event) => { const file = event.target.files?.[0]; if (file) onFile(file); event.currentTarget.value = ""; }} /></label>;
+}
+
+function SectionContentEditor({ section, index, total, onChange, onMove }: { section: StudioSite["sections"][number]; index: number; total: number; onChange: (patch: Partial<StudioSite["sections"][number]>) => void; onMove: (direction: -1 | 1) => void }) {
+  const labels: Record<StudioSite["sections"][number]["type"], string> = { hero: "Ana ekran", services: "Hizmetler", about: "Hakkımızda", pricing: "Paketler", gallery: "Galeri", testimonials: "Yorumlar", faq: "SSS", contact: "İletişim" };
+  const listEditor = (label: string, values: string[], key: "items" | "details" | "answers") => <label className="block"><span className="mb-2 block text-xs font-black text-white/45">{label} <small className="font-medium text-white/22">(her satıra bir tane)</small></span><textarea value={values.join("\n")} onChange={(event) => onChange({ [key]: event.target.value.split("\n").map((item) => item.trim()).filter(Boolean).slice(0, 12) })} rows={Math.min(Math.max(values.length, 3), 7)} className="w-full resize-y rounded-xl border border-white/8 bg-white/[0.045] p-3 text-xs font-semibold leading-6 text-white outline-none focus:border-white/18" /></label>;
+  return <details className="group overflow-hidden rounded-2xl border border-white/8 bg-white/[0.025]"><summary className="flex cursor-pointer list-none items-center gap-3 px-3 py-3"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-[#8f7cff]/10 text-[9px] font-black text-[#ad9fff]">0{index + 1}</span><span className="flex-1 text-[11px] font-black text-white/58">{labels[section.type]}</span><span className="flex items-center gap-1"><button type="button" disabled={index === 0} onClick={(event) => { event.preventDefault(); event.stopPropagation(); onMove(-1); }} className="grid h-7 w-7 place-items-center rounded-lg text-white/25 hover:bg-white/6 hover:text-white disabled:opacity-15" aria-label="Bölümü yukarı taşı"><ChevronUp size={13} /></button><button type="button" disabled={index === total - 1} onClick={(event) => { event.preventDefault(); event.stopPropagation(); onMove(1); }} className="grid h-7 w-7 place-items-center rounded-lg text-white/25 hover:bg-white/6 hover:text-white disabled:opacity-15" aria-label="Bölümü aşağı taşı"><ChevronDown size={13} /></button><ChevronRight size={14} className="ml-1 text-white/20 transition group-open:rotate-90" /></span></summary><div className="space-y-3 border-t border-white/7 p-3"><EditorField label="Üst başlık" value={section.eyebrow || ""} onChange={(value) => onChange({ eyebrow: value })} /><EditorField label="Başlık" value={section.title} onChange={(value) => onChange({ title: value })} /><label className="block"><span className="mb-2 block text-xs font-black text-white/45">Açıklama</span><textarea value={section.text} onChange={(event) => onChange({ text: event.target.value })} rows={4} className="w-full resize-y rounded-xl border border-white/8 bg-white/[0.045] p-3 text-sm font-semibold leading-6 text-white outline-none focus:border-white/18" /></label>{section.ctaLabel !== undefined || section.type === "hero" || section.type === "contact" ? <EditorField label="Buton yazısı" value={section.ctaLabel || ""} onChange={(value) => onChange({ ctaLabel: value })} /> : null}{section.items ? listEditor(section.type === "faq" ? "Sorular" : "Liste öğeleri", section.items, "items") : null}{section.details ? listEditor("Öğe açıklamaları", section.details, "details") : null}{section.answers ? listEditor("Cevaplar", section.answers, "answers") : null}</div></details>;
 }
 
 function DecisionCard({ badge, title, text, action, onClick, featured = false }: { badge: string; title: string; text: string; action: string; onClick: () => void; featured?: boolean }) {

@@ -10,7 +10,7 @@ type Domain = { id: string; project_id: string; domain: string; status: string; 
 type FormEntry = { id: string; project_id: string; name?: string; phone?: string; email?: string; message?: string; status: string; created_at: string };
 
 function date(value?: string | null) { return value ? new Intl.DateTimeFormat("tr-TR", { dateStyle: "medium" }).format(new Date(value)) : "—"; }
-function label(value?: string | null) { const map: Record<string, string> = { published: "Yayında", draft: "Taslak", ready: "Yayına hazır", suspended: "Askıda", pending: "Ödeme bekliyor", active: "Aktif", paid: "Ödendi", overdue: "Gecikmiş", dns_pending: "DNS bekliyor", monthly: "Aylık yönetim" }; return map[value || ""] || value || "—"; }
+function label(value?: string | null) { const map: Record<string, string> = { published: "Yayında", draft: "Geçici ön izleme", ready: "Yayına hazır", suspended: "Askıda", pending: "Ödeme bekliyor", active: "Aktif", paid: "Ödendi", overdue: "Gecikmiş", dns_pending: "DNS bekliyor", monthly: "Aylık yönetim" }; return map[value || ""] || value || "—"; }
 
 export default function CustomerPanelPage() {
   const [projects, setProjects] = useState<StudioProject[]>([]);
@@ -43,4 +43,3 @@ export default function CustomerPanelPage() {
 }
 
 function MiniStat({ label: statLabel, value }: { label: string; value: string }) { return <div className="min-w-0 rounded-xl bg-slate-50 p-3"><p className="text-[9px] font-black uppercase tracking-[.12em] text-slate-400">{statLabel}</p><p className="mt-2 truncate text-xs font-black">{value}</p></div>; }
-

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { applyStudioInstruction, describeStudioChanges, type StudioSite } from "@/lib/sitemixStudio";
+import { applyStudioInstruction, describeStudioChanges, upgradeStudioSite, type StudioSite } from "@/lib/sitemixStudio";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { isMissingStudioTable, requireStudioUser } from "@/lib/studioServerAuth";
 
@@ -19,6 +19,14 @@ async function ownedProject(projectId: string, ownerId: string) {
     .eq("owner_id", ownerId)
     .single();
   if (error || !data) throw error || new Error("Proje bulunamadı.");
+  const expired = data.status === "draft"
+    && !data.management_mode
+    && data.created_at
+    && new Date(data.created_at).getTime() + 7 * 24 * 60 * 60 * 1000 <= Date.now();
+  if (expired) {
+    await supabaseAdmin.from("studio_projects").delete().eq("id", projectId).eq("owner_id", ownerId);
+    throw new Error("Bu geçici ön izlemenin süresi dolmuş. Yeni bir site oluşturabilirsiniz.");
+  }
   return data;
 }
 
@@ -42,6 +50,11 @@ export async function GET(request: Request, context: RouteContext) {
     const user = await requireStudioUser(request);
     const { projectId } = await context.params;
     const project = await ownedProject(projectId, user.id);
+    const upgraded = upgradeStudioSite(project.current_version as StudioSite);
+    if (JSON.stringify(upgraded) !== JSON.stringify(project.current_version)) {
+      await supabaseAdmin.from("studio_projects").update({ current_version: upgraded }).eq("id", projectId).eq("owner_id", user.id);
+      project.current_version = upgraded;
+    }
     const { data: messages } = await supabaseAdmin
       .from("studio_messages")
       .select("id, role, content, created_at")
