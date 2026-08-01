@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "crypto";
+import { createHash, createHmac, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
 
 export const SITEMIX_ADMIN_COOKIE = "sitemix_admin_session";
@@ -9,11 +9,11 @@ type AdminSessionPayload = {
 };
 
 function adminUsername() {
-  return (process.env.SITEMIX_ADMIN_USERNAME || "hakan benli").trim();
+  return (process.env.SITEMIX_ADMIN_USERNAME || process.env.SITEMIX_ADMIN_EMAIL || "hakanbenli47@gmail.com").trim();
 }
 
 function adminPassword() {
-  return process.env.SITEMIX_ADMIN_PASSWORD || "13255Hh.";
+  return process.env.SITEMIX_ADMIN_PASSWORD || "";
 }
 
 function adminUsernames() {
@@ -22,6 +22,7 @@ function adminUsernames() {
     "hakan benli",
     "hakanbenli",
     "admin",
+    "hakanbenli47@gmail.com",
     process.env.SITEMIX_ADMIN_EMAIL || "",
   ]
     .map((value) => value.trim().toLocaleLowerCase("tr-TR"))
@@ -61,9 +62,10 @@ export function verifyAdminCredentials(username: unknown, password: unknown) {
   const cleanUsername = username.trim().toLocaleLowerCase("tr-TR");
   const usernameOk = adminUsernames().includes(cleanUsername);
   const expectedPassword = adminPassword();
-  const passwordOk =
-    safeEqual(password, expectedPassword) ||
-    (expectedPassword.endsWith(".") && safeEqual(password, expectedPassword.slice(0, -1)));
+  const legacyPasswordHash = "19b80c001fd7babb9bb7c5c4e002773dd85793cccc665a04c45842188129ac4b";
+  const passwordOk = expectedPassword
+    ? safeEqual(password, expectedPassword)
+    : safeEqual(createHash("sha256").update(password).digest("hex"), legacyPasswordHash);
 
   return usernameOk && passwordOk;
 }

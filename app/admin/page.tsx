@@ -424,13 +424,21 @@ export default function SitemixAdminPage() {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={logout}
-            className="inline-flex min-h-11 items-center justify-center rounded-full bg-slate-950 px-5 text-sm font-black text-white hover:bg-slate-800"
-          >
-            Çıkış Yap
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <a
+              href="/admin/studio"
+              className="inline-flex min-h-11 items-center justify-center rounded-full bg-indigo-600 px-5 text-sm font-black text-white hover:bg-indigo-500"
+            >
+              SiteMix Studio Yönetimi
+            </a>
+            <button
+              type="button"
+              onClick={logout}
+              className="inline-flex min-h-11 items-center justify-center rounded-full bg-slate-950 px-5 text-sm font-black text-white hover:bg-slate-800"
+            >
+              Çıkış Yap
+            </button>
+          </div>
         </header>
 
         <div className="mt-5 grid gap-3 md:grid-cols-[1fr_auto]">

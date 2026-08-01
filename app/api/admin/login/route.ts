@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const response = NextResponse.json({ success: true, redirectTo: "/admin" });
+  const response = NextResponse.json({ success: true, redirectTo: "/admin/studio" });
 
   response.cookies.set({
     name: SITEMIX_ADMIN_COOKIE,
