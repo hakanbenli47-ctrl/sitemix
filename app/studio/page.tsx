@@ -4,7 +4,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import SitePreview from "@/app/_components/SitePreview";
-import { applyStudioInstruction, describeStudioChanges, generateStudioSite, slugify, type StudioProject, type StudioSite } from "@/lib/sitemixStudio";
+import { applyStudioInstruction, describeStudioChanges, generateStudioSite, slugify, suggestStudioInstructions, type StudioProject, type StudioSite } from "@/lib/sitemixStudio";
 import { advanceStudioConversation, composeStudioPrompt, emptyStudioBrief, getBriefProgress, type StudioBrief } from "@/lib/studioConversation";
 import { supabaseClient } from "@/lib/supabaseClient";
 
@@ -35,6 +35,8 @@ export default function StudioPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [brief, setBrief] = useState<StudioBrief>(() => ({ ...emptyStudioBrief, services: [], notes: [] }));
   const [quickReplies, setQuickReplies] = useState<string[]>([]);
+  const [editSuggestions, setEditSuggestions] = useState<string[]>([]);
+  const [pendingContactMode, setPendingContactMode] = useState<"both" | "whatsapp" | "phone" | null>(null);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
@@ -68,6 +70,7 @@ export default function StudioPage() {
     }
     setProject(result.project);
     setMessages((result.messages || []).map((message: { id: string; role: "user" | "assistant"; content: string }) => ({ id: message.id, role: message.role, content: message.content })));
+    setEditSuggestions(suggestStudioInstructions(result.project.current_version as StudioSite));
     setActiveTab("chat");
   }
 
@@ -91,7 +94,9 @@ export default function StudioPage() {
     createdPromptRef.current = prompt;
     setBusy(true);
     setQuickReplies([]);
-    setProject(makeLocalProject(prompt));
+    const localProject = makeLocalProject(prompt);
+    setProject(localProject);
+    setEditSuggestions(suggestStudioInstructions(localProject.current_version));
 
     try {
       const response = await fetch("/api/studio/projects", {
@@ -138,7 +143,7 @@ export default function StudioPage() {
         { id: `a-${Date.now() + 1}`, role: "assistant", content: "Elbette. Değiştirmek istediğin bilgiyi doğal biçimde yazabilirsin. Örneğin “işletme adı Luna olsun” veya “site koyu ve modern olsun” demen yeterli." },
       ];
       setMessages(nextMessages);
-      setQuickReplies(["İşletme adını değiştireceğim", "Konumu değiştireceğim", "Tarzı değiştireceğim", "Sayfa yapısını değiştireceğim"]);
+      setQuickReplies(["İşletme adını değiştireceğim", "Konumu değiştireceğim", "Numarayı değiştireceğim", "Tarzı değiştireceğim", "Sayfa yapısını değiştireceğim"]);
       return;
     }
 
@@ -207,17 +212,58 @@ export default function StudioPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function sendInstruction(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const instruction = input.trim();
-    if (!instruction || !project || !site || busy) return;
+  async function runInstruction(rawInstruction: string) {
+    const visibleInstruction = rawInstruction.trim();
+    if (!visibleInstruction || !project || !site || busy) return;
+    const normalizedInstruction = visibleInstruction.toLocaleLowerCase("tr-TR");
+    const contactNumber = visibleInstruction.match(/\+?[\d\s()-]{10,22}/)?.[0]?.trim();
+
+    if (pendingContactMode && !contactNumber) {
+      const selectedMode = /telefon.*whatsapp.*aynı|aynı numara/.test(normalizedInstruction)
+        ? "both"
+        : /sadece whatsapp/.test(normalizedInstruction)
+          ? "whatsapp"
+          : /sadece telefon/.test(normalizedInstruction)
+            ? "phone"
+            : pendingContactMode;
+      setPendingContactMode(selectedMode);
+      setInput("");
+      setEditSuggestions([]);
+      setMessages((current) => [
+        ...current,
+        { id: `u-${Date.now()}`, role: "user", content: visibleInstruction },
+        { id: `a-${Date.now() + 1}`, role: "assistant", content: `${selectedMode === "both" ? "Telefon ve WhatsApp" : selectedMode === "whatsapp" ? "WhatsApp" : "Telefon"} numaranı yazabilir misin? Örnek: 0555 555 55 55` },
+      ]);
+      return;
+    }
+
+    let instruction = visibleInstruction;
+    if (pendingContactMode && contactNumber) {
+      instruction = pendingContactMode === "both"
+        ? `Telefon: ${contactNumber}. WhatsApp: ${contactNumber}`
+        : pendingContactMode === "whatsapp"
+          ? `WhatsApp: ${contactNumber}`
+          : `Telefon: ${contactNumber}`;
+      setPendingContactMode(null);
+    }
     setInput("");
+    setEditSuggestions([]);
     setBusy(true);
-    setMessages((current) => [...current, { id: `u-${Date.now()}`, role: "user", content: instruction }]);
+    setMessages((current) => [...current, { id: `u-${Date.now()}`, role: "user", content: visibleInstruction }]);
     const localSite = applyStudioInstruction(site, instruction);
     const understoodChanges = describeStudioChanges(site, localSite);
     if (!understoodChanges.length) {
-      setMessages((current) => [...current, { id: `a-${Date.now()}`, role: "assistant", content: "Bu isteği tasarım kararına çevirebilmem için biraz daha net yazmalısın. Örneğin “işletme adı Luna olsun”, “hizmetlere gelin saçı ekle” veya “galeri bölümünü kaldır” diyebilirsin." }]);
+      if (/(whatsapp|telefon|numara)/.test(normalizedInstruction) && !contactNumber) {
+        const mode = /whatsapp/.test(normalizedInstruction) && !/telefon/.test(normalizedInstruction) ? "whatsapp" : /telefon/.test(normalizedInstruction) && !/whatsapp/.test(normalizedInstruction) ? "phone" : "both";
+        setPendingContactMode(mode);
+        setMessages((current) => [...current, { id: `a-${Date.now()}`, role: "assistant", content: "Elbette. Hangi iletişim bilgisini ekleyelim? Bir seçeneğe dokun; ardından numaranı yazmanı isteyeceğim." }]);
+        setEditSuggestions(["Telefon ve WhatsApp aynı", "Sadece WhatsApp", "Sadece telefon"]);
+        setBusy(false);
+        return;
+      }
+      const suggestions = suggestStudioInstructions(site, instruction);
+      setMessages((current) => [...current, { id: `a-${Date.now()}`, role: "assistant", content: "Ne yapmak istediğini tam eşleştiremedim. Aşağıdakilerden birini mi demek istedin? Bir seçeneğe dokunabilir veya isteğini biraz daha ayrıntılı yazabilirsin." }]);
+      setEditSuggestions(suggestions);
       setBusy(false);
       return;
     }
@@ -235,12 +281,18 @@ export default function StudioPage() {
         setProjects((current) => current.map((item) => item.id === result.project.id ? result.project : item));
       }
       setMessages((current) => [...current, { id: `a-${Date.now()}`, role: "assistant", content: `Güncelledim: ${understoodChanges.join(", ")}. Ön izleme şimdi yeni kararlarını gösteriyor. Başka neyi değiştirelim?` }]);
+      setEditSuggestions(suggestStudioInstructions(localSite));
       if (window.innerWidth < 1024) setActiveTab("preview");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Değişiklik ön izlemeye uygulandı.");
     } finally {
       setBusy(false);
     }
+  }
+
+  function sendInstruction(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void runInstruction(input);
   }
 
   function updateSite(patch: Partial<StudioSite>) {
@@ -388,6 +440,7 @@ export default function StudioPage() {
                 <BriefMemory label="Konum" value={brief.location} />
                 <BriefMemory label="Hizmetler" value={brief.services.length ? brief.services.join(", ") : undefined} />
                 <BriefMemory label="Ana hedef" value={brief.goal} />
+                <BriefMemory label="Telefon / WhatsApp" value={brief.whatsapp || brief.phone || (brief.contactSkipped ? "Daha sonra eklenecek" : undefined)} />
                 <BriefMemory label="Görsel tarz" value={brief.style} />
                 <BriefMemory label="Sayfa yapısı" value={brief.pageMode ? (brief.pageMode === "multi" ? "Çok sayfalı" : "Tek sayfalı") : undefined} />
               </div>
@@ -425,7 +478,7 @@ export default function StudioPage() {
               {messages.map((message) => <div key={message.id} className={`max-w-[92%] rounded-2xl px-4 py-3 text-sm font-semibold leading-6 ${message.role === "user" ? "ml-auto bg-[#7e68ff] text-white" : "border border-white/8 bg-white/[0.04] text-white/62"}`}>{message.content}</div>)}
               {busy ? <div className="inline-flex gap-1 rounded-full bg-white/6 px-4 py-3"><span className="dot-typing" /><span className="dot-typing" /><span className="dot-typing" /></div> : null}
             </div>
-            <form onSubmit={sendInstruction} className="border-t border-white/8 p-3"><textarea value={input} onChange={(event) => setInput(event.target.value)} rows={3} placeholder="Örn. Mor tonlara geç, fiyat listesi ekle..." className="w-full resize-none rounded-2xl border border-white/8 bg-white/[0.045] p-4 text-sm font-semibold leading-6 text-white outline-none placeholder:text-white/24 focus:border-white/18" /><button disabled={!input.trim() || busy} className="send-button mt-2 min-h-12 w-full rounded-full text-sm font-black text-[#0a0b13] disabled:opacity-40">Değişikliği uygula</button></form></>
+            <form onSubmit={sendInstruction} className="border-t border-white/8 p-3">{editSuggestions.length ? <div className="mb-3 flex gap-2 overflow-x-auto pb-1">{editSuggestions.map((suggestion) => <button key={suggestion} type="button" onClick={() => void runInstruction(suggestion)} disabled={busy} className="shrink-0 rounded-full border border-[#8e7bff]/20 bg-[#8e7bff]/8 px-3.5 py-2 text-[10px] font-black text-[#b7adff] transition hover:bg-[#8e7bff]/15 disabled:opacity-40">{suggestion}</button>)}</div> : null}<textarea value={input} onChange={(event) => setInput(event.target.value)} rows={3} placeholder="Örn. Başlığı ortaya al, kısalt ve girişi daha premium yap..." className="w-full resize-none rounded-2xl border border-white/8 bg-white/[0.045] p-4 text-sm font-semibold leading-6 text-white outline-none placeholder:text-white/24 focus:border-white/18" /><button disabled={!input.trim() || busy} className="send-button mt-2 min-h-12 w-full rounded-full text-sm font-black text-[#0a0b13] disabled:opacity-40">İsteği uygula</button></form></>
           ) : null}
 
           {activeTab === "content" && site ? (

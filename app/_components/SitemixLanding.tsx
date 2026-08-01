@@ -12,6 +12,13 @@ const suggestions = [
   "Berberim için fiyat listeli, koyu renkli bir site yap",
 ];
 
+const typingExamples = [
+  "Kadıköy'deki berberim için koyu, premium ve randevu odaklı bir site kur...",
+  "Halı yıkama işletmem için güven veren, hızlı teklif toplayan bir site hazırla...",
+  "Güzellik salonum için zarif, hareketli ve WhatsApp odaklı bir site oluştur...",
+  "Emlak ofisim için portföyleri öne çıkaran çok sayfalı bir site tasarla...",
+];
+
 const featureCards = [
   ["01", "İşletmeni anlat", "Form doldurmak yerine doğal biçimde neye ihtiyacın olduğunu yaz."],
   ["02", "Siteni canlı gör", "SiteMix sektörüne uygun sayfaları, metinleri ve görünümü saniyeler içinde kursun."],
@@ -25,6 +32,9 @@ export default function SitemixLanding() {
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState("");
   const [signedIn, setSignedIn] = useState(false);
+  const [typingIndex, setTypingIndex] = useState(0);
+  const [typedExample, setTypedExample] = useState("");
+  const [typingDeleting, setTypingDeleting] = useState(false);
 
   useEffect(() => {
     supabaseClient.auth.getSession().then(({ data }) => setSignedIn(Boolean(data.session)));
@@ -50,6 +60,27 @@ export default function SitemixLanding() {
       window.removeEventListener("keydown", closeOnEscape);
     };
   }, [showAuth, authBusy]);
+
+  useEffect(() => {
+    const fullText = typingExamples[typingIndex];
+    let delay = typingDeleting ? 18 : 42;
+
+    if (!typingDeleting && typedExample === fullText) delay = 1650;
+    if (typingDeleting && typedExample === "") delay = 260;
+
+    const timer = window.setTimeout(() => {
+      if (!typingDeleting && typedExample === fullText) {
+        setTypingDeleting(true);
+      } else if (typingDeleting && typedExample === "") {
+        setTypingDeleting(false);
+        setTypingIndex((current) => (current + 1) % typingExamples.length);
+      } else {
+        setTypedExample((current) => typingDeleting ? current.slice(0, -1) : fullText.slice(0, current.length + 1));
+      }
+    }, delay);
+
+    return () => window.clearTimeout(timer);
+  }, [typedExample, typingDeleting, typingIndex]);
 
   function startWithPrompt(value: string) {
     const cleanPrompt = value.trim();
@@ -127,9 +158,9 @@ export default function SitemixLanding() {
           Fikrini yaz, ilk taslağın dakikalar içinde hazır olsun
         </motion.div>
 
-        <motion.h1 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="max-w-5xl text-center text-[clamp(3.1rem,9vw,8.5rem)] font-black leading-[0.88] tracking-[-0.085em]">
-          Konuş. Siten
-          <span className="hero-gradient block">şekillensin.</span>
+        <motion.h1 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="max-w-5xl text-center text-[clamp(3.2rem,9vw,8rem)] font-black leading-[0.88] tracking-[-0.085em]">
+          <span className="block">Söyle.</span>
+          <motion.span animate={{ y: [0, -5, 0], rotate: [-.4, .35, -.4] }} transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }} className="premium-title-shape hero-gradient mt-2 inline-block">Siten olsun.</motion.span>
         </motion.h1>
 
         <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.18 }} className="mt-7 max-w-2xl text-center text-base font-medium leading-7 text-white/52 sm:text-lg sm:leading-8">
@@ -138,24 +169,28 @@ export default function SitemixLanding() {
 
         <motion.div initial={{ opacity: 0, scale: 0.97, y: 24 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ delay: 0.22, type: "spring", stiffness: 130 }} className="relative mt-10 w-full max-w-4xl">
           <div className="prompt-glow" />
-          <form onSubmit={handleSubmit} className="prompt-shell relative overflow-hidden rounded-[28px] border border-white/12 bg-[#11121d]/88 p-3 shadow-[0_35px_100px_rgba(0,0,0,.55)] backdrop-blur-2xl sm:rounded-[34px] sm:p-4">
-            <textarea
-              value={prompt}
-              onChange={(event) => setPrompt(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  startWithPrompt(prompt);
-                }
-              }}
-              rows={3}
-              maxLength={1200}
-              placeholder="Örn. Üsküdar'daki halı yıkama işletmem için güven veren, WhatsApp odaklı bir site oluştur..."
-              aria-label="Oluşturmak istediğiniz siteyi anlatın"
-              className="min-h-[112px] w-full resize-none bg-transparent px-3 py-3 text-base font-semibold leading-7 text-white outline-none placeholder:text-white/27 sm:min-h-[126px] sm:px-5 sm:py-4 sm:text-lg"
-            />
+          <form onSubmit={handleSubmit} className="prompt-shell premium-prompt relative overflow-hidden rounded-[28px] border border-white/12 bg-[#11121d]/88 p-3 shadow-[0_40px_130px_rgba(0,0,0,.62)] backdrop-blur-2xl sm:rounded-[36px] sm:p-4">
+            <div className="flex items-center justify-between border-b border-white/7 px-3 pb-3 sm:px-5"><span className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[.17em] text-white/35"><span className="h-1.5 w-1.5 rounded-full bg-[#82f0cd] shadow-[0_0_12px_#82f0cd]" />Site fikrini anlat</span><span className="rounded-full border border-white/8 bg-white/[0.035] px-3 py-1.5 text-[9px] font-black text-white/25">Adım 1 / Sohbet</span></div>
+            <div className="relative min-h-[132px] sm:min-h-[148px]">
+              {!prompt ? <div aria-hidden="true" className="pointer-events-none absolute inset-0 px-3 py-5 text-base font-semibold leading-7 text-white/30 sm:px-5 sm:text-lg"><span className="text-white/18">Örn. </span>{typedExample}<span className="ml-0.5 inline-block h-5 w-px animate-pulse bg-[#9c8bff] align-middle" /></div> : null}
+              <textarea
+                value={prompt}
+                onChange={(event) => setPrompt(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    startWithPrompt(prompt);
+                  }
+                }}
+                rows={4}
+                maxLength={1200}
+                placeholder=""
+                aria-label="Oluşturmak istediğiniz siteyi anlatın"
+                className="relative z-10 min-h-[132px] w-full resize-none bg-transparent px-3 py-5 text-base font-semibold leading-7 text-white outline-none sm:min-h-[148px] sm:px-5 sm:text-lg"
+              />
+            </div>
             <div className="flex items-center justify-between gap-3 border-t border-white/8 px-1 pt-3 sm:px-3">
-              <span className="hidden text-xs font-bold text-white/30 sm:block">Enter ile gönder · Shift + Enter ile yeni satır</span>
+              <span className="hidden items-center gap-3 text-[10px] font-bold text-white/28 sm:flex"><span>Enter ile gönder</span><span className="h-1 w-1 rounded-full bg-white/15" /><span>Mesajın girişten sonra korunur</span></span>
               <span className="text-xs font-bold text-white/28 sm:hidden">İşletmeni anlat</span>
               <button type="submit" disabled={!prompt.trim()} className="send-button group flex min-h-12 items-center gap-3 rounded-full px-5 text-sm font-black text-[#0a0b13] disabled:cursor-not-allowed disabled:opacity-35 sm:px-7">
                 Oluşturmaya başla

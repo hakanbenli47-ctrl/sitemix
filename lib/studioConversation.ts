@@ -1,6 +1,6 @@
 import { sectorCatalog } from "@/lib/sitemixStudio";
 
-export type BriefField = "sector" | "businessName" | "location" | "services" | "goal" | "style" | "pageMode";
+export type BriefField = "sector" | "businessName" | "location" | "services" | "goal" | "contact" | "style" | "pageMode";
 
 export type StudioBrief = {
   sectorId?: string;
@@ -9,6 +9,9 @@ export type StudioBrief = {
   location?: string;
   services: string[];
   goal?: string;
+  phone?: string;
+  whatsapp?: string;
+  contactSkipped?: boolean;
   style?: string;
   pageMode?: "single" | "multi";
   lastQuestion?: BriefField;
@@ -27,7 +30,7 @@ export type ConversationResult = {
 
 export const emptyStudioBrief: StudioBrief = { services: [], notes: [] };
 
-const requiredFields: BriefField[] = ["sector", "businessName", "location", "services", "goal", "style", "pageMode"];
+const requiredFields: BriefField[] = ["sector", "businessName", "location", "services", "goal", "contact", "style", "pageMode"];
 
 const greetings = /^(merhaba|selam|selamlar|hey|iyi günler|iyi akşamlar|günaydın|mrb)[.!\s]*$/i;
 const buildRequest = /(taslağ[ıi]?|siteyi|sitemi).*(oluştur|hazırla|göster)|(oluştur|hazırla).*(taslağ[ıi]?|siteyi|sitemi)|^hazırım$|^başla$/i;
@@ -90,6 +93,7 @@ function inferStyle(message: string) {
 function fieldDone(brief: StudioBrief, field: BriefField) {
   if (field === "sector") return Boolean(brief.sectorLabel);
   if (field === "services") return brief.services.length > 0;
+  if (field === "contact") return Boolean(brief.phone || brief.whatsapp || brief.contactSkipped);
   return Boolean(brief[field]);
 }
 
@@ -124,6 +128,10 @@ function questionFor(field: BriefField, brief: StudioBrief) {
       reply: "Bu sitenin senin için en önemli sonucu ne olmalı?",
       quickReplies: ["WhatsApp mesajı almak", "Randevu almak", "Telefon araması almak", "İşletmemi tanıtmak"],
     },
+    contact: {
+      reply: "Müşteriler sana hangi numaradan ulaşsın? Telefon ve WhatsApp numaranı yazabilirsin. Aynı numaraysa bir kez yazman yeterli.",
+      quickReplies: ["Telefon ve WhatsApp aynı", "Sadece WhatsApp kullanacağım", "Şimdilik sonra ekle"],
+    },
     style: {
       reply: "Ziyaretçiler sitene girdiğinde nasıl bir his alsın? Bir tarz veya renk tercihin varsa söyle.",
       quickReplies: ["Modern ve sade", "Şık ve lüks", "Kurumsal ve güven veren", "Koyu ve güçlü", "Sana bırakıyorum"],
@@ -142,6 +150,7 @@ function summary(brief: StudioBrief) {
     `📍 ${brief.location}`,
     `🧭 ${brief.sectorLabel}`,
     `🎯 ${brief.goal}`,
+    `☎️ ${brief.whatsapp || brief.phone || "İletişim numarası daha sonra eklenecek"}`,
     `🎨 ${brief.style}`,
     `📄 ${brief.pageMode === "multi" ? "Çok sayfalı yapı" : "Tek sayfalı yapı"}`,
     "Bu özete göre ilk taslağı oluşturmamı ister misin?",
@@ -158,6 +167,8 @@ export function advanceStudioConversation(current: StudioBrief, rawMessage: stri
     ? "businessName"
     : /konum|şehir|bölge/i.test(value)
       ? "location"
+      : /telefon|whatsapp|numara/i.test(value) && /değiştir/i.test(value)
+        ? "contact"
       : /hizmet/i.test(value) && /değiştir/i.test(value)
         ? "services"
         : /hedef/i.test(value) && /değiştir/i.test(value)
@@ -176,6 +187,10 @@ export function advanceStudioConversation(current: StudioBrief, rawMessage: stri
       brief.sectorLabel = undefined;
     } else if (requestedChange === "services") {
       brief.services = [];
+    } else if (requestedChange === "contact") {
+      brief.phone = undefined;
+      brief.whatsapp = undefined;
+      brief.contactSkipped = false;
     } else {
       brief[requestedChange] = undefined;
     }
@@ -254,6 +269,27 @@ export function advanceStudioConversation(current: StudioBrief, rawMessage: stri
     learned.push(`Hedef: ${brief.goal}`);
   }
 
+  if (brief.lastQuestion === "contact" || /telefon|whatsapp|numara/i.test(value)) {
+    if (/şimdilik|sonra ekle|atla/.test(value)) {
+      brief.contactSkipped = true;
+      learned.push("İletişim numarası: Daha sonra eklenecek");
+    } else {
+      const numbers = message.match(/\+?\d[\d\s()-]{8,}\d/g)?.map((item) => clean(item)).slice(0, 2) || [];
+      const explicitWhatsapp = message.match(/(?:whatsapp|wp)\s*(?:numarası)?\s*[:,-]?\s*(\+?\d[\d\s()-]{8,}\d)/i)?.[1];
+      const explicitPhone = message.match(/telefon\s*(?:numarası)?\s*[:,-]?\s*(\+?\d[\d\s()-]{8,}\d)/i)?.[1];
+      if (explicitPhone) brief.phone = clean(explicitPhone);
+      if (explicitWhatsapp) brief.whatsapp = clean(explicitWhatsapp);
+      if (!explicitPhone && !explicitWhatsapp && numbers[0]) {
+        brief.phone = numbers[0];
+        brief.whatsapp = numbers[0];
+      } else if (numbers.length === 2) {
+        brief.phone ||= numbers[0];
+        brief.whatsapp ||= numbers[1];
+      }
+      if (brief.phone || brief.whatsapp) learned.push(`İletişim: ${brief.whatsapp || brief.phone}`);
+    }
+  }
+
   const style = inferStyle(message);
   if (style && style !== brief.style) {
     brief.style = style;
@@ -294,7 +330,14 @@ export function advanceStudioConversation(current: StudioBrief, rawMessage: stri
   const nextField = missing[0];
   brief.lastQuestion = nextField;
   const next = questionFor(nextField, brief);
-  const acknowledgement = learned.length ? `Anladım — ${learned.join(" · ")}.\n\n` : "";
+  const ambiguous = current.lastQuestion === nextField && learned.length === 0;
+  const acknowledgement = learned.length
+    ? `Anladım — ${learned.join(" · ")}.\n\n`
+    : ambiguous
+      ? nextField === "contact"
+        ? "Tercihini anladım; şimdi kullanacağımız numarayı da yazar mısın? Örnek: 0555 555 55 55\n\n"
+        : "Cevabını ilgili alana tam yerleştiremedim. Bunu mu demek istedin?\n\n"
+      : "";
   return {
     brief,
     reply: `${acknowledgement}${next.reply}`,
@@ -313,6 +356,8 @@ export function composeStudioPrompt(brief: StudioBrief) {
     `Konum: ${brief.location}.`,
     `Hizmetler: ${brief.services.join(", ")}.`,
     `Sitenin ana hedefi: ${brief.goal}.`,
+    `Telefon: ${brief.phone || "Daha sonra eklenecek"}.`,
+    `WhatsApp: ${brief.whatsapp || brief.phone || "Daha sonra eklenecek"}.`,
     `Görsel tarz: ${brief.style}.`,
     `Site yapısı: ${brief.pageMode === "multi" ? "çok sayfalı" : "tek sayfalı"}.`,
   ].join(" ");

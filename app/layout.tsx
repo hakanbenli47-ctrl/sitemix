@@ -25,7 +25,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "SiteMix Studio | Konuş, siten şekillensin",
+    default: "SiteMix Studio | Söyle. Siten olsun.",
     template: "%s | SiteMix",
   },
   description: "İşletmeni birkaç cümleyle anlat. SiteMix sektörüne uygun, mobil uyumlu siteni oluştursun; canlı ön izlemede düzenle, yönet ve yayınla.",
@@ -53,13 +53,13 @@ export const metadata: Metadata = {
     locale: "tr_TR",
     url: siteUrl,
     siteName: "SiteMix Studio",
-    title: "Konuş. Siten şekillensin.",
+    title: "Söyle. Siten olsun.",
     description: "İşletmeni anlat, siteni canlı gör, istediğin gibi düzenle ve yayınla.",
-    images: [{ url: "/og.png", width: 1731, height: 909, alt: "SiteMix Studio — Konuş. Siten şekillensin." }],
+    images: [{ url: "/og.png", width: 1731, height: 909, alt: "SiteMix Studio — Söyle. Siten olsun." }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Konuş. Siten şekillensin.",
+    title: "Söyle. Siten olsun.",
     description: "İşletmeni anlat, siteni canlı gör, istediğin gibi düzenle ve yayınla.",
     images: ["/og.png"],
   },

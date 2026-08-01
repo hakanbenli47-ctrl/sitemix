@@ -22,6 +22,14 @@ export type StudioTheme = {
   fontStyle: "modern" | "elegant" | "strong";
 };
 
+export type StudioDesign = {
+  heroAlign: "left" | "center";
+  heroStyle: "editorial" | "conversion" | "immersive" | "minimal";
+  motion: "none" | "calm" | "dynamic";
+  cardStyle: "soft" | "sharp" | "outline";
+  density: "airy" | "balanced" | "compact";
+};
+
 export type StudioSite = {
   businessName: string;
   sector: string;
@@ -31,6 +39,7 @@ export type StudioSite = {
   whatsapp: string;
   pageMode: "single" | "multi";
   theme: StudioTheme;
+  design?: StudioDesign;
   sections: StudioSection[];
 };
 
@@ -154,6 +163,32 @@ const palettes: Record<string, StudioTheme> = {
   },
 };
 
+const sectorDesigns: Record<string, StudioDesign> = {
+  kuafor: { heroAlign: "left", heroStyle: "editorial", motion: "calm", cardStyle: "sharp", density: "airy" },
+  guzellik: { heroAlign: "left", heroStyle: "editorial", motion: "calm", cardStyle: "soft", density: "airy" },
+  berber: { heroAlign: "left", heroStyle: "immersive", motion: "calm", cardStyle: "sharp", density: "balanced" },
+  "hali-yikama": { heroAlign: "left", heroStyle: "conversion", motion: "calm", cardStyle: "soft", density: "balanced" },
+  "oto-yikama": { heroAlign: "left", heroStyle: "immersive", motion: "dynamic", cardStyle: "sharp", density: "balanced" },
+  "teknik-servis": { heroAlign: "left", heroStyle: "conversion", motion: "calm", cardStyle: "outline", density: "compact" },
+  emlak: { heroAlign: "center", heroStyle: "immersive", motion: "calm", cardStyle: "sharp", density: "airy" },
+  danismanlik: { heroAlign: "left", heroStyle: "minimal", motion: "calm", cardStyle: "outline", density: "airy" },
+  organizasyon: { heroAlign: "center", heroStyle: "editorial", motion: "dynamic", cardStyle: "soft", density: "airy" },
+  default: { heroAlign: "left", heroStyle: "minimal", motion: "calm", cardStyle: "outline", density: "balanced" },
+};
+
+function shortHeadline(site: Pick<StudioSite, "sector" | "businessName">) {
+  const sector = site.sector.toLocaleLowerCase("tr-TR");
+  if (/kuaför|güzellik/.test(sector)) return "Işığını ortaya çıkar.";
+  if (/berber/.test(sector)) return "Tarzın burada başlar.";
+  if (/halı|temizlik|yıkama/.test(sector)) return "Temizliğin güven veren hâli.";
+  if (/oto|araç/.test(sector)) return "Aracın yeniden ışıldasın.";
+  if (/servis|tamir/.test(sector)) return "Hızlı çözüm. Net sonuç.";
+  if (/emlak|gayrimenkul/.test(sector)) return "Doğru yer, doğru karar.";
+  if (/danışman|uzman/.test(sector)) return "Netlik burada başlar.";
+  if (/organizasyon|etkinlik/.test(sector)) return "Unutulmayacak anlar.";
+  return `${site.businessName} ile daha ileri.`;
+}
+
 function titleCase(value: string) {
   return value
     .trim()
@@ -214,8 +249,11 @@ export function generateStudioSite(prompt: string): StudioSite {
     .filter(Boolean)
     .slice(0, 8);
   const goal = prompt.match(/Sitenin ana hedefi:\s*([^.!?\n]{3,160})/i)?.[1]?.trim();
+  const phone = prompt.match(/Telefon:\s*(\+?\d[\d\s()-]{8,}\d)/i)?.[1]?.trim() || "";
+  const whatsapp = prompt.match(/WhatsApp:\s*(\+?\d[\d\s()-]{8,}\d)/i)?.[1]?.trim() || phone;
   const wantsPricing = /fiyat|paket|ücret/.test(normalized);
   const wantsGallery = /galeri|fotoğraf|öncesi|sonrası/.test(normalized);
+  const wantsTestimonials = /yorum|referans|müşteri deneyimi/.test(normalized);
   const wantsMulti = /çok sayfa|çok sayfalı|sayfalar/.test(normalized);
 
   const conversationColors: Array<[RegExp, Partial<StudioTheme>]> = [
@@ -233,6 +271,7 @@ export function generateStudioSite(prompt: string): StudioSite {
   });
 
   const tagline = catalogSector?.tagline || `${businessName} ile ihtiyacınıza uygun, güvenilir çözümler.`;
+  const design: StudioDesign = { ...(sectorDesigns[catalogSector?.id || "default"] || sectorDesigns.default) };
   const heroAction = goal
     ? `${goal.toLocaleLowerCase("tr-TR")} için hizmetleri inceleyin ve hemen iletişime geçin.`
     : "Hızlıca bilgi alın, çalışma detaylarını görün ve bize ulaşın.";
@@ -278,13 +317,17 @@ export function generateStudioSite(prompt: string): StudioSite {
           },
         ]
       : []),
-    {
-      id: "testimonials",
-      type: "testimonials",
-      title: "Müşterilerimiz ne diyor?",
-      text: "Memnuniyet, işimizin en görünür sonucu.",
-      items: ["Hızlı ve ilgili bir ekip.", "Süreç boyunca her şey çok açıktı.", "Sonuç beklentimizin üzerindeydi."],
-    },
+    ...(wantsTestimonials
+      ? [
+          {
+            id: "testimonials",
+            type: "testimonials" as const,
+            title: "Müşteri deneyimleri",
+            text: "Gerçek müşterilerinizden izinli yorumları yayınlamadan önce buradan düzenleyin.",
+            items: ["Müşteri yorumunuzu buraya ekleyin", "İkinci müşteri yorumunu buraya ekleyin", "Üçüncü müşteri yorumunu buraya ekleyin"],
+          },
+        ]
+      : []),
     {
       id: "faq",
       type: "faq",
@@ -305,10 +348,11 @@ export function generateStudioSite(prompt: string): StudioSite {
     sector: sectorLabel,
     location,
     tagline,
-    phone: "",
-    whatsapp: "",
+    phone,
+    whatsapp,
     pageMode: wantsMulti ? "multi" : "single",
     theme,
+    design,
     sections,
   };
 }
@@ -316,6 +360,41 @@ export function generateStudioSite(prompt: string): StudioSite {
 export function applyStudioInstruction(site: StudioSite, instruction: string): StudioSite {
   const normalized = instruction.toLocaleLowerCase("tr-TR");
   const next: StudioSite = JSON.parse(JSON.stringify(site));
+  next.design = { ...(site.design || sectorDesigns.default) };
+
+  if (/(başl(?:ık|ığ)|hero).*(ortala|ortaya|merkeze)|ortalanmış başlık/.test(normalized)) next.design.heroAlign = "center";
+  if (/(başl(?:ık|ığ)|hero).*(sola|solda)|sol hizalı başlık/.test(normalized)) next.design.heroAlign = "left";
+  if ((/başl(?:ık|ığ)/.test(normalized) && /kısa|kısalt/.test(normalized)) || /daha kısa bir şey/.test(normalized)) {
+    const hero = next.sections.find((section) => section.type === "hero");
+    if (hero) {
+      hero.title = shortHeadline(next);
+      next.tagline = hero.title;
+    }
+  }
+  if (/(açıklama|metin).*(kısa|kısalt)/.test(normalized)) {
+    const hero = next.sections.find((section) => section.type === "hero");
+    if (hero && hero.text.length > 110) hero.text = `${hero.text.slice(0, 107).replace(/\s+\S*$/, "")}...`;
+  }
+  if (/(giriş|hero|ana ekran).*(hareketli|dinamik|canlı)|daha hareketli/.test(normalized)) next.design.motion = "dynamic";
+  if (/(hareket|animasyon).*(kapat|olmasın|kaldır)|sabit olsun/.test(normalized)) next.design.motion = "none";
+  if (/sakin|yavaş animasyon/.test(normalized)) next.design.motion = "calm";
+  if (/premium|lüks|editoryal|dergi gibi/.test(normalized)) {
+    next.design.heroStyle = "editorial";
+    next.design.cardStyle = "sharp";
+    next.design.density = "airy";
+    next.theme.fontStyle = "elegant";
+  }
+  if (/minimal|çok sade/.test(normalized)) {
+    next.design.heroStyle = "minimal";
+    next.design.cardStyle = "outline";
+    next.design.density = "airy";
+  }
+  if (/satış odaklı|teklif odaklı|dönüşüm odaklı/.test(normalized)) next.design.heroStyle = "conversion";
+  if (/tam ekran|görsel ağırlıklı|çarpıcı giriş/.test(normalized)) next.design.heroStyle = "immersive";
+  if (/köşeli|keskin/.test(normalized)) next.design.cardStyle = "sharp";
+  if (/yuvarlak|yumuşak köşe/.test(normalized)) next.design.cardStyle = "soft";
+  if (/daha sıkı|kompakt/.test(normalized)) next.design.density = "compact";
+  if (/daha ferah|boşlukları artır/.test(normalized)) next.design.density = "airy";
 
   const businessName = instruction.match(/(?:işletme|marka|şirket)\s+ad(?:ı|ını)\s*[:,-]?\s*([^.!?\n]{2,60}?)(?:\s+olsun|\s+yap|$)/i)?.[1]
     || instruction.match(/ad(?:ı|ını)\s+([^.!?\n]{2,60}?)\s+(?:olsun|yap)/i)?.[1];
@@ -333,7 +412,7 @@ export function applyStudioInstruction(site: StudioSite, instruction: string): S
   const whatsapp = instruction.match(/(?:whatsapp|wp)\s*(?:numarası)?\s*[:,-]?\s*(\+?[\d\s()-]{10,22})/i)?.[1];
   if (whatsapp) next.whatsapp = whatsapp.trim();
 
-  const serviceList = instruction.match(/(?:hizmetler|hizmetlerim|hizmetlerimiz)\s*[:,-]?\s*([^.!?\n]{3,260})/i)?.[1]
+  const serviceList = instruction.match(/(?:hizmetler|hizmetlerim|hizmetlerimiz)(?![a-zçğıöşü])\s*[:,-]?\s*([^.!?\n]{3,260})/i)?.[1]
     ?.replace(/\s+olsun$/i, "")
     .split(/,|;|\s+ve\s+/i)
     .map((item) => item.trim())
@@ -342,6 +421,16 @@ export function applyStudioInstruction(site: StudioSite, instruction: string): S
   if (serviceList?.length) {
     const services = next.sections.find((section) => section.type === "services");
     if (services) services.items = serviceList;
+  }
+  const serviceToAdd = instruction.match(/hizmet(?:lere|lerime|lerimize)?\s+([^.!?\n]{2,70}?)\s+ekle/i)?.[1]?.trim();
+  if (serviceToAdd) {
+    const services = next.sections.find((section) => section.type === "services");
+    if (services) services.items = [...new Set([...(services.items || []), titleCase(serviceToAdd)])].slice(0, 10);
+  }
+  const serviceToRemove = instruction.match(/hizmet(?:lerden|lerimden|lerimizden)?\s+([^.!?\n]{2,70}?)\s+(?:kaldır|sil|çıkar)/i)?.[1]?.trim();
+  if (serviceToRemove) {
+    const services = next.sections.find((section) => section.type === "services");
+    if (services?.items) services.items = services.items.filter((item) => item.toLocaleLowerCase("tr-TR") !== serviceToRemove.toLocaleLowerCase("tr-TR"));
   }
 
   const slogan = instruction.match(/(?:slogan|ana başlık|hero başlığı)\s*[:,-]?\s*[“"']?([^.!?\n”"']{3,120})[”"']?/i)?.[1];
@@ -368,6 +457,17 @@ export function applyStudioInstruction(site: StudioSite, instruction: string): S
 
   if (/çok sayfa|çok sayfalı/.test(normalized)) next.pageMode = "multi";
   if (/tek sayfa|tek sayfalı/.test(normalized)) next.pageMode = "single";
+
+  const moveAfterHero = (type: StudioSection["type"]) => {
+    const sectionIndex = next.sections.findIndex((section) => section.type === type);
+    const heroIndex = next.sections.findIndex((section) => section.type === "hero");
+    if (sectionIndex < 0 || heroIndex < 0 || sectionIndex === heroIndex + 1) return;
+    const [section] = next.sections.splice(sectionIndex, 1);
+    const nextHeroIndex = next.sections.findIndex((item) => item.type === "hero");
+    next.sections.splice(nextHeroIndex + 1, 0, section);
+  };
+  if (/hizmet.*(yukarı|öne|başa)/.test(normalized)) moveAfterHero("services");
+  if (/hakkımızda.*(yukarı|öne|başa)/.test(normalized)) moveAfterHero("about");
 
   const addSection = (section: StudioSection) => {
     if (!next.sections.some((item) => item.type === section.type)) {
@@ -397,8 +497,8 @@ export function applyStudioInstruction(site: StudioSite, instruction: string): S
       id: "testimonials",
       type: "testimonials",
       title: "Müşterilerimiz anlatıyor",
-      text: "Gerçek deneyimlerden kısa notlar.",
-      items: ["Çok memnun kaldık.", "Hızlı ve güvenilir.", "Kesinlikle tavsiye ederim."],
+      text: "Yayınlama izni alınmış gerçek müşteri deneyimlerini buraya ekleyin.",
+      items: ["Müşteri yorumunu buraya ekleyin.", "İkinci müşteri yorumunu buraya ekleyin.", "Üçüncü müşteri yorumunu buraya ekleyin."],
     });
   }
 
@@ -427,6 +527,12 @@ export function describeStudioChanges(before: StudioSite, after: StudioSite) {
   if (before.tagline !== after.tagline) changes.push("ana başlık");
   if (before.pageMode !== after.pageMode) changes.push("sayfa yapısı");
   if (before.theme.accent !== after.theme.accent || before.theme.background !== after.theme.background) changes.push("renk ve görünüm");
+  if (JSON.stringify(before.design || sectorDesigns.default) !== JSON.stringify(after.design || sectorDesigns.default)) changes.push("tema yerleşimi ve hareket");
+
+  const beforeHero = before.sections.find((section) => section.type === "hero");
+  const afterHero = after.sections.find((section) => section.type === "hero");
+  if (beforeHero?.title !== afterHero?.title && !changes.includes("ana başlık")) changes.push("ana başlık");
+  if (beforeHero?.text !== afterHero?.text) changes.push("giriş açıklaması");
 
   const beforeTypes = before.sections.map((section) => section.type);
   const afterTypes = after.sections.map((section) => section.type);
@@ -437,4 +543,28 @@ export function describeStudioChanges(before: StudioSite, after: StudioSite) {
   if (beforeServices.join("|") !== afterServices.join("|")) changes.push("hizmetler");
 
   return [...new Set(changes)];
+}
+
+export function suggestStudioInstructions(site: StudioSite, instruction = "") {
+  const value = instruction.toLocaleLowerCase("tr-TR");
+  if (/başl(?:ık|ığ)|hero|giriş/.test(value)) {
+    return ["Başlığı ortaya al ve kısalt", "Girişi daha premium ve hareketli yap", "Başlığı sola al, açıklamayı kısalt", "Girişi tam ekran ve çarpıcı yap"];
+  }
+  if (/renk|tema|görünüm/.test(value)) {
+    return ["Koyu, premium ve altın tonlu yap", "Açık, sade ve ferah yap", "Sektörüme uygun renkleri sen seç", "Kartları daha köşeli ve editoryal yap"];
+  }
+  if (/hizmet|bölüm|sayfa/.test(value)) {
+    return ["Hizmetleri girişin hemen altına al", "Fiyat bölümü ekle", "Galeri bölümü ekle", "Siteyi çok sayfalı yap"];
+  }
+  const sector = site.sector.toLocaleLowerCase("tr-TR");
+  const sectorSuggestion = /kuaför|güzellik/.test(sector)
+    ? "Randevu odaklı, zarif ve editoryal yap"
+    : /berber/.test(sector)
+      ? "Koyu, güçlü ve premium berber teması yap"
+      : /halı|temizlik/.test(sector)
+        ? "Güven ve hızlı teklif odaklı yap"
+        : /emlak/.test(sector)
+          ? "Portföy odaklı, ferah ve lüks yap"
+          : "Sektörüme uygun premium temayı uygula";
+  return [sectorSuggestion, "Başlığı daha kısa yap", "Hizmetleri yukarı al", "WhatsApp numaramı ekle"];
 }
