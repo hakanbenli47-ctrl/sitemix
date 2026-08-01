@@ -6,6 +6,7 @@ import type { StudioSite } from "@/lib/sitemixStudio";
 
 export default async function HomePage() {
   const headerStore = await headers();
+  
   const host = (headerStore.get("x-forwarded-host") || headerStore.get("host") || "")
     .split(":")[0]
     .toLowerCase()
