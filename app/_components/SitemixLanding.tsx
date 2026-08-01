@@ -34,10 +34,28 @@ export default function SitemixLanding() {
     return () => data.subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (!showAuth) return;
+
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !authBusy) setShowAuth(false);
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", closeOnEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [showAuth, authBusy]);
+
   function startWithPrompt(value: string) {
     const cleanPrompt = value.trim();
     if (!cleanPrompt) return;
     window.sessionStorage.setItem("sitemix_pending_prompt", cleanPrompt);
+    window.localStorage.setItem("sitemix_pending_prompt_backup", cleanPrompt);
 
     if (signedIn) {
       window.location.href = "/studio";
@@ -59,7 +77,7 @@ export default function SitemixLanding() {
       provider: "google",
       options: {
         redirectTo: `${window.location.origin}/studio?auth=google`,
-        queryParams: { access_type: "offline", prompt: "consent" },
+        queryParams: { prompt: "select_account" },
       },
     });
 
@@ -227,17 +245,108 @@ export default function SitemixLanding() {
 
       <AnimatePresence>
         {showAuth ? (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] grid place-items-end bg-black/72 p-0 backdrop-blur-xl sm:place-items-center sm:p-5" role="dialog" aria-modal="true" aria-label="Google ile giriş">
-            <motion.div initial={{ y: 50, opacity: 0, scale: 0.98 }} animate={{ y: 0, opacity: 1, scale: 1 }} exit={{ y: 30, opacity: 0 }} className="w-full max-w-md rounded-t-[32px] border border-white/12 bg-[#151621] p-6 shadow-2xl sm:rounded-[32px] sm:p-8">
-              <div className="flex items-start justify-between"><span className="brand-orb"><span>S</span></span><button type="button" onClick={() => setShowAuth(false)} className="grid h-10 w-10 place-items-center rounded-full bg-white/7 text-xl text-white/55" aria-label="Pencereyi kapat">×</button></div>
-              <h2 className="mt-7 text-3xl font-black tracking-[-0.05em]">Mesajın hazır.</h2>
-              <p className="mt-3 text-sm font-medium leading-7 text-white/48">Oluşturduğumuz siteyi sana kaydedebilmemiz için Google hesabınla devam et. Yazdığın mesaj girişten sonra otomatik gönderilecek.</p>
-              <div className="mt-5 rounded-2xl border border-white/8 bg-white/[0.035] p-4 text-sm font-semibold leading-6 text-white/65">“{prompt.trim() || "Site oluşturma isteğin"}”</div>
-              {authError ? <p className="mt-4 rounded-2xl bg-red-500/12 p-3 text-sm font-bold text-red-200">{authError}</p> : null}
-              <button type="button" onClick={continueWithGoogle} disabled={authBusy} className="mt-5 flex min-h-14 w-full items-center justify-center gap-3 rounded-full bg-white px-6 text-sm font-black text-[#11121b] transition hover:bg-[#eef0ff] disabled:opacity-60">
-                <span className="grid h-7 w-7 place-items-center rounded-full border border-black/10 font-black text-[#4285f4]">G</span>{authBusy ? "Google açılıyor..." : "Google ile devam et"}
-              </button>
-              <p className="mt-4 text-center text-[11px] font-medium leading-5 text-white/28">Google hesabın yalnızca güvenli oturum ve proje sahipliği için kullanılır.</p>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget && !authBusy) setShowAuth(false);
+            }}
+            className="fixed inset-0 z-[100] flex items-end justify-center overflow-y-auto bg-[#04050a]/84 p-0 backdrop-blur-2xl sm:items-center sm:p-6"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="sitemix-auth-title"
+          >
+            <motion.div
+              initial={{ y: 42, opacity: 0, scale: 0.975 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 24, opacity: 0, scale: 0.985 }}
+              transition={{ type: "spring", stiffness: 220, damping: 25 }}
+              className="relative grid w-full max-w-[980px] overflow-hidden rounded-t-[34px] border border-white/12 bg-[#11121b] shadow-[0_40px_160px_rgba(0,0,0,.75)] sm:rounded-[38px] lg:grid-cols-[.9fr_1.1fr]"
+            >
+              <aside className="relative hidden min-h-[650px] overflow-hidden border-r border-white/8 bg-[#0b0c14] p-10 lg:flex lg:flex-col">
+                <div className="absolute -left-28 -top-32 h-96 w-96 rounded-full bg-[#7c5cff]/30 blur-[95px]" />
+                <div className="absolute -bottom-28 -right-32 h-96 w-96 rounded-full bg-[#35e8ad]/20 blur-[100px]" />
+                <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.035)_1px,transparent_1px)] bg-[size:42px_42px] [mask-image:linear-gradient(to_bottom,black,transparent)]" />
+
+                <div className="relative flex items-center gap-3">
+                  <span className="brand-orb"><span>S</span></span>
+                  <div><strong className="block text-base font-black">SiteMix</strong><span className="text-[10px] font-black uppercase tracking-[.2em] text-white/35">Studio</span></div>
+                </div>
+
+                <div className="relative mt-auto mb-auto py-14">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-[#8b78ff]/25 bg-[#8b78ff]/10 px-3.5 py-2 text-[10px] font-black uppercase tracking-[.16em] text-[#bdb3ff]">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#8ff5d2] shadow-[0_0_14px_#8ff5d2]" />
+                    İlk adım tamam
+                  </span>
+                  <h3 className="mt-6 max-w-sm text-[42px] font-black leading-[.98] tracking-[-.065em]">Fikrin kaybolmadan taslağa dönüşsün.</h3>
+                  <p className="mt-5 max-w-sm text-sm font-medium leading-7 text-white/45">Giriş yaptıktan sonra mesajını yeniden yazman gerekmez. SiteMix kaldığın yerden devam eder.</p>
+
+                  <div className="mt-9 space-y-3">
+                    {[
+                      ["01", "İşletmeni anlattın", "Tamamlandı"],
+                      ["02", "Güvenli giriş", "Şimdi"],
+                      ["03", "Canlı taslak", "Sıradaki"],
+                    ].map(([number, label, status], index) => (
+                      <div key={number} className={`flex items-center gap-4 rounded-2xl border px-4 py-3.5 ${index === 1 ? "border-[#8b78ff]/30 bg-[#8b78ff]/10" : "border-white/7 bg-white/[0.025]"}`}>
+                        <span className={`grid h-8 w-8 place-items-center rounded-full text-[10px] font-black ${index === 0 ? "bg-[#8ff5d2] text-[#07110d]" : index === 1 ? "bg-[#8b78ff] text-white" : "bg-white/7 text-white/30"}`}>{index === 0 ? "✓" : number}</span>
+                        <strong className="flex-1 text-xs font-black text-white/75">{label}</strong>
+                        <span className={`text-[9px] font-black uppercase tracking-[.12em] ${index === 1 ? "text-[#bdb3ff]" : "text-white/25"}`}>{status}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <p className="relative text-[10px] font-bold uppercase tracking-[.16em] text-white/25">Mobil uyumlu · Canlı ön izleme · Kolay yönetim</p>
+              </aside>
+
+              <section className="relative flex min-h-[640px] flex-col p-5 sm:p-9 lg:p-11">
+                <div className="pointer-events-none absolute right-0 top-0 h-64 w-64 rounded-full bg-[#5f43e8]/10 blur-[85px]" />
+                <div className="relative flex items-center justify-between lg:justify-end">
+                  <div className="flex items-center gap-3 lg:hidden">
+                    <span className="brand-orb"><span>S</span></span>
+                    <div><strong className="block text-sm font-black">SiteMix</strong><span className="text-[9px] font-black uppercase tracking-[.18em] text-white/30">Güvenli proje alanı</span></div>
+                  </div>
+                  <button type="button" onClick={() => setShowAuth(false)} disabled={authBusy} className="grid h-11 w-11 place-items-center rounded-full border border-white/8 bg-white/[0.035] text-xl text-white/45 transition hover:border-white/15 hover:bg-white/8 hover:text-white disabled:opacity-40" aria-label="Pencereyi kapat">×</button>
+                </div>
+
+                <div className="relative my-auto py-7 sm:py-9">
+                  <p className="text-[10px] font-black uppercase tracking-[.18em] text-[#9b8cff]">Mesajın güvende</p>
+                  <h2 id="sitemix-auth-title" className="mt-3 max-w-md text-[clamp(2.35rem,6vw,3.4rem)] font-black leading-[.98] tracking-[-.065em]">Taslağını hesabına bağla.</h2>
+                  <p className="mt-4 max-w-lg text-sm font-medium leading-7 text-white/46">Projen sana özel kaydedilsin, düzenlemelerine istediğin cihazdan devam et. İlk mesajın girişten sonra otomatik olarak işlenecek.</p>
+
+                  <div className="mt-6 overflow-hidden rounded-[22px] border border-white/8 bg-white/[0.035]">
+                    <div className="flex items-center justify-between border-b border-white/7 px-4 py-3">
+                      <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[.14em] text-white/35"><span className="h-1.5 w-1.5 rounded-full bg-[#8ff5d2]" />Gönderilmeye hazır</span>
+                      <span className="text-[10px] font-bold text-white/20">İlk mesaj</span>
+                    </div>
+                    <p className="line-clamp-3 px-4 py-4 text-sm font-semibold leading-6 text-white/70">“{prompt.trim() || "Site oluşturma isteğin"}”</p>
+                  </div>
+
+                  {authError ? <p className="mt-4 rounded-2xl border border-red-400/15 bg-red-500/10 p-3.5 text-sm font-bold text-red-200">{authError}</p> : null}
+
+                  <button type="button" onClick={continueWithGoogle} disabled={authBusy} className="group mt-5 flex min-h-15 w-full items-center justify-center gap-3 rounded-2xl bg-white px-5 text-sm font-black text-[#11121b] shadow-[0_15px_45px_rgba(0,0,0,.28)] transition hover:-translate-y-0.5 hover:bg-[#f4f2ff] hover:shadow-[0_20px_55px_rgba(87,65,190,.22)] disabled:translate-y-0 disabled:cursor-wait disabled:opacity-60">
+                    <span className="grid h-8 w-8 place-items-center rounded-full border border-black/8 bg-white shadow-sm">
+                      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[18px] w-[18px]">
+                        <path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.18-2.07H12v3.91h5.38a4.6 4.6 0 0 1-2 3.02v2.54h3.24c1.9-1.75 2.98-4.33 2.98-7.4Z" />
+                        <path fill="#34A853" d="M12 22c2.7 0 4.98-.9 6.63-2.37l-3.24-2.54c-.9.6-2.05.96-3.39.96-2.61 0-4.82-1.76-5.61-4.13H3.04v2.62A10 10 0 0 0 12 22Z" />
+                        <path fill="#FBBC05" d="M6.39 13.92A6 6 0 0 1 6.07 12c0-.67.12-1.32.32-1.92V7.46H3.04A10 10 0 0 0 2 12c0 1.63.39 3.17 1.04 4.54l3.35-2.62Z" />
+                        <path fill="#EA4335" d="M12 5.95c1.47 0 2.79.5 3.83 1.5l2.87-2.88A9.64 9.64 0 0 0 12 2a10 10 0 0 0-8.96 5.46l3.35 2.62C7.18 7.71 9.39 5.95 12 5.95Z" />
+                      </svg>
+                    </span>
+                    <span>{authBusy ? "Google açılıyor..." : "Google ile güvenli devam et"}</span>
+                    <span className="ml-auto text-lg text-black/25 transition group-hover:translate-x-1">→</span>
+                  </button>
+
+                  <div className="mt-5 grid grid-cols-3 gap-2">
+                    {["Şifre istemeyiz", "Mesajın korunur", "Ücretsiz başla"].map((item) => (
+                      <span key={item} className="rounded-xl border border-white/6 bg-white/[0.025] px-2 py-3 text-center text-[9px] font-black leading-4 text-white/34">{item}</span>
+                    ))}
+                  </div>
+                </div>
+
+                <p className="relative text-center text-[10px] font-medium leading-5 text-white/25">Devam ederek hesabının yalnızca güvenli oturum ve proje sahipliği için kullanılmasını kabul edersin.</p>
+              </section>
             </motion.div>
           </motion.div>
         ) : null}

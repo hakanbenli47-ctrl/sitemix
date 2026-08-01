@@ -1,0 +1,319 @@
+import { sectorCatalog } from "@/lib/sitemixStudio";
+
+export type BriefField = "sector" | "businessName" | "location" | "services" | "goal" | "style" | "pageMode";
+
+export type StudioBrief = {
+  sectorId?: string;
+  sectorLabel?: string;
+  businessName?: string;
+  location?: string;
+  services: string[];
+  goal?: string;
+  style?: string;
+  pageMode?: "single" | "multi";
+  lastQuestion?: BriefField;
+  notes: string[];
+};
+
+export type ConversationResult = {
+  brief: StudioBrief;
+  reply: string;
+  quickReplies: string[];
+  ready: boolean;
+  shouldBuild: boolean;
+  progress: number;
+  learned: string[];
+};
+
+export const emptyStudioBrief: StudioBrief = { services: [], notes: [] };
+
+const requiredFields: BriefField[] = ["sector", "businessName", "location", "services", "goal", "style", "pageMode"];
+
+const greetings = /^(merhaba|selam|selamlar|hey|iyi günler|iyi akşamlar|günaydın|mrb)[.!\s]*$/i;
+const buildRequest = /(taslağ[ıi]?|siteyi|sitemi).*(oluştur|hazırla|göster)|(oluştur|hazırla).*(taslağ[ıi]?|siteyi|sitemi)|^hazırım$|^başla$/i;
+
+function clean(value: string) {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function titleCase(value: string) {
+  return clean(value)
+    .split(" ")
+    .slice(0, 8)
+    .map((part) => part.charAt(0).toLocaleUpperCase("tr-TR") + part.slice(1))
+    .join(" ");
+}
+
+function normalized(value: string) {
+  return value.toLocaleLowerCase("tr-TR");
+}
+
+function directAnswer(message: string) {
+  return clean(message.replace(/^(bence|olsun|istiyorum|tercihim|cevap)\s*[:,-]?\s*/i, ""));
+}
+
+function splitServices(value: string) {
+  return value
+    .replace(/^(hizmetlerim|hizmetlerimiz|hizmetler|şunlar|başlıca)\s*[:,-]?\s*/i, "")
+    .split(/,|;|\s+ve\s+/i)
+    .map((item) => clean(item))
+    .filter((item) => item.length > 1 && item.length < 60)
+    .slice(0, 8);
+}
+
+function findSector(message: string) {
+  const value = normalized(message);
+  return sectorCatalog.find((sector) =>
+    sector.keywords.some((keyword) => value.includes(normalized(keyword))) || value.includes(normalized(sector.label)),
+  );
+}
+
+function inferGoal(message: string) {
+  const value = normalized(message);
+  if (/whatsapp|mesaj|yazsın|teklif/.test(value)) return "WhatsApp üzerinden talep toplamak";
+  if (/randevu|rezervasyon/.test(value)) return "Randevu almak";
+  if (/ara(sın|ma)|telefon/.test(value)) return "Telefon araması almak";
+  if (/satış|satmak|sipariş/.test(value)) return "Satış ve sipariş almak";
+  if (/tanıt|portföy|güven|kurumsal/.test(value)) return "İşletmeyi profesyonel biçimde tanıtmak";
+  return undefined;
+}
+
+function inferStyle(message: string) {
+  const value = normalized(message);
+  const words = ["modern", "sade", "şık", "lüks", "kurumsal", "samimi", "renkli", "minimal", "koyu", "açık", "enerjik", "elegant", "güçlü", "güven veren"];
+  const found = words.filter((word) => value.includes(word));
+  const color = value.match(/(mor|mavi|yeşil|pembe|turuncu|kırmızı|bordo|siyah|beyaz|altın)(?:\s+ton(?:ları|larda)?)?/i)?.[0];
+  if (!found.length && !color) return undefined;
+  return titleCase([...found, ...(color ? [color] : [])].join(", "));
+}
+
+function fieldDone(brief: StudioBrief, field: BriefField) {
+  if (field === "sector") return Boolean(brief.sectorLabel);
+  if (field === "services") return brief.services.length > 0;
+  return Boolean(brief[field]);
+}
+
+export function getBriefProgress(brief: StudioBrief) {
+  const completed = requiredFields.filter((field) => fieldDone(brief, field)).length;
+  return Math.round((completed / requiredFields.length) * 100);
+}
+
+export function getMissingBriefFields(brief: StudioBrief) {
+  return requiredFields.filter((field) => !fieldDone(brief, field));
+}
+
+function questionFor(field: BriefField, brief: StudioBrief) {
+  const questions: Record<BriefField, { reply: string; quickReplies: string[] }> = {
+    sector: {
+      reply: "Önce işletmeni tanıyayım. Hangi sektörde hizmet veriyorsun?",
+      quickReplies: ["Kadın kuaförü", "Erkek berberi", "Halı yıkama", "Güzellik salonu", "Başka bir sektör"],
+    },
+    businessName: {
+      reply: `${brief.sectorLabel || "İşletmen"} için doğru yapıyı kurabiliriz. İşletmenin veya markanın adı nedir?`,
+      quickReplies: [],
+    },
+    location: {
+      reply: `Memnun oldum, ${brief.businessName}. Hangi şehirde veya bölgede hizmet veriyorsun?`,
+      quickReplies: ["Tüm Türkiye", "Sadece bulunduğum bölge", "Online hizmet veriyorum"],
+    },
+    services: {
+      reply: "Müşterilerin en çok hangi hizmetlerin için sana ulaşıyor? Başlıca hizmetlerini virgülle ayırarak yazabilirsin.",
+      quickReplies: [],
+    },
+    goal: {
+      reply: "Bu sitenin senin için en önemli sonucu ne olmalı?",
+      quickReplies: ["WhatsApp mesajı almak", "Randevu almak", "Telefon araması almak", "İşletmemi tanıtmak"],
+    },
+    style: {
+      reply: "Ziyaretçiler sitene girdiğinde nasıl bir his alsın? Bir tarz veya renk tercihin varsa söyle.",
+      quickReplies: ["Modern ve sade", "Şık ve lüks", "Kurumsal ve güven veren", "Koyu ve güçlü", "Sana bırakıyorum"],
+    },
+    pageMode: {
+      reply: "Son bir karar: hızlı ve akıcı tek sayfalı bir site mi, hizmetleri ayrı anlatan çok sayfalı bir site mi istersin?",
+      quickReplies: ["Tek sayfalı", "Çok sayfalı", "Sen öner"],
+    },
+  };
+  return questions[field];
+}
+
+function summary(brief: StudioBrief) {
+  return [
+    `${brief.businessName} için gerekli bilgileri topladım.`,
+    `📍 ${brief.location}`,
+    `🧭 ${brief.sectorLabel}`,
+    `🎯 ${brief.goal}`,
+    `🎨 ${brief.style}`,
+    `📄 ${brief.pageMode === "multi" ? "Çok sayfalı yapı" : "Tek sayfalı yapı"}`,
+    "Bu özete göre ilk taslağı oluşturmamı ister misin?",
+  ].join("\n");
+}
+
+export function advanceStudioConversation(current: StudioBrief, rawMessage: string): ConversationResult {
+  const message = clean(rawMessage).slice(0, 1200);
+  const value = normalized(message);
+  const brief: StudioBrief = { ...current, services: [...current.services], notes: [...current.notes, message].slice(-30) };
+  const learned: string[] = [];
+
+  const requestedChange: BriefField | undefined = /işletme ad/i.test(value)
+    ? "businessName"
+    : /konum|şehir|bölge/i.test(value)
+      ? "location"
+      : /hizmet/i.test(value) && /değiştir/i.test(value)
+        ? "services"
+        : /hedef/i.test(value) && /değiştir/i.test(value)
+          ? "goal"
+          : /tarz|renk|görünüm/i.test(value) && /değiştir/i.test(value)
+            ? "style"
+            : /sayfa yap/i.test(value) && /değiştir/i.test(value)
+              ? "pageMode"
+              : /sektör/i.test(value) && /değiştir/i.test(value)
+                ? "sector"
+                : undefined;
+
+  if (requestedChange && /değiştir(?:eceğim|mek|elim)?/i.test(value)) {
+    if (requestedChange === "sector") {
+      brief.sectorId = undefined;
+      brief.sectorLabel = undefined;
+    } else if (requestedChange === "services") {
+      brief.services = [];
+    } else {
+      brief[requestedChange] = undefined;
+    }
+    brief.lastQuestion = requestedChange;
+    const changeQuestion = questionFor(requestedChange, brief);
+    return {
+      brief,
+      reply: `Tabii, bu bilgiyi yeniden netleştirelim. ${changeQuestion.reply}`,
+      quickReplies: changeQuestion.quickReplies,
+      ready: false,
+      shouldBuild: false,
+      progress: getBriefProgress(brief),
+      learned,
+    };
+  }
+
+  if (greetings.test(message) && !brief.sectorLabel) {
+    const question = questionFor("sector", brief);
+    brief.lastQuestion = "sector";
+    return { brief, reply: `Merhaba, SiteMix Studio’ya hoş geldin. Ben önce işletmeni anlayacağım, sonra birlikte doğru site yapısını kuracağız.\n\n${question.reply}`, quickReplies: question.quickReplies, ready: false, shouldBuild: false, progress: 0, learned };
+  }
+
+  const sector = findSector(message);
+  const canUpdateSector = !brief.sectorLabel || brief.lastQuestion === "sector" || /sektör(?:üm|ümüz)?\s*[:,-]/i.test(message);
+  if (sector && brief.sectorId !== sector.id && canUpdateSector) {
+    brief.sectorId = sector.id;
+    brief.sectorLabel = sector.label;
+    learned.push(`Sektör: ${sector.label}`);
+  } else if (brief.lastQuestion === "sector" && !brief.sectorLabel && !/başka bir sektör/i.test(message)) {
+    brief.sectorId = "custom";
+    brief.sectorLabel = titleCase(directAnswer(message));
+    learned.push(`Sektör: ${brief.sectorLabel}`);
+  }
+
+  const named = message.match(/(?:[iİ]şletme(?:min|mizin)?|marka(?:m|mız)?|şirket(?:im|imiz)?)(?:in)?\s+(?:adı|ismi)\s*[:,-]?\s*([^.!?\n]{2,60})/i)
+    || message.match(/(?:adı|ismi)\s*[:,-]\s*([^.!?\n]{2,60})/i);
+  if (named?.[1]) {
+    brief.businessName = titleCase(named[1]);
+    learned.push(`İşletme: ${brief.businessName}`);
+  } else if (brief.lastQuestion === "businessName" && !brief.businessName && message.length <= 70) {
+    brief.businessName = titleCase(directAnswer(message));
+    learned.push(`İşletme: ${brief.businessName}`);
+  }
+
+  const located = message.match(/(?:konum|şehir|bölge|hizmet bölgesi)\s*[:,-]?\s*([^.!?\n]{2,80})/i)
+    || message.match(/([\p{L}]+(?:\s+[\p{L}]+){0,2})['’]?(?:da|de|ta|te)\s+(?:hizmet|faaliyet|bulun)/iu);
+  if (located?.[1]) {
+    brief.location = titleCase(located[1]);
+    learned.push(`Konum: ${brief.location}`);
+  } else if (brief.lastQuestion === "location" && !brief.location && message.length <= 100) {
+    brief.location = titleCase(directAnswer(message));
+    learned.push(`Konum: ${brief.location}`);
+  }
+
+  const serviceMatch = message.match(/(?:hizmetlerim|hizmetlerimiz|başlıca hizmetler|yapıyoruz|sunuyoruz)\s*[:,-]?\s*([^.!?\n]{3,240})/i);
+  if (serviceMatch?.[1]) {
+    const services = splitServices(serviceMatch[1]);
+    if (services.length) {
+      brief.services = services;
+      learned.push(`Hizmetler: ${services.join(", ")}`);
+    }
+  } else if (brief.lastQuestion === "services" && !brief.services.length) {
+    const services = splitServices(message);
+    if (services.length) {
+      brief.services = services;
+      learned.push(`Hizmetler: ${services.join(", ")}`);
+    }
+  }
+
+  const goal = inferGoal(message);
+  if (goal && goal !== brief.goal) {
+    brief.goal = goal;
+    learned.push(`Hedef: ${goal}`);
+  } else if (brief.lastQuestion === "goal" && !brief.goal && message.length <= 120) {
+    brief.goal = titleCase(directAnswer(message));
+    learned.push(`Hedef: ${brief.goal}`);
+  }
+
+  const style = inferStyle(message);
+  if (style && style !== brief.style) {
+    brief.style = style;
+    learned.push(`Tarz: ${style}`);
+  } else if (brief.lastQuestion === "style" && !brief.style) {
+    brief.style = /sana bırak/i.test(message) ? "Sektöre uygun, modern ve güven veren" : titleCase(directAnswer(message));
+    learned.push(`Tarz: ${brief.style}`);
+  }
+
+  if (/çok\s*sayfa|çok\s*sayfalı/i.test(value)) {
+    brief.pageMode = "multi";
+    learned.push("Yapı: Çok sayfalı");
+  } else if (/tek\s*sayfa|tek\s*sayfalı/i.test(value)) {
+    brief.pageMode = "single";
+    learned.push("Yapı: Tek sayfalı");
+  } else if (brief.lastQuestion === "pageMode" && /sen öner|sana bırak/i.test(message)) {
+    brief.pageMode = brief.services.length > 4 ? "multi" : "single";
+    learned.push(`Yapı: ${brief.pageMode === "multi" ? "Çok sayfalı" : "Tek sayfalı"} (SiteMix önerisi)`);
+  }
+
+  const missing = getMissingBriefFields(brief);
+  const ready = missing.length === 0;
+  const shouldBuild = ready && buildRequest.test(message);
+
+  if (ready) {
+    brief.lastQuestion = undefined;
+    return {
+      brief,
+      reply: shouldBuild ? "Harika. Onayını aldım; şimdi bu bilgilerle ilk taslağını hazırlıyorum." : summary(brief),
+      quickReplies: shouldBuild ? [] : ["Taslağı oluştur", "Bir bilgiyi değiştirelim"],
+      ready: true,
+      shouldBuild,
+      progress: 100,
+      learned,
+    };
+  }
+
+  const nextField = missing[0];
+  brief.lastQuestion = nextField;
+  const next = questionFor(nextField, brief);
+  const acknowledgement = learned.length ? `Anladım — ${learned.join(" · ")}.\n\n` : "";
+  return {
+    brief,
+    reply: `${acknowledgement}${next.reply}`,
+    quickReplies: next.quickReplies,
+    ready: false,
+    shouldBuild: false,
+    progress: getBriefProgress(brief),
+    learned,
+  };
+}
+
+export function composeStudioPrompt(brief: StudioBrief) {
+  return [
+    `İşletme adı: ${brief.businessName}.`,
+    `Sektör: ${brief.sectorLabel}.`,
+    `Konum: ${brief.location}.`,
+    `Hizmetler: ${brief.services.join(", ")}.`,
+    `Sitenin ana hedefi: ${brief.goal}.`,
+    `Görsel tarz: ${brief.style}.`,
+    `Site yapısı: ${brief.pageMode === "multi" ? "çok sayfalı" : "tek sayfalı"}.`,
+  ].join(" ");
+}

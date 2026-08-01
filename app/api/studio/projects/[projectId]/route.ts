@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { applyStudioInstruction, type StudioSite } from "@/lib/sitemixStudio";
+import { applyStudioInstruction, describeStudioChanges, type StudioSite } from "@/lib/sitemixStudio";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { isMissingStudioTable, requireStudioUser } from "@/lib/studioServerAuth";
 
@@ -68,7 +68,12 @@ export async function PATCH(request: Request, context: RouteContext) {
       const instruction = cleanText(body?.instruction, 800);
       if (!instruction) throw new Error("Düzenleme isteği boş olamaz.");
       nextVersion = applyStudioInstruction(nextVersion, instruction);
+      if (!describeStudioChanges(project.current_version as StudioSite, nextVersion).length) {
+        throw new Error("Bu isteği uygulayabilmemiz için işletme adı, renk, bölüm veya içerik değişikliğini biraz daha açık yazın.");
+      }
       update.current_version = nextVersion;
+      update.title = cleanText(nextVersion.businessName, 120);
+      update.sector = cleanText(nextVersion.sector, 120);
       note = instruction;
       await supabaseAdmin.from("studio_messages").insert([
         { project_id: projectId, owner_id: user.id, role: "user", content: instruction },

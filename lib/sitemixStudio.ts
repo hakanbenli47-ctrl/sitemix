@@ -175,6 +175,9 @@ export function slugify(value: string) {
 }
 
 function inferBusinessName(prompt: string, sectorLabel: string) {
+  const structured = prompt.match(/İşletme adı:\s*([^.!?\n]{2,60})/i)?.[1];
+  if (structured) return titleCase(structured);
+
   const quoted = prompt.match(/[“\"']([^”\"']{2,40})[”\"']/)?.[1];
   if (quoted) return titleCase(quoted);
 
@@ -185,35 +188,68 @@ function inferBusinessName(prompt: string, sectorLabel: string) {
 }
 
 function inferLocation(prompt: string) {
+  const structured = prompt.match(/Konum:\s*([^.!?\n]{2,80})/i)?.[1];
+  if (structured) return titleCase(structured);
+
   const match = prompt.match(/(?:^|\s)([A-ZÇĞİÖŞÜ][a-zçğıöşü]+(?:'?[dt][ae])?)\s+(?:bir|bulunan|için)/);
   return match?.[1]?.replace(/'[dt][ae]$/i, "") || "Bulunduğunuz bölgede";
 }
 
 export function generateStudioSite(prompt: string): StudioSite {
   const normalized = prompt.toLocaleLowerCase("tr-TR");
-  const sector =
-    sectorCatalog.find((item) => item.keywords.some((keyword) => normalized.includes(keyword))) ||
-    sectorCatalog[0];
-  const businessName = inferBusinessName(prompt, sector.label);
+  const requestedSector = prompt.match(/Sektör:\s*([^.!?\n]{2,80})/i)?.[1]?.trim();
+  const requestedSectorNormalized = requestedSector?.toLocaleLowerCase("tr-TR") || "";
+  const catalogSector = sectorCatalog.find((item) =>
+    requestedSectorNormalized.includes(item.label.toLocaleLowerCase("tr-TR"))
+    || item.keywords.some((keyword) => requestedSectorNormalized.includes(keyword.toLocaleLowerCase("tr-TR"))),
+  ) || sectorCatalog.find((item) => item.keywords.some((keyword) => normalized.includes(keyword)));
+  const sector = catalogSector || sectorCatalog[0];
+  const sectorLabel = requestedSector || sector.label;
+  const businessName = inferBusinessName(prompt, sectorLabel);
   const location = inferLocation(prompt);
-  const theme = palettes[sector.id] || palettes.default;
+  const theme: StudioTheme = { ...(palettes[catalogSector?.id || "default"] || palettes.default) };
+  const learnedServices = prompt.match(/Hizmetler:\s*([^.!?\n]{3,300})/i)?.[1]
+    ?.split(/,|;/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, 8);
+  const goal = prompt.match(/Sitenin ana hedefi:\s*([^.!?\n]{3,160})/i)?.[1]?.trim();
   const wantsPricing = /fiyat|paket|ücret/.test(normalized);
   const wantsGallery = /galeri|fotoğraf|öncesi|sonrası/.test(normalized);
   const wantsMulti = /çok sayfa|çok sayfalı|sayfalar/.test(normalized);
+
+  const conversationColors: Array<[RegExp, Partial<StudioTheme>]> = [
+    [/kırmızı|bordo/, { accent: "#e33d4f", accentSoft: "#ffd9de" }],
+    [/mavi/, { accent: "#3478f6", accentSoft: "#d9e8ff" }],
+    [/yeşil/, { accent: "#15a36d", accentSoft: "#d3f5e6" }],
+    [/mor/, { accent: "#7656ee", accentSoft: "#e4ddff" }],
+    [/turuncu/, { accent: "#f2773d", accentSoft: "#ffe0d0" }],
+    [/pembe/, { accent: "#f0528a", accentSoft: "#ffd8e6" }],
+    [/siyah|koyu/, { background: "#0e1014", foreground: "#fafafa" }],
+    [/beyaz|açık/, { background: "#fbfbff", foreground: "#171827" }],
+  ];
+  conversationColors.forEach(([pattern, colors]) => {
+    if (pattern.test(normalized)) Object.assign(theme, colors);
+  });
+
+  const tagline = catalogSector?.tagline || `${businessName} ile ihtiyacınıza uygun, güvenilir çözümler.`;
+  const heroAction = goal
+    ? `${goal.toLocaleLowerCase("tr-TR")} için hizmetleri inceleyin ve hemen iletişime geçin.`
+    : "Hızlıca bilgi alın, çalışma detaylarını görün ve bize ulaşın.";
 
   const sections: StudioSection[] = [
     {
       id: "hero",
       type: "hero",
-      title: sector.tagline,
-      text: `${location} ${sector.label.toLocaleLowerCase("tr-TR")} hizmetleri için hızlıca bilgi alın, çalışma detaylarını görün ve WhatsApp üzerinden bize ulaşın.`,
+      title: tagline,
+      text: `${location} ${sectorLabel.toLocaleLowerCase("tr-TR")} hizmetleri. ${heroAction}`,
     },
     {
       id: "services",
       type: "services",
       title: "Size nasıl yardımcı olabiliriz?",
       text: "İhtiyacınıza uygun hizmeti seçin, ayrıntıları birlikte netleştirelim.",
-      items: [...sector.services],
+      items: learnedServices?.length ? learnedServices : [...sector.services],
     },
     {
       id: "about",
@@ -266,9 +302,9 @@ export function generateStudioSite(prompt: string): StudioSite {
 
   return {
     businessName,
-    sector: sector.label,
+    sector: sectorLabel,
     location,
-    tagline: sector.tagline,
+    tagline,
     phone: "",
     whatsapp: "",
     pageMode: wantsMulti ? "multi" : "single",
@@ -280,6 +316,40 @@ export function generateStudioSite(prompt: string): StudioSite {
 export function applyStudioInstruction(site: StudioSite, instruction: string): StudioSite {
   const normalized = instruction.toLocaleLowerCase("tr-TR");
   const next: StudioSite = JSON.parse(JSON.stringify(site));
+
+  const businessName = instruction.match(/(?:işletme|marka|şirket)\s+ad(?:ı|ını)\s*[:,-]?\s*([^.!?\n]{2,60}?)(?:\s+olsun|\s+yap|$)/i)?.[1]
+    || instruction.match(/ad(?:ı|ını)\s+([^.!?\n]{2,60}?)\s+(?:olsun|yap)/i)?.[1];
+  if (businessName) {
+    next.businessName = titleCase(businessName);
+    const about = next.sections.find((section) => section.type === "about");
+    if (about) about.title = `${next.businessName} hakkında`;
+  }
+
+  const location = instruction.match(/(?:konum|şehir|bölge)\s*[:,-]?\s*([^.!?\n]{2,80}?)(?:\s+olsun|\s+yap|$)/i)?.[1];
+  if (location) next.location = titleCase(location);
+
+  const phone = instruction.match(/(?:telefon|iletişim numarası)\s*[:,-]?\s*(\+?[\d\s()-]{10,22})/i)?.[1];
+  if (phone) next.phone = phone.trim();
+  const whatsapp = instruction.match(/(?:whatsapp|wp)\s*(?:numarası)?\s*[:,-]?\s*(\+?[\d\s()-]{10,22})/i)?.[1];
+  if (whatsapp) next.whatsapp = whatsapp.trim();
+
+  const serviceList = instruction.match(/(?:hizmetler|hizmetlerim|hizmetlerimiz)\s*[:,-]?\s*([^.!?\n]{3,260})/i)?.[1]
+    ?.replace(/\s+olsun$/i, "")
+    .split(/,|;|\s+ve\s+/i)
+    .map((item) => item.trim())
+    .filter((item) => item.length > 1)
+    .slice(0, 8);
+  if (serviceList?.length) {
+    const services = next.sections.find((section) => section.type === "services");
+    if (services) services.items = serviceList;
+  }
+
+  const slogan = instruction.match(/(?:slogan|ana başlık|hero başlığı)\s*[:,-]?\s*[“"']?([^.!?\n”"']{3,120})[”"']?/i)?.[1];
+  if (slogan) {
+    next.tagline = slogan.trim();
+    const hero = next.sections.find((section) => section.type === "hero");
+    if (hero) hero.title = next.tagline;
+  }
 
   const colorMap: Array<[RegExp, Partial<StudioTheme>]> = [
     [/kırmızı|bordo/, { accent: "#e33d4f", accentSoft: "#ffd9de" }],
@@ -305,7 +375,7 @@ export function applyStudioInstruction(site: StudioSite, instruction: string): S
     }
   };
 
-  if (/fiyat|ücret|paket/.test(normalized)) {
+  if (/fiyat|ücret|paket/.test(normalized) && !/kaldır|sil|çıkar/.test(normalized)) {
     addSection({
       id: "pricing",
       type: "pricing",
@@ -314,7 +384,7 @@ export function applyStudioInstruction(site: StudioSite, instruction: string): S
       items: ["Başlangıç", "Profesyonel", "Size özel"],
     });
   }
-  if (/galeri|fotoğraf|öncesi|sonrası/.test(normalized)) {
+  if (/galeri|fotoğraf|öncesi|sonrası/.test(normalized) && !/kaldır|sil|çıkar/.test(normalized)) {
     addSection({
       id: "gallery",
       type: "gallery",
@@ -322,7 +392,7 @@ export function applyStudioInstruction(site: StudioSite, instruction: string): S
       text: "İşletmemizden seçili çalışmalar.",
     });
   }
-  if (/yorum/.test(normalized)) {
+  if (/yorum/.test(normalized) && !/kaldır|sil|çıkar/.test(normalized)) {
     addSection({
       id: "testimonials",
       type: "testimonials",
@@ -332,6 +402,39 @@ export function applyStudioInstruction(site: StudioSite, instruction: string): S
     });
   }
 
+  const removableSections: Array<[RegExp, StudioSection["type"]]> = [
+    [/fiyat|ücret|paket/, "pricing"],
+    [/galeri|fotoğraf/, "gallery"],
+    [/yorum|referans/, "testimonials"],
+    [/sss|sıkça|soru/, "faq"],
+    [/hakkımızda/, "about"],
+  ];
+  if (/kaldır|sil|çıkar/.test(normalized)) {
+    removableSections.forEach(([pattern, type]) => {
+      if (pattern.test(normalized)) next.sections = next.sections.filter((section) => section.type !== type);
+    });
+  }
+
   return next;
 }
 
+export function describeStudioChanges(before: StudioSite, after: StudioSite) {
+  const changes: string[] = [];
+  if (before.businessName !== after.businessName) changes.push("işletme adı");
+  if (before.location !== after.location) changes.push("konum");
+  if (before.phone !== after.phone) changes.push("telefon");
+  if (before.whatsapp !== after.whatsapp) changes.push("WhatsApp numarası");
+  if (before.tagline !== after.tagline) changes.push("ana başlık");
+  if (before.pageMode !== after.pageMode) changes.push("sayfa yapısı");
+  if (before.theme.accent !== after.theme.accent || before.theme.background !== after.theme.background) changes.push("renk ve görünüm");
+
+  const beforeTypes = before.sections.map((section) => section.type);
+  const afterTypes = after.sections.map((section) => section.type);
+  if (beforeTypes.join("|") !== afterTypes.join("|")) changes.push("site bölümleri");
+
+  const beforeServices = before.sections.find((section) => section.type === "services")?.items || [];
+  const afterServices = after.sections.find((section) => section.type === "services")?.items || [];
+  if (beforeServices.join("|") !== afterServices.join("|")) changes.push("hizmetler");
+
+  return [...new Set(changes)];
+}

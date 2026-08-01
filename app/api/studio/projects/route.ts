@@ -9,6 +9,17 @@ function cleanText(value: unknown, limit = 500) {
   return typeof value === "string" ? value.trim().slice(0, limit) : "";
 }
 
+function cleanConversation(value: unknown) {
+  if (!Array.isArray(value)) return [] as Array<{ role: "user" | "assistant"; content: string }>;
+  return value
+    .slice(-30)
+    .map((item) => ({
+      role: item?.role === "assistant" ? "assistant" as const : "user" as const,
+      content: cleanText(item?.content, 1200),
+    }))
+    .filter((item) => item.content.length > 0);
+}
+
 function errorResponse(error: unknown) {
   if (isMissingStudioTable(error)) {
     return NextResponse.json(
@@ -47,6 +58,7 @@ export async function POST(request: Request) {
     const user = await requireStudioUser(request);
     const body = await request.json().catch(() => null);
     const prompt = cleanText(body?.prompt, 1200);
+    const conversation = cleanConversation(body?.conversation);
 
     if (prompt.length < 3) {
       return NextResponse.json({ message: "İşletmeni biraz daha anlatmalısın." }, { status: 400 });
@@ -82,14 +94,10 @@ export async function POST(request: Request) {
 
     if (error) throw error;
 
+    const history = conversation.length ? conversation : [{ role: "user" as const, content: prompt }];
     await supabaseAdmin.from("studio_messages").insert([
-      { project_id: data.id, owner_id: user.id, role: "user", content: prompt },
-      {
-        project_id: data.id,
-        owner_id: user.id,
-        role: "assistant",
-        content: `${generated.sector} için ilk taslağı hazırladım. Ön izlemeden renkleri, bölümleri ve sayfa yapısını birlikte değiştirebiliriz.`,
-      },
+      ...history.map((message) => ({ project_id: data.id, owner_id: user.id, role: message.role, content: message.content })),
+      { project_id: data.id, owner_id: user.id, role: "assistant", content: `${generated.sector} için ilk taslağı hazırladım. Ön izlemeden renkleri, bölümleri ve sayfa yapısını birlikte değiştirebiliriz.` },
     ]);
 
     await supabaseAdmin.from("studio_versions").insert({
@@ -105,4 +113,3 @@ export async function POST(request: Request) {
     return errorResponse(error);
   }
 }
-

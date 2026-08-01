@@ -4,7 +4,8 @@ import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import SitePreview from "@/app/_components/SitePreview";
-import { applyStudioInstruction, generateStudioSite, slugify, type StudioProject, type StudioSite } from "@/lib/sitemixStudio";
+import { applyStudioInstruction, describeStudioChanges, generateStudioSite, slugify, type StudioProject, type StudioSite } from "@/lib/sitemixStudio";
+import { advanceStudioConversation, composeStudioPrompt, emptyStudioBrief, getBriefProgress, type StudioBrief } from "@/lib/studioConversation";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 type ChatMessage = { id: string; role: "user" | "assistant"; content: string };
@@ -32,6 +33,8 @@ export default function StudioPage() {
   const [project, setProject] = useState<StudioProject | null>(null);
   const [projects, setProjects] = useState<StudioProject[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [brief, setBrief] = useState<StudioBrief>(() => ({ ...emptyStudioBrief, services: [], notes: [] }));
+  const [quickReplies, setQuickReplies] = useState<string[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
@@ -56,6 +59,18 @@ export default function StudioPage() {
     });
   }
 
+  async function openProject(projectId: string, token = accessToken) {
+    const response = await fetch(`/api/studio/projects/${projectId}`, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
+    const result = await response.json().catch(() => null);
+    if (!response.ok || !result?.project) {
+      setNotice(result?.message || "Proje açılamadı.");
+      return;
+    }
+    setProject(result.project);
+    setMessages((result.messages || []).map((message: { id: string; role: "user" | "assistant"; content: string }) => ({ id: message.id, role: message.role, content: message.content })));
+    setActiveTab("chat");
+  }
+
   async function loadProjects(token: string) {
     const response = await fetch("/api/studio/projects", { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
     const result = await response.json().catch(() => null);
@@ -63,28 +78,26 @@ export default function StudioPage() {
       setProjects(result.projects || []);
       const requestedId = new URLSearchParams(window.location.search).get("project");
       const requestedProject = (result.projects || []).find((item: StudioProject) => item.id === requestedId);
-      if (!project && (requestedProject || result.projects?.[0])) setProject(requestedProject || result.projects[0]);
-      return;
+      const selectedProject = requestedProject || result.projects?.[0];
+      if (!project && selectedProject) await openProject(selectedProject.id, token);
+      return (result.projects || []) as StudioProject[];
     }
     if (!result?.setupRequired) setNotice(result?.message || "Projeler alınamadı.");
+    return [] as StudioProject[];
   }
 
-  async function createProject(prompt: string, token: string) {
+  async function createProject(prompt: string, token: string, conversation: ChatMessage[] = []) {
     if (!prompt || createdPromptRef.current === prompt) return;
     createdPromptRef.current = prompt;
     setBusy(true);
-    setMessages([{ id: "u1", role: "user", content: prompt }]);
+    setQuickReplies([]);
     setProject(makeLocalProject(prompt));
-
-    window.setTimeout(() => {
-      setMessages((current) => [...current, { id: "a1", role: "assistant", content: "İşletmenin sektörünü ve ihtiyacını anladım. İlk taslağı hazırlıyorum..." }]);
-    }, 350);
 
     try {
       const response = await fetch("/api/studio/projects", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt, conversation }),
       });
       const result = await response.json().catch(() => null);
       if (response.ok && result.project) {
@@ -100,10 +113,54 @@ export default function StudioPage() {
       setNotice(error instanceof Error ? error.message : "Taslak yerel olarak hazırlandı.");
     } finally {
       window.setTimeout(() => {
-        setMessages((current) => [...current.filter((item) => item.id !== "a1"), { id: `a-${Date.now()}`, role: "assistant", content: "İlk taslak hazır. Renk, sayfa, fiyat listesi veya galeri gibi değişiklikleri buradan yazabilirsin." }]);
+        setMessages((current) => [...current, { id: `a-${Date.now()}`, role: "assistant", content: "İlk taslak hazır. Şimdi ön izlemede gezebilir; renk, bölüm, içerik veya sayfa yapısını konuşarak değiştirebilirsin." }]);
         setBusy(false);
       }, 650);
     }
+  }
+
+  function welcomeToDiscovery() {
+    const seed: StudioBrief = { ...emptyStudioBrief, services: [], notes: [] };
+    const result = advanceStudioConversation(seed, "merhaba");
+    setBrief(result.brief);
+    setMessages([{ id: `a-${Date.now()}`, role: "assistant", content: result.reply }]);
+    setQuickReplies(result.quickReplies);
+  }
+
+  async function continueDiscovery(rawValue: string, token = accessToken) {
+    const value = rawValue.trim();
+    if (!value || busy) return;
+
+    if (/bir bilgiyi değiştir/i.test(value) && getBriefProgress(brief) === 100) {
+      const nextMessages: ChatMessage[] = [
+        ...messages,
+        { id: `u-${Date.now()}`, role: "user", content: value },
+        { id: `a-${Date.now() + 1}`, role: "assistant", content: "Elbette. Değiştirmek istediğin bilgiyi doğal biçimde yazabilirsin. Örneğin “işletme adı Luna olsun” veya “site koyu ve modern olsun” demen yeterli." },
+      ];
+      setMessages(nextMessages);
+      setQuickReplies(["İşletme adını değiştireceğim", "Konumu değiştireceğim", "Tarzı değiştireceğim", "Sayfa yapısını değiştireceğim"]);
+      return;
+    }
+
+    const result = advanceStudioConversation(brief, value);
+    const nextMessages: ChatMessage[] = [
+      ...messages,
+      { id: `u-${Date.now()}`, role: "user", content: value },
+      { id: `a-${Date.now() + 1}`, role: "assistant", content: result.reply },
+    ];
+    setBrief(result.brief);
+    setMessages(nextMessages);
+    setQuickReplies(result.quickReplies);
+    setInput("");
+
+    if (result.shouldBuild && token) {
+      await createProject(composeStudioPrompt(result.brief), token, nextMessages);
+    }
+  }
+
+  function sendDiscovery(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void continueDiscovery(input);
   }
 
   useEffect(() => {
@@ -126,12 +183,23 @@ export default function StudioPage() {
       setAccessToken(token);
       setUserEmail(session.user.email || "");
       setSessionReady(true);
-      const pending = window.sessionStorage.getItem("sitemix_pending_prompt") || "";
+      const pending = window.sessionStorage.getItem("sitemix_pending_prompt") || window.localStorage.getItem("sitemix_pending_prompt_backup") || "";
       if (pending) {
         window.sessionStorage.removeItem("sitemix_pending_prompt");
-        await createProject(pending, token);
+        window.localStorage.removeItem("sitemix_pending_prompt_backup");
+        const seed: StudioBrief = { ...emptyStudioBrief, services: [], notes: [] };
+        const result = advanceStudioConversation(seed, pending);
+        const firstMessages: ChatMessage[] = [
+          { id: "u-first", role: "user", content: pending },
+          { id: "a-first", role: "assistant", content: result.reply },
+        ];
+        setBrief(result.brief);
+        setMessages(firstMessages);
+        setQuickReplies(result.quickReplies);
+        if (result.shouldBuild) await createProject(composeStudioPrompt(result.brief), token, firstMessages);
       } else {
-        await loadProjects(token);
+        const loadedProjects = await loadProjects(token);
+        if (!loadedProjects.length) welcomeToDiscovery();
       }
     }
     boot();
@@ -147,6 +215,12 @@ export default function StudioPage() {
     setBusy(true);
     setMessages((current) => [...current, { id: `u-${Date.now()}`, role: "user", content: instruction }]);
     const localSite = applyStudioInstruction(site, instruction);
+    const understoodChanges = describeStudioChanges(site, localSite);
+    if (!understoodChanges.length) {
+      setMessages((current) => [...current, { id: `a-${Date.now()}`, role: "assistant", content: "Bu isteği tasarım kararına çevirebilmem için biraz daha net yazmalısın. Örneğin “işletme adı Luna olsun”, “hizmetlere gelin saçı ekle” veya “galeri bölümünü kaldır” diyebilirsin." }]);
+      setBusy(false);
+      return;
+    }
     setProject({ ...project, current_version: localSite });
 
     try {
@@ -158,8 +232,9 @@ export default function StudioPage() {
         const result = await response.json().catch(() => null);
         if (!response.ok) throw new Error(result?.message || "Değişiklik kaydedilemedi.");
         setProject(result.project);
+        setProjects((current) => current.map((item) => item.id === result.project.id ? result.project : item));
       }
-      setMessages((current) => [...current, { id: `a-${Date.now()}`, role: "assistant", content: "İsteğini uyguladım. Ön izleme güncellendi. Başka bir değişiklik ister misin?" }]);
+      setMessages((current) => [...current, { id: `a-${Date.now()}`, role: "assistant", content: `Güncelledim: ${understoodChanges.join(", ")}. Ön izleme şimdi yeni kararlarını gösteriyor. Başka neyi değiştirelim?` }]);
       if (window.innerWidth < 1024) setActiveTab("preview");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Değişiklik ön izlemeye uygulandı.");
@@ -184,6 +259,7 @@ export default function StudioPage() {
       const result = await response.json().catch(() => null);
       if (!response.ok) throw new Error(result?.message || "Kaydedilemedi.");
       setProject(result.project);
+      setProjects((current) => current.map((item) => item.id === result.project.id ? result.project : item));
       setNotice("Değişiklikler kaydedildi ve yeni sürüm oluşturuldu.");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Kaydedilemedi.");
@@ -261,11 +337,64 @@ export default function StudioPage() {
   }
 
   if (!project) {
+    const progress = getBriefProgress(brief);
     return (
-      <main className="min-h-screen bg-[#090a12] px-4 py-8 text-white">
-        <div className="mx-auto max-w-5xl">
-          <header className="flex items-center justify-between"><Link href="/" className="flex items-center gap-3"><span className="brand-orb"><span>S</span></span><strong>SiteMix Studio</strong></Link><button onClick={signOut} className="rounded-full border border-white/10 px-4 py-2 text-xs font-black text-white/55">Çıkış</button></header>
-          <section className="mt-20 text-center"><p className="section-kicker">Projelerin</p><h1 className="mt-4 text-5xl font-black tracking-[-0.06em]">Yeni bir fikirle başlayalım.</h1><p className="mx-auto mt-5 max-w-xl text-sm leading-7 text-white/45">Henüz bir projen yok. Ana sayfadaki sohbet alanına işletmeni anlat.</p><Link href="/" className="send-button mt-8 inline-flex min-h-14 items-center rounded-full px-7 text-sm font-black text-[#0a0b13]">Yeni site oluştur</Link></section>
+      <main className="relative min-h-screen overflow-hidden bg-[#080910] text-white">
+        <div className="pointer-events-none absolute -left-48 top-10 h-[520px] w-[520px] rounded-full bg-[#684cf0]/15 blur-[130px]" />
+        <div className="pointer-events-none absolute -right-48 bottom-0 h-[520px] w-[520px] rounded-full bg-[#4fe0b1]/10 blur-[140px]" />
+
+        <header className="relative z-20 border-b border-white/7 bg-[#090a12]/78 backdrop-blur-2xl">
+          <div className="mx-auto flex h-[72px] max-w-[1380px] items-center justify-between px-4 sm:px-7">
+            <Link href="/" className="flex items-center gap-3"><span className="brand-orb"><span>S</span></span><div><strong className="block text-sm font-black">SiteMix Studio</strong><span className="text-[9px] font-black uppercase tracking-[.18em] text-white/30">Site görüşmesi</span></div></Link>
+            <div className="flex items-center gap-2"><span className="hidden text-[11px] font-bold text-white/30 sm:block">{userEmail}</span><button onClick={signOut} className="rounded-full border border-white/9 bg-white/[0.025] px-4 py-2.5 text-[11px] font-black text-white/50 transition hover:bg-white/7 hover:text-white">Çıkış</button></div>
+          </div>
+        </header>
+
+        <div className="relative z-10 mx-auto grid max-w-[1380px] gap-5 px-3 py-4 sm:px-7 sm:py-7 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <section className="flex min-h-[calc(100svh-112px)] flex-col overflow-hidden rounded-[26px] border border-white/9 bg-[#0e0f18]/92 shadow-[0_30px_100px_rgba(0,0,0,.38)] sm:rounded-[32px]">
+            <div className="border-b border-white/7 px-4 py-4 sm:px-6 sm:py-5">
+              <div className="flex items-center justify-between gap-4"><div><p className="text-[10px] font-black uppercase tracking-[.17em] text-[#9484ff]">Akıllı site brifi</p><h1 className="mt-1.5 text-xl font-black tracking-[-.035em] sm:text-2xl">İşletmeni birlikte tanıyalım.</h1></div><div className="shrink-0 text-right"><strong className="block text-lg font-black text-[#8ff3d2]">%{progress}</strong><span className="text-[9px] font-bold uppercase tracking-[.12em] text-white/25">Hazır</span></div></div>
+              <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/6"><motion.div animate={{ width: `${Math.max(progress, 4)}%` }} className="h-full rounded-full bg-gradient-to-r from-[#755cff] via-[#9c83ff] to-[#75efc7]" /></div>
+            </div>
+
+            <div className="flex-1 space-y-4 overflow-y-auto px-4 py-6 sm:px-6">
+              {messages.map((message) => (
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} key={message.id} className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+                  {message.role === "assistant" ? <span className="brand-orb mt-1 !h-8 !w-8 !shrink-0 !rounded-[11px] !text-[11px]"><span>S</span></span> : null}
+                  <div className={`max-w-[88%] whitespace-pre-line rounded-[20px] px-4 py-3.5 text-sm font-semibold leading-6 sm:max-w-[72%] ${message.role === "user" ? "rounded-br-md bg-gradient-to-br from-[#765cff] to-[#5a43d4] text-white shadow-[0_12px_30px_rgba(73,51,171,.22)]" : "rounded-bl-md border border-white/8 bg-white/[0.035] text-white/68"}`}>{message.content}</div>
+                </motion.div>
+              ))}
+              {busy ? <div className="ml-11 inline-flex gap-1 rounded-full border border-white/7 bg-white/[0.035] px-4 py-3"><span className="dot-typing" /><span className="dot-typing" /><span className="dot-typing" /></div> : null}
+            </div>
+
+            <div className="border-t border-white/7 bg-[#0b0c14]/90 p-3 sm:p-4">
+              {quickReplies.length ? <div className="mb-3 flex gap-2 overflow-x-auto pb-1">{quickReplies.map((reply) => <button key={reply} type="button" onClick={() => void continueDiscovery(reply)} disabled={busy} className="shrink-0 rounded-full border border-white/9 bg-white/[0.035] px-4 py-2.5 text-[11px] font-black text-white/55 transition hover:border-[#8f7cff]/35 hover:bg-[#8f7cff]/10 hover:text-white disabled:opacity-40">{reply}</button>)}</div> : null}
+              <form onSubmit={sendDiscovery} className="flex items-end gap-2 rounded-[20px] border border-white/9 bg-white/[0.035] p-2 focus-within:border-[#8c79ff]/35 focus-within:bg-white/[0.05]">
+                <textarea value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); if (input.trim()) void continueDiscovery(input); } }} rows={2} maxLength={1200} placeholder="Cevabını doğal bir şekilde yaz..." className="min-h-12 flex-1 resize-none bg-transparent px-3 py-2 text-sm font-semibold leading-6 text-white outline-none placeholder:text-white/22" />
+                <button disabled={!input.trim() || busy} className="send-button grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-lg font-black text-[#090a12] disabled:opacity-30" aria-label="Yanıtı gönder">↑</button>
+              </form>
+              <p className="mt-2 px-2 text-[9px] font-medium text-white/20">SiteMix cevaplarını bu proje için hatırlar; taslak yalnızca sen onayladığında oluşturulur.</p>
+            </div>
+          </section>
+
+          <aside className="hidden lg:block">
+            <div className="sticky top-[100px] overflow-hidden rounded-[28px] border border-white/9 bg-[#0e0f18]/92 p-5 shadow-[0_25px_80px_rgba(0,0,0,.28)]">
+              <div className="flex items-center justify-between"><div><p className="text-[10px] font-black uppercase tracking-[.16em] text-white/28">Canlı proje hafızası</p><h2 className="mt-2 text-2xl font-black tracking-[-.045em]">Seni anladıkça dolar.</h2></div><span className="grid h-12 w-12 place-items-center rounded-2xl bg-[#8f7cff]/12 text-lg font-black text-[#a99cff]">{brief.businessName ? brief.businessName.charAt(0) : "S"}</span></div>
+              <p className="mt-3 text-xs font-medium leading-6 text-white/35">Her cevabın tasarım kararına dönüşür. Eksik bilgi varken rastgele site üretmeyiz.</p>
+
+              <div className="mt-6 space-y-2">
+                <BriefMemory label="Sektör" value={brief.sectorLabel} />
+                <BriefMemory label="İşletme" value={brief.businessName} />
+                <BriefMemory label="Konum" value={brief.location} />
+                <BriefMemory label="Hizmetler" value={brief.services.length ? brief.services.join(", ") : undefined} />
+                <BriefMemory label="Ana hedef" value={brief.goal} />
+                <BriefMemory label="Görsel tarz" value={brief.style} />
+                <BriefMemory label="Sayfa yapısı" value={brief.pageMode ? (brief.pageMode === "multi" ? "Çok sayfalı" : "Tek sayfalı") : undefined} />
+              </div>
+
+              <div className="mt-5 rounded-2xl border border-[#7ce8c5]/12 bg-[#7ce8c5]/[0.055] p-4"><p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[.14em] text-[#8ff3d2]"><span className="h-1.5 w-1.5 rounded-full bg-[#8ff3d2]" />Kontrollü üretim</p><p className="mt-2 text-[11px] font-medium leading-5 text-white/38">Bilgileri istediğin an düzeltebilirsin. Ön izleme açılmadan önce senden son onay alınır.</p></div>
+            </div>
+          </aside>
         </div>
       </main>
     );
@@ -274,7 +403,7 @@ export default function StudioPage() {
   return (
     <main className="studio-app min-h-screen bg-[#090a12] text-white">
       <header className="sticky top-0 z-50 flex h-[68px] items-center justify-between border-b border-white/8 bg-[#0b0c14]/88 px-3 backdrop-blur-2xl sm:px-5">
-        <div className="flex min-w-0 items-center gap-3"><Link href="/" className="brand-orb !h-10 !w-10 !rounded-[13px]"><span>S</span></Link><div className="min-w-0">{projects.length > 1 ? <select value={project.id} onChange={(event) => { const selected = projects.find((item) => item.id === event.target.value); if (selected) { setProject(selected); setMessages([]); } }} className="max-w-[180px] bg-transparent text-sm font-black text-white outline-none sm:max-w-[260px]">{projects.map((item) => <option key={item.id} value={item.id} className="bg-[#11121b]">{item.title}</option>)}</select> : <p className="truncate text-sm font-black">{site?.businessName}</p>}<p className="truncate text-[10px] font-bold text-white/32">{project.status === "published" ? "Yayında" : "Taslak"} · {site?.sector}</p></div></div>
+        <div className="flex min-w-0 items-center gap-3"><Link href="/" className="brand-orb !h-10 !w-10 !rounded-[13px]"><span>S</span></Link><div className="min-w-0">{projects.length > 1 ? <select value={project.id} onChange={(event) => void openProject(event.target.value)} className="max-w-[180px] bg-transparent text-sm font-black text-white outline-none sm:max-w-[260px]">{projects.map((item) => <option key={item.id} value={item.id} className="bg-[#11121b]">{item.title}</option>)}</select> : <p className="truncate text-sm font-black">{site?.businessName}</p>}<p className="truncate text-[10px] font-bold text-white/32">{project.status === "published" ? "Yayında" : "Taslak"} · {site?.sector}</p></div></div>
         <div className="flex items-center gap-2">
           <Link href="/" className="hidden rounded-full border border-white/10 px-4 py-2 text-xs font-black text-white/55 md:inline-flex">+ Yeni site</Link>
           <a href={projectUrl} target="_blank" className="hidden rounded-full border border-white/10 px-4 py-2 text-xs font-black text-white/55 sm:inline-flex">Yeni sekmede aç</a>
@@ -341,6 +470,10 @@ export default function StudioPage() {
 
 function EditorField({ label, value, onChange, placeholder = "" }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string }) {
   return <label className="block"><span className="mb-2 block text-xs font-black text-white/45">{label}</span><input value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className="h-12 w-full rounded-xl border border-white/8 bg-white/[0.045] px-3 text-sm font-bold text-white outline-none placeholder:text-white/22 focus:border-white/18" /></label>;
+}
+
+function BriefMemory({ label, value }: { label: string; value?: string }) {
+  return <div className={`rounded-2xl border px-4 py-3.5 ${value ? "border-white/8 bg-white/[0.035]" : "border-dashed border-white/7 bg-transparent"}`}><div className="flex items-center justify-between gap-3"><span className="text-[9px] font-black uppercase tracking-[.13em] text-white/27">{label}</span><span className={`h-1.5 w-1.5 rounded-full ${value ? "bg-[#7ce8c5] shadow-[0_0_10px_#7ce8c5]" : "bg-white/12"}`} /></div><p className={`mt-1.5 line-clamp-2 text-xs font-bold leading-5 ${value ? "text-white/68" : "text-white/18"}`}>{value || "Henüz öğrenilmedi"}</p></div>;
 }
 
 function DecisionCard({ badge, title, text, action, onClick, featured = false }: { badge: string; title: string; text: string; action: string; onClick: () => void; featured?: boolean }) {
