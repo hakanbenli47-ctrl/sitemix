@@ -1,10 +1,9 @@
 import { buildStudioRepositoryFiles } from "@/lib/studioExport";
-import type { StudioProject, StudioSite } from "@/lib/sitemixStudio";
+import type { StudioDeployment, StudioProject, StudioSite } from "@/lib/sitemixStudio";
 import { slugify } from "@/lib/sitemixStudio";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type GithubRepository = { id: number; name: string; full_name: string; html_url: string; default_branch: string; owner?: { login?: string } };
-type DeploymentRecord = { id?: string; project_id: string; github_repo_name?: string | null; github_repo_full_name?: string | null; github_repo_url?: string | null; vercel_project_id?: string | null; vercel_project_name?: string | null; vercel_url?: string | null; status?: string; domain?: string | null; last_error?: string | null };
 
 function githubHeaders() {
   const token = process.env.GITHUB_STUDIO_TOKEN || process.env.GITHUB_TOKEN;
@@ -126,28 +125,25 @@ async function commitRepositoryFiles(repository: GithubRepository, files: Return
   return nextCommit.result.sha;
 }
 
-async function saveDeployment(projectId: string, patch: Record<string, unknown>) {
-  const { data, error } = await supabaseAdmin.from("studio_deployments").upsert({ project_id: projectId, ...patch, updated_at: new Date().toISOString() }, { onConflict: "project_id" }).select("*").single();
-  if (error) throw error;
-  return data as DeploymentRecord;
+function deploymentRecord(projectId: string, patch: Omit<StudioDeployment, "project_id" | "updated_at">): StudioDeployment {
+  return { project_id: projectId, ...patch, updated_at: new Date().toISOString() };
 }
 
-export async function provisionStudioProject(project: StudioProject) {
+export async function provisionStudioProject(project: StudioProject): Promise<StudioDeployment> {
   const githubConfigured = Boolean(process.env.GITHUB_STUDIO_TOKEN || process.env.GITHUB_TOKEN);
   if (!githubConfigured) {
-    return saveDeployment(project.id, {
+    return deploymentRecord(project.id, {
       status: "configuration_required",
       last_error: "SiteMix AI projesindeki GITHUB_TOKEN ve GITHUB_OWNER değişkenleri bu projeye de eklenmeli.",
     });
   }
 
-  await saveDeployment(project.id, { status: "provisioning", last_error: null });
   try {
     const repository = await ensureGithubRepository(project);
     const vercelProject = process.env.VERCEL_TOKEN ? await ensureVercelProject(repository, project) : null;
     const fallbackHost = `${vercelProject?.name || repository.name}.vercel.app`;
     const commitSha = await commitRepositoryFiles(repository, buildStudioRepositoryFiles(project.current_version, undefined, fallbackHost), "Publish SiteMix website");
-    return saveDeployment(project.id, {
+    return deploymentRecord(project.id, {
       github_repo_id: repository.id,
       github_repo_name: repository.name,
       github_repo_full_name: repository.full_name,
@@ -161,33 +157,35 @@ export async function provisionStudioProject(project: StudioProject) {
       provisioned_at: new Date().toISOString(),
     });
   } catch (error) {
-    return saveDeployment(project.id, {
+    return deploymentRecord(project.id, {
       status: "error",
       last_error: error instanceof Error ? error.message : "Site deposu hazırlanamadı.",
     });
   }
 }
 
-export async function syncStudioRepository(project: StudioProject, deployment: DeploymentRecord, domain?: string) {
+export async function syncStudioRepository(project: StudioProject, deployment: StudioDeployment, domain?: string | null): Promise<StudioDeployment> {
   if (!deployment.github_repo_full_name) throw new Error("Bu proje için GitHub deposu henüz hazır değil.");
   const repo = await githubRequest<GithubRepository>(`/repos/${deployment.github_repo_full_name}`);
   const fallbackHost = deployment.vercel_project_name ? `${deployment.vercel_project_name}.vercel.app` : undefined;
-  const commitSha = await commitRepositoryFiles(repo.result, buildStudioRepositoryFiles(project.current_version as StudioSite, domain, fallbackHost), domain ? `Connect domain ${domain}` : "Update website content");
-  await saveDeployment(project.id, {
-    domain: domain || deployment.domain || null,
+  const resolvedDomain = domain === undefined ? deployment.domain || undefined : domain || undefined;
+  const commitSha = await commitRepositoryFiles(repo.result, buildStudioRepositoryFiles(project.current_version as StudioSite, resolvedDomain, fallbackHost), resolvedDomain ? `Connect domain ${resolvedDomain}` : "Update website content");
+  const connectedToVercel = Boolean(deployment.vercel_project_id);
+  return {
+    ...deployment,
+    project_id: project.id,
+    domain: resolvedDomain || null,
     github_commit_sha: commitSha,
     seo_synced_at: new Date().toISOString(),
-    status: "ready",
-    last_error: null,
-  });
-  return commitSha;
+    status: connectedToVercel ? "ready" : "vercel_connection_required",
+    last_error: connectedToVercel ? null : deployment.last_error || "GitHub deposu güncellendi; Vercel bağlantısı için VERCEL_TOKEN eklenmeli.",
+    updated_at: new Date().toISOString(),
+  };
 }
 
-export async function connectStudioDomain(project: StudioProject, rawDomain: string) {
+export async function connectStudioDomain(project: StudioProject, deployment: StudioDeployment, rawDomain: string) {
   const domain = rawDomain.trim().toLocaleLowerCase("tr-TR").replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0].replace(/[^a-z0-9.-]/g, "");
   if (!domain || !domain.includes(".")) throw new Error("Geçerli bir domain yazmalısınız.");
-  const { data: deployment, error: deploymentError } = await supabaseAdmin.from("studio_deployments").select("*").eq("project_id", project.id).single();
-  if (deploymentError || !deployment) throw deploymentError || new Error("Önce site deposu hazırlanmalı.");
   const vercelProject = deployment.vercel_project_id || deployment.vercel_project_name;
   if (!vercelProject) throw new Error("Vercel projesi henüz hazır değil.");
 
@@ -217,6 +215,6 @@ export async function connectStudioDomain(project: StudioProject, rawDomain: str
     last_checked_at: new Date().toISOString(),
   }, { onConflict: "domain" }).select("*").single();
   if (error) throw error;
-  await syncStudioRepository(project, deployment, domain);
-  return domainRecord;
+  const nextDeployment = await syncStudioRepository(project, deployment, domain);
+  return { domainRecord, deployment: nextDeployment };
 }

@@ -36,6 +36,24 @@ export type StudioDesign = {
   density: "airy" | "balanced" | "compact";
 };
 
+export type StudioDeployment = {
+  project_id: string;
+  github_repo_id?: number | null;
+  github_repo_name?: string | null;
+  github_repo_full_name?: string | null;
+  github_repo_url?: string | null;
+  github_commit_sha?: string | null;
+  vercel_project_id?: string | null;
+  vercel_project_name?: string | null;
+  vercel_url?: string | null;
+  domain?: string | null;
+  status: string;
+  last_error?: string | null;
+  provisioned_at?: string | null;
+  seo_synced_at?: string | null;
+  updated_at?: string;
+};
+
 export type StudioSite = {
   contentVersion?: number;
   businessName: string;
@@ -54,6 +72,7 @@ export type StudioSite = {
     services?: string[];
     gallery?: string[];
   };
+  deployment?: StudioDeployment;
   sections: StudioSection[];
 };
 

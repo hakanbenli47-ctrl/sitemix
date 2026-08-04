@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { applyStudioInstruction, describeStudioChanges, upgradeStudioSite, type StudioProject, type StudioSite } from "@/lib/sitemixStudio";
+import { applyStudioInstruction, describeStudioChanges, upgradeStudioSite, type StudioDeployment, type StudioProject, type StudioSite } from "@/lib/sitemixStudio";
 import { assertCustomerCanManageStudioProject } from "@/lib/studioAccess";
 import { provisionStudioProject, syncStudioRepository } from "@/lib/studioProvisioning";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -47,6 +47,18 @@ function responseError(error: unknown) {
   );
 }
 
+async function persistDeployment(project: StudioProject, deployment: StudioDeployment) {
+  const currentVersion = { ...(project.current_version as StudioSite), deployment };
+  const { data, error } = await supabaseAdmin
+    .from("studio_projects")
+    .update({ current_version: currentVersion, updated_at: new Date().toISOString() })
+    .eq("id", project.id)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data as StudioProject;
+}
+
 export async function GET(request: Request, context: RouteContext) {
   try {
     const user = await requireStudioUser(request);
@@ -84,6 +96,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       const instruction = cleanText(body?.instruction, 800);
       if (!instruction) throw new Error("Düzenleme isteği boş olamaz.");
       nextVersion = applyStudioInstruction(nextVersion, instruction);
+      nextVersion.deployment = (project.current_version as StudioSite).deployment;
       if (!describeStudioChanges(project.current_version as StudioSite, nextVersion).length) {
         throw new Error("Bu isteği uygulayabilmemiz için işletme adı, renk, bölüm veya içerik değişikliğini biraz daha açık yazın.");
       }
@@ -106,6 +119,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       if (!nextVersion?.businessName || !Array.isArray(nextVersion?.sections)) {
         throw new Error("Site içeriği geçersiz.");
       }
+      nextVersion.deployment = (project.current_version as StudioSite).deployment;
       update.current_version = nextVersion;
       update.title = cleanText(nextVersion.businessName, 120);
       note = "İçerik düzenleyiciden kaydedildi";
@@ -177,26 +191,25 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     let deployment = null;
     let deploymentMessage = "";
+    let responseProject = data as StudioProject;
     if (action === "management") {
-      try {
-        deployment = await provisionStudioProject(data as StudioProject);
-      } catch (error) {
-        deploymentMessage = error instanceof Error ? error.message : "Bağımsız site hazırlama kaydı oluşturulamadı.";
-      }
+      deployment = await provisionStudioProject(responseProject);
+      responseProject = await persistDeployment(responseProject, deployment);
+      deploymentMessage = deployment.last_error || "";
     } else if (action === "instruction" || action === "save") {
-      const { data: existingDeployment } = await supabaseAdmin.from("studio_deployments").select("*").eq("project_id", projectId).maybeSingle();
+      const existingDeployment = (project.current_version as StudioSite).deployment;
       if (existingDeployment?.github_repo_full_name) {
         try {
-          await syncStudioRepository(data as StudioProject, existingDeployment);
-          deployment = { ...existingDeployment, status: "ready" };
+          deployment = await syncStudioRepository(responseProject, existingDeployment);
         } catch (error) {
           deploymentMessage = error instanceof Error ? error.message : "Bağımsız site deposu güncellenemedi.";
-          await supabaseAdmin.from("studio_deployments").update({ status: "error", last_error: deploymentMessage }).eq("project_id", projectId);
+          deployment = { ...existingDeployment, status: "error", last_error: deploymentMessage, updated_at: new Date().toISOString() };
         }
+        responseProject = await persistDeployment(responseProject, deployment);
       }
     }
 
-    return NextResponse.json({ project: data, deployment, message: deploymentMessage ? `${note}. ${deploymentMessage}` : note });
+    return NextResponse.json({ project: responseProject, deployment, message: deploymentMessage ? `${note}. ${deploymentMessage}` : note });
   } catch (error) {
     return responseError(error);
   }
