@@ -3,7 +3,7 @@ import { requireSitemixAdmin } from "@/lib/sitemixAdminAuth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { isMissingStudioTable } from "@/lib/studioServerAuth";
 import { connectStudioDomain, provisionStudioProject, syncStudioRepository } from "@/lib/studioProvisioning";
-import type { StudioProject } from "@/lib/sitemixStudio";
+import type { StudioDeployment, StudioProject, StudioSite } from "@/lib/sitemixStudio";
 
 export const runtime = "nodejs";
 
@@ -29,16 +29,31 @@ async function audit(actor: string, action: string, entityType: string, entityId
   if (error && !isMissingStudioTable(error)) throw error;
 }
 
+function deploymentFor(project: Pick<StudioProject, "current_version">) {
+  return (project.current_version as StudioSite)?.deployment;
+}
+
+async function persistDeployment(project: StudioProject, deployment: StudioDeployment) {
+  const currentVersion = { ...(project.current_version as StudioSite), deployment };
+  const { data, error } = await supabaseAdmin
+    .from("studio_projects")
+    .update({ current_version: currentVersion, updated_at: new Date().toISOString() })
+    .eq("id", project.id)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data as StudioProject;
+}
+
 export async function GET() {
   try {
     await requireSitemixAdmin();
-    const [projects, leads, subscriptions, payments, domains, deployments, forms, audits, sectors, settings, usersResult] = await Promise.all([
+    const [projects, leads, subscriptions, payments, domains, forms, audits, sectors, settings, usersResult] = await Promise.all([
       tableRows("studio_projects", "id, owner_id, title, slug, sector, status, management_mode, payment_status, published_at, created_at, updated_at, current_version"),
       tableRows("studio_leads"),
       tableRows("studio_subscriptions"),
       tableRows("studio_payments"),
       tableRows("studio_domains"),
-      tableRows("studio_deployments", "*", "updated_at"),
       tableRows("studio_form_submissions"),
       tableRows("studio_audit_logs", "*", "created_at", 100),
       tableRows("studio_sectors", "*", "sort_order", 100),
@@ -51,6 +66,11 @@ export async function GET() {
     const enrichedProjects = projects.map((project) => {
       const projectRow = project as unknown as Record<string, unknown>;
       return { ...projectRow, owner: userMap.get(String(projectRow.owner_id || "")) || null };
+    });
+    const deployments = enrichedProjects.flatMap((project) => {
+      const projectRow = project as unknown as Record<string, unknown>;
+      const currentVersion = projectRow.current_version as StudioSite | undefined;
+      return currentVersion?.deployment ? [{ ...currentVersion.deployment, project_id: String(projectRow.id) }] : [];
     });
 
     return NextResponse.json({
@@ -95,38 +115,47 @@ export async function POST(request: Request) {
     }
 
     if (action === "save_project") {
-      const site = body?.site;
+      const site = body?.site as StudioSite | undefined;
       if (!site || typeof site !== "object") {
         return NextResponse.json({ message: "Site içeriği geçersiz." }, { status: 400 });
       }
       const { data: before, error: beforeError } = await supabaseAdmin.from("studio_projects").select("*").eq("id", id).single();
       if (beforeError) throw beforeError;
+      site.deployment = deploymentFor(before as StudioProject);
       const title = cleanText((site as { businessName?: unknown }).businessName, 120) || before.title;
       const { data: after, error } = await supabaseAdmin.from("studio_projects").update({ current_version: site, title, updated_at: new Date().toISOString() }).eq("id", id).select("*").single();
       if (error) throw error;
       const { count } = await supabaseAdmin.from("studio_versions").select("id", { count: "exact", head: true }).eq("project_id", id);
       await supabaseAdmin.from("studio_versions").insert({ project_id: id, owner_id: before.owner_id, version_number: Number(count || 0) + 1, snapshot: site, change_note: "Admin içerik düzenlemesi" });
-      await audit(session.sub, action, "project", id, before, after);
-      const { data: deployment } = await supabaseAdmin.from("studio_deployments").select("*").eq("project_id", id).maybeSingle();
-      if (deployment?.github_repo_full_name) await syncStudioRepository(after as StudioProject, deployment, deployment.domain || undefined);
-      return NextResponse.json({ message: "Site içeriği kaydedildi.", record: after });
+      const deployment = deploymentFor(after as StudioProject);
+      let savedProject = after as StudioProject;
+      if (deployment?.github_repo_full_name) {
+        const nextDeployment = await syncStudioRepository(savedProject, deployment, deployment.domain || undefined);
+        savedProject = await persistDeployment(savedProject, nextDeployment);
+      }
+      await audit(session.sub, action, "project", id, before, savedProject);
+      return NextResponse.json({ message: "Site içeriği kaydedildi.", record: savedProject });
     }
 
     if (action === "provision") {
       const { data: project, error } = await supabaseAdmin.from("studio_projects").select("*").eq("id", id).single();
       if (error) throw error;
       const deployment = await provisionStudioProject(project as StudioProject);
+      const savedProject = await persistDeployment(project as StudioProject, deployment);
       await audit(session.sub, action, "deployment", id, null, deployment);
-      return NextResponse.json({ message: deployment?.status === "ready" ? "GitHub deposu ve Vercel projesi hazırlandı." : deployment?.last_error || "Yayın hazırlama kaydı güncellendi.", record: deployment });
+      return NextResponse.json({ message: deployment.status === "ready" ? "GitHub deposu ve Vercel projesi hazırlandı." : deployment.last_error || "Yayın hazırlama kaydı güncellendi.", record: deployment, project: savedProject });
     }
 
     if (action === "connect_domain") {
       const domain = cleanText(body?.domain, 253);
       const { data: project, error } = await supabaseAdmin.from("studio_projects").select("*").eq("id", id).single();
       if (error) throw error;
-      const record = await connectStudioDomain(project as StudioProject, domain);
-      await audit(session.sub, action, "domain", record.id, null, record);
-      return NextResponse.json({ message: "Domain kaydedildi; sitemap.xml ve robots.txt site deposunda güncellendi.", record });
+      const deployment = deploymentFor(project as StudioProject);
+      if (!deployment) throw new Error("Önce GitHub/Vercel sitesini hazırlayın.");
+      const result = await connectStudioDomain(project as StudioProject, deployment, domain);
+      await persistDeployment(project as StudioProject, result.deployment);
+      await audit(session.sub, action, "domain", result.domainRecord.id, null, result.domainRecord);
+      return NextResponse.json({ message: "Domain kaydedildi; sitemap.xml ve robots.txt site deposunda güncellendi.", record: result.domainRecord });
     }
 
     if (action === "lead_status") {
