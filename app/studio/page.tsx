@@ -5,8 +5,10 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import TextareaAutosize from "react-textarea-autosize";
 import {
+  AlertCircle,
   ArrowUp,
   Check,
+  CheckCircle2,
   ChevronDown,
   ChevronRight,
   ChevronUp,
@@ -15,6 +17,7 @@ import {
   FileText,
   Globe2,
   ImagePlus,
+  Info,
   Laptop,
   LayoutGrid,
   LogOut,
@@ -27,6 +30,7 @@ import {
   Trash2,
   Upload,
   WandSparkles,
+  X,
 } from "lucide-react";
 import SitePreview from "@/app/_components/SitePreview";
 import { applyStudioInstruction, describeStudioChanges, generateStudioSite, getStudioVisualPrompt, slugify, suggestStudioInstructions, type StudioProject, type StudioSite } from "@/lib/sitemixStudio";
@@ -35,6 +39,7 @@ import { supabaseClient } from "@/lib/supabaseClient";
 
 type ChatMessage = { id: string; role: "user" | "assistant"; content: string };
 type StudioTab = "chat" | "preview" | "content" | "domain";
+type StudioNotice = { message: string; tone: "success" | "error" | "info" };
 
 const whatsappPhone = "905515550302";
 
@@ -64,7 +69,7 @@ export default function StudioPage() {
   const [pendingContactMode, setPendingContactMode] = useState<"both" | "whatsapp" | "phone" | null>(null);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState("");
+  const [notice, setNotice] = useState<StudioNotice | null>(null);
   const [activeTab, setActiveTab] = useState<StudioTab>("chat");
   const [previewMobile, setPreviewMobile] = useState(false);
   const [showDecision, setShowDecision] = useState(false);
@@ -73,12 +78,27 @@ export default function StudioPage() {
   const [mediaBusy, setMediaBusy] = useState<"hero" | "logo" | "about" | "service" | "gallery" | null>(null);
   const [domainResult, setDomainResult] = useState<{ status: string; message: string; records?: Array<{ type: string; name: string; value: string }> } | null>(null);
   const createdPromptRef = useRef("");
+  const conversationEndRef = useRef<HTMLDivElement>(null);
 
   const site = project?.current_version || null;
   const isTemporaryPreview = Boolean(project && !project.management_mode);
   const previewDaysLeft = project?.created_at
     ? Math.max(0, Math.ceil((new Date(project.created_at).getTime() + 7 * 24 * 60 * 60 * 1000 - Date.now()) / (24 * 60 * 60 * 1000)))
     : 7;
+
+  function showNotice(message: string, tone: StudioNotice["tone"] = "info") {
+    setNotice({ message, tone });
+  }
+
+  useEffect(() => {
+    if (!notice) return;
+    const timeout = window.setTimeout(() => setNotice(null), notice.tone === "error" ? 6500 : 4500);
+    return () => window.clearTimeout(timeout);
+  }, [notice]);
+
+  useEffect(() => {
+    conversationEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages, busy, quickReplies]);
 
   async function authorizedFetch(url: string, init?: RequestInit) {
     return fetch(url, {
@@ -95,7 +115,7 @@ export default function StudioPage() {
     const response = await fetch(`/api/studio/projects/${projectId}`, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
     const result = await response.json().catch(() => null);
     if (!response.ok || !result?.project) {
-      setNotice(result?.message || "Proje açılamadı.");
+      showNotice(result?.message || "Proje açılamadı.", "error");
       return;
     }
     setProject(result.project);
@@ -115,7 +135,7 @@ export default function StudioPage() {
       if (!project && selectedProject) await openProject(selectedProject.id, token);
       return (result.projects || []) as StudioProject[];
     }
-    if (!result?.setupRequired) setNotice(result?.message || "Projeler alınamadı.");
+    if (!result?.setupRequired) showNotice(result?.message || "Projeler alınamadı.", "error");
     return [] as StudioProject[];
   }
 
@@ -138,17 +158,17 @@ export default function StudioPage() {
       if (response.ok && result.project) {
         setProject(result.project);
         setProjects((current) => [result.project, ...current.filter((item) => item.id !== result.project.id)]);
-        setNotice("Geçici ön izlemen hazır. Paket seçilmezse 7 gün sonra otomatik silinir.");
+        showNotice("Ön izlemen hazırlandı ve hesabına kaydedildi.", "success");
       } else if (result?.setupRequired) {
-        setNotice("Ön izlemen hazır. Veritabanı kurulumu tamamlanınca geçici olarak hesabına bağlanacak.");
+        showNotice("Ön izlemen hazır. Hesaba kaydetme işlemi kurulum tamamlanınca etkinleşecek.", "info");
       } else {
         throw new Error(result?.message || "Proje kaydedilemedi.");
       }
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Taslak yerel olarak hazırlandı.");
+      showNotice(error instanceof Error ? error.message : "Taslak bu cihazda hazırlandı.", "info");
     } finally {
       window.setTimeout(() => {
-        setMessages((current) => [...current, { id: `a-${Date.now()}`, role: "assistant", content: `İlk ön izlemen hazır. ${localProject.current_version.pageMode === "multi" ? "Ana sayfa, hakkımızda, hizmetler, çalışmalar ve iletişim sayfalarını ayrı ayrı hazırladım." : "Bölümleri tek ve akıcı bir sayfada topladım."} Şimdi metinleri, bölüm sırasını ve görünümü konuşarak değiştirebilir; ana ekran, hakkımızda, hizmet ve galeri görsellerini ayrı alanlara ekleyebilirsin.` }]);
+        setMessages((current) => [...current, { id: `a-${Date.now()}`, role: "assistant", content: `Taslağın hazır. ${localProject.current_version.pageMode === "multi" ? "Ana sayfa, hakkımızda, hizmetler, çalışmalar ve iletişim sayfalarını ayrı ayrı hazırladım." : "Tüm bölümleri tek ve akıcı bir sayfada topladım."}\n\nŞimdi üç şey yapabilirsin:\n1. Ön izleme sekmesinden siteyi kontrol et.\n2. İçerik sekmesinden gerçek görsellerini ekle.\n3. Sohbete istediğin değişikliği yaz.\n\nHer şey istediğin gibiyse Devam düğmesinden yayın yöntemini seçebilirsin.` }]);
         setBusy(false);
       }, 650);
     }
@@ -314,7 +334,7 @@ export default function StudioPage() {
       setEditSuggestions(suggestStudioInstructions(localSite));
       if (window.innerWidth < 1024) setActiveTab("preview");
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Değişiklik ön izlemeye uygulandı.");
+      showNotice(error instanceof Error ? error.message : "Değişiklik ön izlemeye uygulandı.", "error");
     } finally {
       setBusy(false);
     }
@@ -347,7 +367,7 @@ export default function StudioPage() {
 
   async function saveContent() {
     if (!project || !site || project.id.startsWith("local-")) {
-      setNotice("Değişiklikler ön izlemeye uygulandı.");
+      showNotice("Değişiklikler ön izlemeye uygulandı.", "success");
       return;
     }
     setBusy(true);
@@ -357,9 +377,9 @@ export default function StudioPage() {
       if (!response.ok) throw new Error(result?.message || "Kaydedilemedi.");
       setProject(result.project);
       setProjects((current) => current.map((item) => item.id === result.project.id ? result.project : item));
-      setNotice("Değişiklikler kaydedildi ve yeni sürüm oluşturuldu.");
+      showNotice("Değişiklikler kaydedildi.", "success");
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Kaydedilemedi.");
+      showNotice(error instanceof Error ? error.message : "Kaydedilemedi.", "error");
     } finally {
       setBusy(false);
     }
@@ -367,7 +387,7 @@ export default function StudioPage() {
 
   async function uploadMedia(file: File, slot: "hero" | "logo" | "about" | "service" | "gallery") {
     if (!project || !site || project.id.startsWith("local-")) {
-      setNotice("Görsel yüklemek için projenin hesabına kaydedilmesi gerekiyor.");
+      showNotice("Görsel yüklemek için önce projenin hesabına kaydedilmesi gerekiyor.", "info");
       return;
     }
     setMediaBusy(slot);
@@ -393,9 +413,9 @@ export default function StudioPage() {
       const saveResult = await saveResponse.json().catch(() => null);
       if (!saveResponse.ok) throw new Error(saveResult?.message || "Görsel siteye kaydedilemedi.");
       setProject(saveResult.project);
-      setNotice(slot === "gallery" ? "Görsel galeriye eklendi." : slot === "service" ? "Hizmet görseli eklendi." : slot === "about" ? "Hakkımızda görseli güncellendi." : slot === "hero" ? "Ana ekran görseli güncellendi." : "Logo güncellendi.");
+      showNotice(slot === "gallery" ? "Görsel galeriye eklendi." : slot === "service" ? "Hizmet görseli eklendi." : slot === "about" ? "Hakkımızda görseli güncellendi." : slot === "hero" ? "Ana ekran görseli güncellendi." : "Logo güncellendi.", "success");
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Görsel yüklenemedi.");
+      showNotice(error instanceof Error ? error.message : "Görsel yüklenemedi.", "error");
     } finally {
       setMediaBusy(null);
     }
@@ -440,7 +460,7 @@ export default function StudioPage() {
       });
       const result = await response.json().catch(() => null);
       if (!response.ok) {
-        setNotice(result?.message || "Paket tercihi kaydedilemedi.");
+        showNotice(result?.message || "Yayın tercihi kaydedilemedi.", "error");
         return;
       }
       if (result?.project) {
@@ -453,8 +473,10 @@ export default function StudioPage() {
     if (mode === "monthly") {
       setShowDecision(false);
       setActiveTab("domain");
-      setNotice("Aylık yönetim seçildi. Domainini bağlayabilir ve ödeme onayından sonra yayınlayabilirsin.");
+      showNotice("Panelden yönetim seçildi. Şimdi domainini bağlayabilirsin.", "success");
     } else {
+      setShowDecision(false);
+      showNotice("Talebin kaydedildi. SiteMix destek görüşmesi açılıyor.", "success");
       window.open(whatsappHref(mode), "_blank", "noopener,noreferrer");
     }
   }
@@ -492,18 +514,19 @@ export default function StudioPage() {
   if (!project) {
     const progress = getBriefProgress(brief);
     return (
-      <main className="relative min-h-screen overflow-hidden bg-[#080910] text-white">
+      <main className="relative flex h-[100dvh] flex-col overflow-hidden bg-[#080910] text-white">
         <div className="pointer-events-none absolute -left-48 top-10 h-[520px] w-[520px] rounded-full bg-[#684cf0]/15 blur-[130px]" />
         <div className="pointer-events-none absolute -right-48 bottom-0 h-[520px] w-[520px] rounded-full bg-[#4fe0b1]/10 blur-[140px]" />
+        <AnimatePresence>{notice ? <StudioNoticeBanner notice={notice} onClose={() => setNotice(null)} /> : null}</AnimatePresence>
 
-        <header className="relative z-20 border-b border-white/7 bg-[#090a12]/78 backdrop-blur-2xl">
-          <div className="mx-auto flex h-[72px] max-w-[1380px] items-center justify-between px-4 sm:px-7">
+        <header className="relative z-20 shrink-0 border-b border-white/7 bg-[#090a12]/78 backdrop-blur-2xl">
+          <div className="mx-auto flex h-16 max-w-[1380px] items-center justify-between px-4 sm:h-[72px] sm:px-7">
             <Link href="/" className="flex items-center gap-3"><span className="brand-orb"><span>S</span></span><div><strong className="block text-sm font-black">SiteMix Studio</strong><span className="text-[9px] font-black uppercase tracking-[.18em] text-white/30">Site görüşmesi</span></div></Link>
             <div className="flex items-center gap-2"><span className="hidden text-[11px] font-bold text-white/30 sm:block">{userEmail}</span><button onClick={signOut} className="inline-flex items-center gap-2 rounded-full border border-white/9 bg-white/[0.025] px-4 py-2.5 text-[11px] font-black text-white/50 transition hover:bg-white/7 hover:text-white"><LogOut size={13} />Çıkış</button></div>
           </div>
         </header>
 
-        <div className="relative z-10 mx-auto grid max-w-[1540px] gap-5 px-3 py-4 sm:px-7 sm:py-7 xl:grid-cols-[230px_minmax(0,1fr)_350px]">
+        <div className="relative z-10 mx-auto grid min-h-0 w-full max-w-[1540px] flex-1 gap-5 px-0 py-0 sm:px-7 sm:py-7 xl:grid-cols-[230px_minmax(0,1fr)_350px]">
           <aside className="hidden xl:block">
             <div className="sticky top-[100px] space-y-4">
               <div className="rounded-[26px] border border-white/8 bg-[#0d0e17]/88 p-4 shadow-[0_22px_70px_rgba(0,0,0,.22)] backdrop-blur-xl">
@@ -518,7 +541,7 @@ export default function StudioPage() {
               <div className="rounded-[24px] border border-[#78ebc8]/12 bg-[#78ebc8]/[0.045] p-4"><div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[.15em] text-[#8bf1d2]"><Sparkles size={13} /> Akıllı öneri</div><p className="mt-3 text-[11px] font-medium leading-5 text-white/38">Kısa cevap verebilirsin. Eksik kalan noktalar için sana seçenekler sunacağım.</p></div>
             </div>
           </aside>
-          <section className="flex min-h-[calc(100svh-112px)] flex-col overflow-hidden rounded-[26px] border border-white/9 bg-[#0e0f18]/92 shadow-[0_30px_100px_rgba(0,0,0,.38)] sm:rounded-[32px]">
+          <section className="flex min-h-0 flex-col overflow-hidden border-white/9 bg-[#0e0f18]/92 shadow-[0_30px_100px_rgba(0,0,0,.38)] sm:rounded-[32px] sm:border">
             <div className="relative overflow-hidden border-b border-white/7 px-4 py-4 sm:px-6 sm:py-5">
               <div className="pointer-events-none absolute -right-10 -top-20 h-44 w-44 rounded-full bg-[#7a61ff]/10 blur-3xl" />
               <div className="relative flex items-center justify-between gap-4"><div className="flex items-center gap-3"><span className="studio-avatar studio-avatar-assistant !h-11 !w-11"><WandSparkles size={18} /></span><div><div className="flex items-center gap-2"><p className="text-[10px] font-black uppercase tracking-[.17em] text-[#a598ff]">SiteMix tasarım görüşmesi</p><span className="hidden rounded-full border border-[#7ee9c7]/15 bg-[#7ee9c7]/[0.055] px-2 py-1 text-[8px] font-black uppercase tracking-[.12em] text-[#8ff0d2] sm:inline-flex">Canlı</span></div><h1 className="mt-1.5 text-xl font-black tracking-[-.035em] sm:text-2xl">İşletmeni birlikte tanıyalım.</h1></div></div><div className="shrink-0 rounded-2xl border border-white/7 bg-white/[0.025] px-3.5 py-2.5 text-right"><strong className="block text-lg font-black text-[#8ff3d2]">%{progress}</strong><span className="text-[8px] font-bold uppercase tracking-[.12em] text-white/25">Brif hazır</span></div></div>
@@ -528,9 +551,10 @@ export default function StudioPage() {
             <div className="studio-conversation flex-1 space-y-5 overflow-y-auto px-4 py-6 sm:px-6 sm:py-7">
               {messages.map((message) => <ConversationMessage key={message.id} message={message} />)}
               {busy ? <div className="ml-11 inline-flex gap-1 rounded-full border border-white/7 bg-white/[0.035] px-4 py-3"><span className="dot-typing" /><span className="dot-typing" /><span className="dot-typing" /></div> : null}
+              <div ref={conversationEndRef} />
             </div>
 
-            <div className="border-t border-white/7 bg-[#090a12]/95 p-3 sm:p-4">
+            <div className="shrink-0 border-t border-white/7 bg-[#090a12]/95 p-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:p-4">
               {quickReplies.length ? <div className="mb-3"><div className="mb-2 flex items-center gap-2 px-1 text-[9px] font-black uppercase tracking-[.14em] text-white/25"><Sparkles size={11} className="text-[#9d90ff]" /> Hazır cevaplar</div><PromptSuggestions items={quickReplies} onSelect={(reply) => void continueDiscovery(reply)} busy={busy} compact /></div> : null}
               <StudioComposer value={input} onChange={setInput} onSubmit={sendDiscovery} busy={busy} label="Cevabını yaz" placeholder="İşletmen hakkında doğal bir şekilde yaz..." />
             </div>
@@ -563,23 +587,23 @@ export default function StudioPage() {
   }
 
   return (
-    <main className="studio-app min-h-screen bg-[#090a12] text-white">
-      <header className="sticky top-0 z-50 flex h-[72px] items-center justify-between border-b border-white/8 bg-[#090a12]/90 px-3 backdrop-blur-2xl sm:px-5">
+    <main className="studio-app flex h-[100dvh] flex-col overflow-hidden bg-[#090a12] text-white">
+      <header className="relative z-50 flex h-16 shrink-0 items-center justify-between border-b border-white/8 bg-[#090a12]/90 px-3 backdrop-blur-2xl sm:h-[72px] sm:px-5">
         <div className="flex min-w-0 items-center gap-3"><Link href="/" className="brand-orb !h-10 !w-10 !rounded-[13px]"><span>S</span></Link><div className="hidden h-7 w-px bg-white/8 sm:block" /><div className="min-w-0"><div className="flex items-center gap-2">{projects.length > 1 ? <select value={project.id} onChange={(event) => void openProject(event.target.value)} className="max-w-[180px] bg-transparent text-sm font-black text-white outline-none sm:max-w-[260px]">{projects.map((item) => <option key={item.id} value={item.id} className="bg-[#11121b]">{item.title}</option>)}</select> : <p className="truncate text-sm font-black">{site?.businessName}</p>}<span className="hidden rounded-full border border-white/8 bg-white/[0.035] px-2 py-1 text-[8px] font-black uppercase tracking-[.11em] text-white/32 sm:inline-flex">Studio</span></div><p className="flex items-center gap-1.5 truncate text-[10px] font-bold text-white/32"><span className={`h-1.5 w-1.5 rounded-full ${project.status === "published" ? "bg-[#79ecc9]" : "bg-[#f0bd72]"}`} />{project.status === "published" ? "Yayında" : isTemporaryPreview ? "Geçici ön izleme" : "Yayına hazırlanıyor"} · {site?.sector}</p></div></div>
         <div className="flex items-center gap-2">
           <Link href="/" className="hidden h-10 items-center gap-2 rounded-full border border-white/9 bg-white/[0.025] px-4 text-[11px] font-black text-white/48 transition hover:bg-white/[0.06] hover:text-white md:inline-flex"><Plus size={14} /> Yeni site</Link>
           <a href={projectUrl} target="_blank" className="hidden h-10 items-center gap-2 rounded-full border border-white/9 bg-white/[0.025] px-4 text-[11px] font-black text-white/48 transition hover:bg-white/[0.06] hover:text-white sm:inline-flex"><ExternalLink size={14} /> Ön izleme</a>
-          <button type="button" onClick={signOut} className="grid h-10 w-10 place-items-center rounded-full border border-white/9 bg-white/[0.025] text-white/42 transition hover:bg-white/[0.06] hover:text-white" aria-label="Çıkış yap"><LogOut size={15} /></button>
+          <button type="button" onClick={signOut} className="hidden h-10 w-10 place-items-center rounded-full border border-white/9 bg-white/[0.025] text-white/42 transition hover:bg-white/[0.06] hover:text-white sm:grid" aria-label="Çıkış yap"><LogOut size={15} /></button>
           <button type="button" onClick={() => setShowDecision(true)} className="send-button inline-flex min-h-10 items-center gap-2 rounded-full px-4 text-xs font-black text-[#0a0b13] sm:px-5"><Rocket size={14} /> <span className="hidden sm:inline">Yayınlamaya geç</span><span className="sm:hidden">Devam</span></button>
         </div>
       </header>
 
-      {isTemporaryPreview ? <div className="relative z-40 flex min-h-10 items-center justify-center gap-3 border-b border-amber-300/15 bg-amber-300/[0.07] px-3 py-2 text-center text-[10px] font-bold text-amber-100/72"><span className="hidden h-1.5 w-1.5 rounded-full bg-amber-300 sm:block" /><span>Bu geçici bir ön izlemedir. Google’da görünür olmak ve siteni korumak için paket seçmelisin. Paket seçilmezse {previewDaysLeft} gün içinde silinir.</span><button type="button" onClick={() => setShowDecision(true)} className="shrink-0 rounded-full border border-amber-200/20 bg-amber-100/10 px-3 py-1.5 text-[9px] font-black text-amber-100">Paket seç</button></div> : null}
+      {isTemporaryPreview ? <div className="relative z-40 flex shrink-0 items-center justify-center gap-2 border-b border-amber-300/15 bg-amber-300/[0.07] px-3 py-2 text-[9px] font-bold leading-4 text-amber-100/72 sm:gap-3 sm:text-center sm:text-[10px]"><span className="hidden h-1.5 w-1.5 rounded-full bg-amber-300 sm:block" /><span className="flex-1 sm:flex-none">Geçici ön izleme · Paket seçilmezse {previewDaysLeft} gün içinde silinir.</span><button type="button" onClick={() => setShowDecision(true)} className="shrink-0 rounded-full border border-amber-200/20 bg-amber-100/10 px-3 py-1.5 text-[9px] font-black text-amber-100">Yayınla</button></div> : null}
 
-      {notice ? <div className="fixed left-1/2 top-[78px] z-[70] w-[calc(100%-24px)] max-w-lg -translate-x-1/2 rounded-2xl border border-white/10 bg-[#1a1b28]/95 px-4 py-3 text-center text-xs font-bold text-white/70 shadow-2xl backdrop-blur-xl" onClick={() => setNotice("")}>{notice}</div> : null}
+      <AnimatePresence>{notice ? <StudioNoticeBanner notice={notice} onClose={() => setNotice(null)} aboveNavigation /> : null}</AnimatePresence>
 
-      <div className="grid min-h-[calc(100vh-72px)] lg:grid-cols-[440px_1fr] xl:grid-cols-[470px_1fr]">
-        <aside className={`${activeTab === "preview" ? "hidden lg:flex" : "flex"} min-h-0 flex-col border-r border-white/8 bg-[#0d0e17]`}>
+      <div className="grid min-h-0 flex-1 lg:grid-cols-[440px_1fr] xl:grid-cols-[470px_1fr]">
+        <aside className={`${activeTab === "preview" ? "hidden lg:flex" : "flex"} min-h-0 flex-col overflow-hidden border-r border-white/8 bg-[#0d0e17] pb-[72px] lg:pb-0`}>
           <div className="border-b border-white/8 px-3 pb-3 pt-4">
             <div className="mb-3 flex items-center justify-between px-1"><div><p className="text-[9px] font-black uppercase tracking-[.16em] text-[#9f91ff]">Proje çalışma alanı</p><p className="mt-1 text-[11px] font-semibold text-white/28">Konuş, düzenle ve anında gör</p></div><span className="grid h-9 w-9 place-items-center rounded-xl border border-[#82ebca]/12 bg-[#82ebca]/[0.05] text-[#82ebca]"><Sparkles size={15} /></span></div>
             <div className="grid grid-cols-3 gap-1 rounded-2xl border border-white/7 bg-black/15 p-1">
@@ -593,8 +617,9 @@ export default function StudioPage() {
               {!site?.media?.hero ? <button type="button" onClick={() => setActiveTab("content")} className="group flex w-full items-start gap-3 rounded-[22px] border border-[#7ce8c5]/14 bg-[#7ce8c5]/[0.045] p-4 text-left transition hover:bg-[#7ce8c5]/[0.075]"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[#7ce8c5]/10 text-[#89efd2]"><ImagePlus size={18} /></span><span className="flex-1"><span className="block text-[9px] font-black uppercase tracking-[.15em] text-[#89efd2]">Sıradaki güçlü adım</span><strong className="mt-1.5 block text-sm">Ana ekran için gerçek fotoğraf ekle</strong><span className="mt-1.5 block text-[10px] font-medium leading-5 text-white/35">{getStudioVisualPrompt(site as StudioSite)} sitenin güvenini ve kalitesini belirgin biçimde yükseltir.</span></span><ChevronRight size={16} className="mt-3 text-white/25 transition group-hover:translate-x-1 group-hover:text-white/60" /></button> : null}
               {messages.map((message) => <ConversationMessage key={message.id} message={message} />)}
               {busy ? <div className="inline-flex gap-1 rounded-full bg-white/6 px-4 py-3"><span className="dot-typing" /><span className="dot-typing" /><span className="dot-typing" /></div> : null}
+              <div ref={conversationEndRef} />
             </div>
-            <div className="border-t border-white/8 bg-[#090a12]/96 p-3"><div className="mb-3 flex items-center justify-between px-1"><span className="text-[9px] font-black uppercase tracking-[.15em] text-white/24">Önerilen düzenlemeler</span><span className="text-[9px] font-bold text-[#82ebca]/55">Ön izlemeye anında uygulanır</span></div><PromptSuggestions items={editSuggestions.slice(0, 4)} onSelect={(suggestion) => void runInstruction(suggestion)} busy={busy} compact /><div className={editSuggestions.length ? "mt-3" : ""}><StudioComposer value={input} onChange={setInput} onSubmit={sendInstruction} busy={busy} label="Tasarım komutu" placeholder="Başlığı kısalt, hizmetleri yukarı al, daha premium yap..." /></div></div></>
+            <div className="shrink-0 border-t border-white/8 bg-[#090a12]/96 p-3"><div className="mb-3 flex items-center justify-between px-1"><span className="text-[9px] font-black uppercase tracking-[.15em] text-white/24">Önerilen düzenlemeler</span><span className="hidden text-[9px] font-bold text-[#82ebca]/55 sm:inline">Ön izlemeye anında uygulanır</span></div><PromptSuggestions items={editSuggestions.slice(0, 4)} onSelect={(suggestion) => void runInstruction(suggestion)} busy={busy} compact /><div className={editSuggestions.length ? "mt-3" : ""}><StudioComposer value={input} onChange={setInput} onSubmit={sendInstruction} busy={busy} label="Tasarım komutu" placeholder="Başlığı kısalt, hizmetleri yukarı al, daha premium yap..." /></div></div></>
           ) : null}
 
           {activeTab === "content" && site ? (
@@ -634,22 +659,45 @@ export default function StudioPage() {
           ) : null}
         </aside>
 
-        <section className={`${activeTab !== "preview" && activeTab !== "chat" && activeTab !== "content" && activeTab !== "domain" ? "hidden" : "flex"} min-w-0 flex-col bg-[#11121b]`}>
+        <section className={`${activeTab === "preview" ? "flex" : "hidden lg:flex"} min-h-0 min-w-0 flex-col bg-[#11121b] pb-[72px] lg:pb-0`}>
           <div className="flex h-14 items-center justify-between border-b border-white/8 px-3 sm:px-5"><div className="flex items-center gap-1 rounded-xl border border-white/7 bg-black/15 p-1"><button onClick={() => setPreviewMobile(false)} className={`flex items-center gap-2 rounded-lg px-3 py-2 text-[10px] font-black transition ${!previewMobile ? "bg-white/10 text-white" : "text-white/30"}`}><Laptop size={13} />Masaüstü</button><button onClick={() => setPreviewMobile(true)} className={`flex items-center gap-2 rounded-lg px-3 py-2 text-[10px] font-black transition ${previewMobile ? "bg-white/10 text-white" : "text-white/30"}`}><Smartphone size={13} />Mobil</button></div><div className="flex items-center gap-2"><span className="hidden items-center gap-2 text-[9px] font-black uppercase tracking-[.13em] text-white/22 sm:flex"><CircleDot size={10} className="text-[#82ebca]" /> Canlı ön izleme</span><button onClick={() => setActiveTab("chat")} className="rounded-full border border-white/10 px-3 py-2 text-[10px] font-black text-white/55 lg:hidden">Sohbete dön</button></div></div>
           <div className="flex flex-1 items-start justify-center overflow-auto p-2 sm:p-5 lg:p-8"><div className={`overflow-hidden rounded-[24px] border border-white/10 bg-white shadow-[0_35px_100px_rgba(0,0,0,.42)] transition-all ${previewMobile ? "w-[390px] max-w-full" : "w-full max-w-[1120px]"}`}>{site ? <SitePreview site={site} compact /> : null}</div></div>
         </section>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-white/10 bg-[#0d0e17]/94 p-2 backdrop-blur-xl lg:hidden">
+      <nav className="studio-mobile-nav fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-white/10 bg-[#0d0e17]/94 px-2 pt-2 backdrop-blur-xl lg:hidden">
         {([{ id: "chat", label: "Sohbet", icon: MessageCircle }, { id: "preview", label: "Ön izleme", icon: Laptop }, { id: "content", label: "İçerik", icon: FileText }, { id: "domain", label: "Domain", icon: Globe2 }] as const).map(({ id, label, icon: Icon }) => <button key={id} onClick={() => setActiveTab(id)} className={`flex flex-col items-center gap-1.5 rounded-xl py-2 text-[9px] font-black ${activeTab === id ? "bg-white/10 text-white" : "text-white/30"}`}><Icon size={15} />{label}</button>)}
       </nav>
 
-      <AnimatePresence>{showDecision ? <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] overflow-y-auto bg-black/78 p-3 backdrop-blur-xl sm:p-6"><div className="mx-auto flex min-h-full max-w-5xl items-center"><motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="w-full rounded-[28px] border border-white/10 bg-[#13141e] p-5 shadow-2xl sm:rounded-[36px] sm:p-8"><div className="flex items-start justify-between"><div><p className="section-kicker">Ön izlemen hazır</p><h2 className="mt-3 text-3xl font-black tracking-[-0.05em] sm:text-5xl">Bundan sonra nasıl ilerleyelim?</h2></div><button onClick={() => setShowDecision(false)} className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/7 text-xl text-white/55">×</button></div><div className="mt-7 grid gap-3 lg:grid-cols-3">
-        <DecisionCard badge="Aylık" title="Kendim yöneteyim" text="İçerik, hizmet, fiyat, görsel ve domain kontrolleri kendi panelinde olsun." action="Aylık yönetime geç" onClick={() => chooseManagement("monthly")} featured />
-        <DecisionCard badge="Yıllık" title="SiteMix kursun" text="Yıllık kurulum isteğin proje özetiyle doğrudan SiteMix ekibine ulaşsın." action="WhatsApp’tan gönder" onClick={() => chooseManagement("yearly")} />
-        <DecisionCard badge="Özel destek" title="SiteMix yönetsin" text="Güncellemeler ve özel sektör ihtiyaçları için tüm süreci bize bırak." action="Ekibe yönlendir" onClick={() => chooseManagement("managed")} />
+      <AnimatePresence>{showDecision ? <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] overflow-y-auto bg-black/78 p-3 backdrop-blur-xl sm:p-6"><div className="mx-auto flex min-h-full max-w-5xl items-center"><motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="w-full rounded-[28px] border border-white/10 bg-[#13141e] p-5 shadow-2xl sm:rounded-[36px] sm:p-8"><div className="flex items-start justify-between gap-4"><div><p className="section-kicker">Tasarım tamamlandı</p><h2 className="mt-3 text-3xl font-black tracking-[-0.05em] sm:text-5xl">Siteni nasıl yayınlayalım?</h2><p className="mt-3 max-w-2xl text-xs font-medium leading-6 text-white/40 sm:text-sm">Ön izlemeni düzenlemeye devam edebilirsin. Yayına geçmek istediğinde sana uygun yönetim yöntemini seçmen yeterli.</p></div><button onClick={() => setShowDecision(false)} className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/7 text-white/55" aria-label="Pencereyi kapat"><X size={18} /></button></div><div className="mt-7 grid gap-3 lg:grid-cols-3">
+        <DecisionCard badge="Panelden yönetim" title="Kendim yöneteyim" text="İçerik, hizmet, görsel ve domain ayarlarını kendi Studio panelinden yönet." action="Bu yöntemle devam et" onClick={() => chooseManagement("monthly")} featured />
+        <DecisionCard badge="Kurulum desteği" title="SiteMix kursun" text="Proje özetini ekibe gönder; domain ve yayın kurulumunu birlikte tamamlayalım." action="Destek görüşmesini aç" onClick={() => chooseManagement("yearly")} />
+        <DecisionCard badge="Tam yönetim" title="SiteMix yönetsin" text="İçerik güncellemeleri ve sektöre özel geliştirmeler dahil yönetimi bize bırak." action="Ekibe yönlendir" onClick={() => chooseManagement("managed")} />
       </div></motion.div></div></motion.div> : null}</AnimatePresence>
     </main>
+  );
+}
+
+function StudioNoticeBanner({ notice, onClose, aboveNavigation = false }: { notice: StudioNotice; onClose: () => void; aboveNavigation?: boolean }) {
+  const Icon = notice.tone === "success" ? CheckCircle2 : notice.tone === "error" ? AlertCircle : Info;
+  const title = notice.tone === "success" ? "Tamamlandı" : notice.tone === "error" ? "İşlem tamamlanamadı" : "Bilgilendirme";
+  const colors = notice.tone === "success"
+    ? "border-[#79ecc9]/20 bg-[#10251f]/96 text-[#a6f5dc]"
+    : notice.tone === "error"
+      ? "border-rose-300/20 bg-[#2a151b]/96 text-rose-100"
+      : "border-[#a99cff]/20 bg-[#19172a]/96 text-[#d7d0ff]";
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 18, scale: .98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 12, scale: .98 }}
+      className={`fixed left-1/2 z-[80] flex w-[calc(100%-24px)] max-w-md -translate-x-1/2 items-start gap-3 rounded-2xl border px-3.5 py-3 shadow-2xl backdrop-blur-xl ${aboveNavigation ? "bottom-[calc(78px+env(safe-area-inset-bottom))] lg:bottom-6" : "bottom-[max(12px,env(safe-area-inset-bottom))]"} ${colors}`}
+      role={notice.tone === "error" ? "alert" : "status"}
+    >
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/[0.07]"><Icon size={17} /></span>
+      <div className="min-w-0 flex-1"><strong className="block text-[10px] font-black uppercase tracking-[.13em]">{title}</strong><p className="mt-1 text-[11px] font-semibold leading-5 text-white/65">{notice.message}</p></div>
+      <button type="button" onClick={onClose} className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-white/35 transition hover:bg-white/8 hover:text-white" aria-label="Bildirimi kapat"><X size={15} /></button>
+    </motion.div>
   );
 }
 
@@ -668,16 +716,16 @@ function DiscoveryStep({ index, title, active, done }: { index: string; title: s
 function ConversationMessage({ message }: { message: ChatMessage }) {
   const assistant = message.role === "assistant";
   return (
-    <motion.div initial={{ opacity: 0, y: 10, scale: .985 }} animate={{ opacity: 1, y: 0, scale: 1 }} className={`group flex gap-3 ${assistant ? "justify-start" : "justify-end"}`}>
+    <motion.div initial={{ opacity: 0, y: 10, scale: .985 }} animate={{ opacity: 1, y: 0, scale: 1 }} className={`group flex min-w-0 gap-2 sm:gap-3 ${assistant ? "justify-start" : "justify-end"}`}>
       {assistant ? <span className="studio-avatar studio-avatar-assistant"><WandSparkles size={15} strokeWidth={2.2} /></span> : null}
-      <div className={`max-w-[88%] sm:max-w-[76%] ${assistant ? "" : "text-right"}`}>
+      <div className={`min-w-0 ${assistant ? "max-w-[calc(100%-42px)] sm:max-w-[76%]" : "max-w-[92%] sm:max-w-[76%] text-right"}`}>
         <div className={`mb-1.5 flex items-center gap-2 px-1 text-[9px] font-black uppercase tracking-[.14em] text-white/24 ${assistant ? "" : "justify-end"}`}>
-          <span>{assistant ? "SiteMix tasarım danışmanı" : "Sen"}</span>
-          {assistant ? <span className="inline-flex items-center gap-1 text-[#82ebca]/70"><CircleDot size={9} /> Aktif</span> : null}
+          <span>{assistant ? <><span className="sm:hidden">SiteMix</span><span className="hidden sm:inline">SiteMix tasarım danışmanı</span></> : "Sen"}</span>
+          {assistant ? <span className="hidden items-center gap-1 text-[#82ebca]/70 sm:inline-flex"><CircleDot size={9} /> Aktif</span> : null}
         </div>
-        <div className={`studio-message whitespace-pre-line px-4 py-3.5 text-left text-sm font-semibold leading-6 ${assistant ? "studio-message-assistant text-white/72" : "studio-message-user text-white"}`}>{message.content}</div>
+        <div className={`studio-message whitespace-pre-line break-words px-3.5 py-3 text-left text-[13px] font-semibold leading-[1.65] sm:px-4 sm:py-3.5 sm:text-sm sm:leading-6 ${assistant ? "studio-message-assistant text-white/72" : "studio-message-user text-white"}`}>{message.content}</div>
       </div>
-      {!assistant ? <span className="studio-avatar studio-avatar-user">S</span> : null}
+      {!assistant ? <span className="studio-avatar studio-avatar-user hidden sm:grid">S</span> : null}
     </motion.div>
   );
 }
@@ -685,9 +733,9 @@ function ConversationMessage({ message }: { message: ChatMessage }) {
 function PromptSuggestions({ items, onSelect, busy, compact = false }: { items: string[]; onSelect: (value: string) => void; busy: boolean; compact?: boolean }) {
   if (!items.length) return null;
   return (
-    <div className={`grid gap-2 ${compact ? "sm:grid-cols-2" : "sm:grid-cols-2 xl:grid-cols-1"}`}>
+    <div className={`studio-suggestions flex gap-2 overflow-x-auto pb-1 sm:grid sm:overflow-visible sm:pb-0 ${compact ? "sm:grid-cols-2" : "sm:grid-cols-2 xl:grid-cols-1"}`}>
       {items.map((item, index) => (
-        <button key={item} type="button" onClick={() => onSelect(item)} disabled={busy} className="studio-suggestion group flex min-h-12 items-center gap-3 text-left disabled:opacity-40">
+        <button key={item} type="button" onClick={() => onSelect(item)} disabled={busy} className="studio-suggestion group flex min-h-11 min-w-[min(76vw,280px)] items-center gap-3 text-left disabled:opacity-40 sm:min-h-12 sm:min-w-0">
           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl border border-white/8 bg-white/[0.035] text-[#ad9fff]"><Sparkles size={13} /></span>
           <span className="flex-1 text-[11px] font-bold leading-4 text-white/58">{item}</span>
           <ChevronRight size={14} className="text-white/18 transition group-hover:translate-x-0.5 group-hover:text-white/55" />
@@ -701,16 +749,16 @@ function PromptSuggestions({ items, onSelect, busy, compact = false }: { items: 
 function StudioComposer({ value, onChange, onSubmit, busy, placeholder, label }: { value: string; onChange: (value: string) => void; onSubmit: (event: FormEvent<HTMLFormElement>) => void; busy: boolean; placeholder: string; label: string }) {
   return (
     <form onSubmit={onSubmit} className="studio-composer">
-      <div className="flex items-center justify-between gap-3 border-b border-white/[0.055] px-4 py-3">
+      <div className="flex items-center justify-between gap-3 border-b border-white/[0.055] px-3 py-2 sm:px-4 sm:py-3">
         <span className="inline-flex items-center gap-2 text-[9px] font-black uppercase tracking-[.16em] text-[#9f91ff]"><Sparkles size={12} />{label}</span>
         <span className="text-[9px] font-bold text-white/18">{value.length}/1200</span>
       </div>
-      <div className="flex items-end gap-3 p-3">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/7 bg-white/[0.025] text-white/25" aria-hidden="true"><Sparkles size={16} /></span>
-        <TextareaAutosize value={value} onChange={(event) => onChange(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); if (value.trim() && !busy) event.currentTarget.form?.requestSubmit(); } }} minRows={1} maxRows={6} maxLength={1200} placeholder={placeholder} className="min-h-10 flex-1 resize-none bg-transparent px-1 py-2 text-sm font-semibold leading-6 text-white outline-none placeholder:text-white/22" />
+      <div className="flex items-end gap-2 p-2.5 sm:gap-3 sm:p-3">
+        <span className="hidden h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/7 bg-white/[0.025] text-white/25 sm:grid" aria-hidden="true"><Sparkles size={16} /></span>
+        <TextareaAutosize value={value} onChange={(event) => onChange(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); if (value.trim() && !busy) event.currentTarget.form?.requestSubmit(); } }} minRows={1} maxRows={5} maxLength={1200} placeholder={placeholder} className="min-h-10 min-w-0 flex-1 resize-none bg-transparent px-1 py-2 text-sm font-semibold leading-6 text-white outline-none placeholder:text-white/22" />
         <button disabled={!value.trim() || busy} className="studio-send grid h-11 w-11 shrink-0 place-items-center rounded-[14px] text-[#090a12] disabled:cursor-not-allowed disabled:opacity-25" aria-label="Mesajı gönder"><ArrowUp size={18} strokeWidth={2.8} /></button>
       </div>
-      <div className="flex items-center justify-between gap-3 px-4 pb-3 text-[9px] font-semibold text-white/18"><span>Enter gönderir · Shift + Enter yeni satır</span><span className="hidden sm:inline">Kararların projeye kaydedilir</span></div>
+      <div className="hidden items-center justify-between gap-3 px-4 pb-3 text-[9px] font-semibold text-white/18 sm:flex"><span>Enter gönderir · Shift + Enter yeni satır</span><span>Kararların projeye kaydedilir</span></div>
     </form>
   );
 }

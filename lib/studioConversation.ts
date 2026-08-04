@@ -163,16 +163,19 @@ function questionFor(field: BriefField, brief: StudioBrief) {
 
 function summary(brief: StudioBrief) {
   return [
-    `${brief.businessName} için gerekli bilgileri topladım.`,
-    `📍 ${brief.location}`,
-    `🧭 ${brief.sectorLabel}`,
-    `🎯 ${brief.goal}`,
-    `✨ ${brief.businessDetails}`,
-    `☎️ ${brief.whatsapp || brief.phone || "İletişim numarası daha sonra eklenecek"}`,
-    `🎨 ${brief.style}`,
-    `📷 ${brief.photoPreference === "upload" ? "Görseller taslaktan sonra yüklenecek" : brief.photoPreference === "later" ? "Görseller daha sonra eklenecek" : "Görsel alanları hazır bırakılacak"}`,
-    `📄 ${brief.pageMode === "multi" ? "Çok sayfalı yapı" : "Tek sayfalı yapı"}`,
-    "Bu özete göre ilk taslağı oluşturmamı ister misin?",
+    `${brief.businessName} için site planını tamamladım. Son kez kontrol edelim:`,
+    "",
+    `• Sektör: ${brief.sectorLabel}`,
+    `• Hizmet bölgesi: ${brief.location}`,
+    `• Hizmetler: ${brief.services.join(", ")}`,
+    `• Ana hedef: ${brief.goal}`,
+    `• Öne çıkan yön: ${brief.businessDetails}`,
+    `• İletişim: ${brief.whatsapp || brief.phone || "Daha sonra eklenecek"}`,
+    `• Görsel tarz: ${brief.style}`,
+    `• Fotoğraflar: ${brief.photoPreference === "upload" ? "Taslak açılınca yüklenecek" : brief.photoPreference === "later" ? "Daha sonra eklenecek" : "Görsel alanları hazır bırakılacak"}`,
+    `• Site yapısı: ${brief.pageMode === "multi" ? "Çok sayfalı" : "Tek sayfalı"}`,
+    "",
+    "Bilgiler doğruysa taslağı oluşturabilirim. Değişiklik varsa önce onu düzeltelim.",
   ].join("\n");
 }
 
@@ -363,7 +366,7 @@ export function advanceStudioConversation(current: StudioBrief, rawMessage: stri
     return {
       brief,
       reply: shouldBuild ? "Harika. Onayını aldım; şimdi bu bilgilerle ilk taslağını hazırlıyorum." : summary(brief),
-      quickReplies: shouldBuild ? [] : ["Taslağı oluştur", "Bir bilgiyi değiştirelim"],
+      quickReplies: shouldBuild ? [] : ["Evet, taslağı oluştur", "Bir bilgiyi değiştirelim"],
       ready: true,
       shouldBuild,
       progress: 100,
