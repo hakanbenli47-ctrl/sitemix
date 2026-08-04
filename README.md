@@ -15,14 +15,14 @@ SiteMix Studio, işletmelerin konuşarak mobil uyumlu web sitesi oluşturduğu; 
 ## Kurulum
 
 1. `.env.example` içindeki değişkenleri yerel `.env.local` ve Vercel proje ayarlarında tanımlayın.
-2. Yeni kurulumda Supabase SQL editöründe `supabase/sitemix_studio_setup.sql` dosyasını bir kez çalıştırın. Mevcut Studio kurulumu için yalnızca `supabase/studio_provisioning_upgrade.sql` yükseltmesini çalıştırın.
+2. Yeni kurulumda Supabase SQL editöründe `supabase/sitemix_studio_setup.sql` dosyasını bir kez çalıştırın. GitHub/Vercel aktarımı için ayrıca bir SQL yükseltmesi gerekmez; dağıtım bilgisi proje verisinde tutulur.
 3. Supabase Authentication içinde Google sağlayıcısını etkinleştirin.
 4. Supabase Site URL ve Redirect URL listesine yerel adresi, `https://www.sitemix.com.tr/studio` ve `https://www.sitemix.com.tr/admin/giris` adreslerini ekleyin.
 5. Her müşteri sitesi için ayrı depo oluştururken sistem önce SiteMix AI'daki mevcut `GITHUB_TOKEN` ve `GITHUB_OWNER` değişkenlerini kullanır; istenirse bunlar `GITHUB_STUDIO_TOKEN` ve `GITHUB_STUDIO_OWNER` ile ayrı tutulabilir. Vercel projesinin de otomatik oluşturulması için `VERCEL_TOKEN` ve gerekiyorsa `VERCEL_TEAM_ID` tanımlanmalıdır. Vercel anahtarı yoksa GitHub deposu ve yayın paketi yine hazırlanır, admin panelinde Vercel bağlantısı bekliyor olarak gösterilir.
 
 ## Yayın düzeni
 
-Kullanıcı yayın/ödeme seçeneğine geçtiğinde siteye özel, özel bir GitHub deposu ve ona bağlı ayrı bir Vercel projesi hazırlanır. Aylık ödeme onaylanan kullanıcıların Studio değişiklikleri bu site deposuna aktarılır. Tek seferlik kurulum ve SiteMix yönetimi seçeneklerinde müşteri düzenleme paneli kilitli kalır. Admin panelinden domain bağlandığında `robots.txt`, `sitemap.xml` ve canonical adresleri site deposunda otomatik güncellenir.
+Kullanıcı yayın/ödeme seçeneğine geçtiğinde siteye özel, özel bir GitHub deposu ve ona bağlı ayrı bir Vercel projesi hazırlanır. Bu aktarım için ayrı bir dağıtım tablosu kullanılmaz; güncel GitHub/Vercel bilgisi projenin kendi JSON verisinde saklanır ve admin panelinde gösterilir. Aylık ödeme onaylanan kullanıcıların Studio değişiklikleri bu site deposuna aktarılır. Tek seferlik kurulum ve SiteMix yönetimi seçeneklerinde müşteri düzenleme paneli kilitli kalır. Admin panelinden domain bağlandığında `robots.txt`, `sitemap.xml` ve canonical adresleri site deposunda otomatik güncellenir.
 
 ## Komutlar
 
