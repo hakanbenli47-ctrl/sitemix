@@ -7,8 +7,8 @@ type GithubRepository = { id: number; name: string; full_name: string; html_url:
 type DeploymentRecord = { id?: string; project_id: string; github_repo_name?: string | null; github_repo_full_name?: string | null; github_repo_url?: string | null; vercel_project_id?: string | null; vercel_project_name?: string | null; vercel_url?: string | null; status?: string; domain?: string | null; last_error?: string | null };
 
 function githubHeaders() {
-  const token = process.env.GITHUB_STUDIO_TOKEN;
-  if (!token) throw new Error("GITHUB_STUDIO_TOKEN eksik.");
+  const token = process.env.GITHUB_STUDIO_TOKEN || process.env.GITHUB_TOKEN;
+  if (!token) throw new Error("GITHUB_STUDIO_TOKEN veya GITHUB_TOKEN eksik.");
   return {
     Accept: "application/vnd.github+json",
     Authorization: `Bearer ${token}`,
@@ -52,7 +52,7 @@ function repositoryName(project: Pick<StudioProject, "slug" | "id">) {
 }
 
 async function ensureGithubRepository(project: StudioProject) {
-  const owner = (process.env.GITHUB_STUDIO_OWNER || "hakanbenli47-ctrl").trim();
+  const owner = (process.env.GITHUB_STUDIO_OWNER || process.env.GITHUB_OWNER || "hakanbenli47-ctrl").trim();
   const name = repositoryName(project);
   const existing = await githubRequest<GithubRepository>(`/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`, undefined, [404]);
   if (existing.response.ok) return existing.result;
@@ -133,19 +133,19 @@ async function saveDeployment(projectId: string, patch: Record<string, unknown>)
 }
 
 export async function provisionStudioProject(project: StudioProject) {
-  const configured = Boolean(process.env.GITHUB_STUDIO_TOKEN && process.env.VERCEL_TOKEN);
-  if (!configured) {
+  const githubConfigured = Boolean(process.env.GITHUB_STUDIO_TOKEN || process.env.GITHUB_TOKEN);
+  if (!githubConfigured) {
     return saveDeployment(project.id, {
       status: "configuration_required",
-      last_error: "GITHUB_STUDIO_TOKEN ve VERCEL_TOKEN ortam değişkenleri eklenmeli.",
+      last_error: "SiteMix AI projesindeki GITHUB_TOKEN ve GITHUB_OWNER değişkenleri bu projeye de eklenmeli.",
     });
   }
 
   await saveDeployment(project.id, { status: "provisioning", last_error: null });
   try {
     const repository = await ensureGithubRepository(project);
-    const vercelProject = await ensureVercelProject(repository, project);
-    const fallbackHost = vercelProject.name ? `${vercelProject.name}.vercel.app` : undefined;
+    const vercelProject = process.env.VERCEL_TOKEN ? await ensureVercelProject(repository, project) : null;
+    const fallbackHost = `${vercelProject?.name || repository.name}.vercel.app`;
     const commitSha = await commitRepositoryFiles(repository, buildStudioRepositoryFiles(project.current_version, undefined, fallbackHost), "Publish SiteMix website");
     return saveDeployment(project.id, {
       github_repo_id: repository.id,
@@ -153,11 +153,11 @@ export async function provisionStudioProject(project: StudioProject) {
       github_repo_full_name: repository.full_name,
       github_repo_url: repository.html_url,
       github_commit_sha: commitSha,
-      vercel_project_id: vercelProject.id || null,
-      vercel_project_name: vercelProject.name || repository.name,
+      vercel_project_id: vercelProject?.id || null,
+      vercel_project_name: vercelProject?.name || repository.name,
       vercel_url: fallbackHost ? `https://${fallbackHost}` : null,
-      status: "ready",
-      last_error: null,
+      status: vercelProject ? "ready" : "vercel_connection_required",
+      last_error: vercelProject ? null : "GitHub deposu hazır. Tam otomatik Vercel projesi oluşturmak için VERCEL_TOKEN eklenmeli; dilerseniz depoyu Vercel panelinden de bir kez içe aktarabilirsiniz.",
       provisioned_at: new Date().toISOString(),
     });
   } catch (error) {

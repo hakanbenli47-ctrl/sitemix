@@ -13,13 +13,19 @@ create table if not exists public.studio_deployments (
   vercel_project_name text,
   vercel_url text,
   domain text,
-  status text not null default 'queued' check (status in ('queued','configuration_required','provisioning','ready','error','archived')),
+  status text not null default 'queued' check (status in ('queued','configuration_required','provisioning','vercel_connection_required','ready','error','archived')),
   last_error text,
   provisioned_at timestamptz,
   seo_synced_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.studio_deployments
+drop constraint if exists studio_deployments_status_check;
+alter table public.studio_deployments
+add constraint studio_deployments_status_check
+check (status in ('queued','configuration_required','provisioning','vercel_connection_required','ready','error','archived'));
 
 create index if not exists studio_deployments_status_idx on public.studio_deployments(status, updated_at desc);
 drop trigger if exists studio_deployments_touch on public.studio_deployments;
