@@ -1,6 +1,6 @@
 import { sectorCatalog } from "@/lib/sitemixStudio";
 
-export type BriefField = "sector" | "businessName" | "location" | "services" | "goal" | "contact" | "style" | "photos" | "pageMode";
+export type BriefField = "sector" | "businessName" | "location" | "services" | "businessDetails" | "goal" | "contact" | "style" | "photos" | "pageMode";
 
 export type StudioBrief = {
   sectorId?: string;
@@ -8,6 +8,7 @@ export type StudioBrief = {
   businessName?: string;
   location?: string;
   services: string[];
+  businessDetails?: string;
   goal?: string;
   phone?: string;
   whatsapp?: string;
@@ -31,7 +32,7 @@ export type ConversationResult = {
 
 export const emptyStudioBrief: StudioBrief = { services: [], notes: [] };
 
-const requiredFields: BriefField[] = ["sector", "businessName", "location", "services", "goal", "contact", "style", "photos", "pageMode"];
+const requiredFields: BriefField[] = ["sector", "businessName", "location", "services", "businessDetails", "goal", "contact", "style", "photos", "pageMode"];
 
 const greetings = /^(merhaba|selam|selamlar|hey|iyi günler|iyi akşamlar|günaydın|mrb)[.!\s]*$/i;
 const buildRequest = /(taslağ[ıi]?|siteyi|sitemi).*(oluştur|hazırla|göster)|(oluştur|hazırla).*(taslağ[ıi]?|siteyi|sitemi)|^hazırım$|^başla$/i;
@@ -91,6 +92,12 @@ function inferStyle(message: string) {
   return titleCase([...found, ...(color ? [color] : [])].join(", "));
 }
 
+function inferBusinessDetails(message: string) {
+  const explicit = message.match(/(?:neden bizi tercih etsinler|bizi farklı yapan|farkımız|avantajımız|öne çıkan yönümüz|işletme hakkında)\s*[:,-]?\s*([^\n]{8,360})/i)?.[1];
+  if (explicit) return clean(explicit);
+  return undefined;
+}
+
 function fieldDone(brief: StudioBrief, field: BriefField) {
   if (field === "sector") return Boolean(brief.sectorLabel);
   if (field === "services") return brief.services.length > 0;
@@ -123,8 +130,12 @@ function questionFor(field: BriefField, brief: StudioBrief) {
       quickReplies: ["Tüm Türkiye", "Sadece bulunduğum bölge", "Online hizmet veriyorum"],
     },
     services: {
-      reply: "Müşterilerin en çok hangi hizmetlerin için sana ulaşıyor? Başlıca hizmetlerini virgülle ayırarak yazabilirsin.",
+      reply: `${brief.location || "Bulunduğun bölge"} için siteyi doğru kurgulayabilmem adına hizmetlerini netleştirelim. Müşterilerin en çok hangi hizmetler için sana ulaşıyor? Virgülle ayırarak yazabilirsin.`,
       quickReplies: [],
+    },
+    businessDetails: {
+      reply: "Siteyi sıradan bir şablondan çıkaracak en önemli bilgi bu: Müşterilerin neden seni tercih etsin? Deneyim, hız, garanti, hijyen, ücretsiz servis veya sana özel başka bir farkı doğal biçimde anlatabilirsin.",
+      quickReplies: ["Hızlı ve güvenilir hizmet", "Kaliteli işçilik ve garanti", "Kişiye özel ilgi", "Fiyatlarımız şeffaf", "Kendim anlatacağım"],
     },
     goal: {
       reply: "Bu sitenin senin için en önemli sonucu ne olmalı?",
@@ -143,8 +154,8 @@ function questionFor(field: BriefField, brief: StudioBrief) {
       quickReplies: ["Şimdi yükleyeceğim", "Önce görselsiz taslağı göreyim", "Fotoğrafları sonra ekleyeceğim"],
     },
     pageMode: {
-      reply: "Son bir karar: hızlı ve akıcı tek sayfalı bir site mi, hizmetleri ayrı anlatan çok sayfalı bir site mi istersin?",
-      quickReplies: ["Tek sayfalı", "Çok sayfalı", "Sen öner"],
+      reply: `${brief.services.length >= 4 ? "Hizmetlerin ayrı ayrı anlatılmaya uygun; çok sayfalı yapı daha güçlü görünebilir." : "Hizmet sayın için tek sayfalı yapı hızlı ve yeterli olabilir."} Yine de son karar senin: tek sayfalı mı, çok sayfalı mı ilerleyelim?`,
+      quickReplies: [brief.services.length >= 4 ? "Çok sayfalı" : "Tek sayfalı", brief.services.length >= 4 ? "Tek sayfalı" : "Çok sayfalı", "SiteMix karar versin"],
     },
   };
   return questions[field];
@@ -156,6 +167,7 @@ function summary(brief: StudioBrief) {
     `📍 ${brief.location}`,
     `🧭 ${brief.sectorLabel}`,
     `🎯 ${brief.goal}`,
+    `✨ ${brief.businessDetails}`,
     `☎️ ${brief.whatsapp || brief.phone || "İletişim numarası daha sonra eklenecek"}`,
     `🎨 ${brief.style}`,
     `📷 ${brief.photoPreference === "upload" ? "Görseller taslaktan sonra yüklenecek" : brief.photoPreference === "later" ? "Görseller daha sonra eklenecek" : "Görsel alanları hazır bırakılacak"}`,
@@ -178,6 +190,8 @@ export function advanceStudioConversation(current: StudioBrief, rawMessage: stri
         ? "contact"
       : /hizmet/i.test(value) && /değiştir/i.test(value)
         ? "services"
+        : /fark|avantaj|neden.*tercih/i.test(value) && /değiştir/i.test(value)
+          ? "businessDetails"
         : /hedef/i.test(value) && /değiştir/i.test(value)
           ? "goal"
           : /tarz|renk|görünüm/i.test(value) && /değiştir/i.test(value)
@@ -271,6 +285,18 @@ export function advanceStudioConversation(current: StudioBrief, rawMessage: stri
     }
   }
 
+  const businessDetails = inferBusinessDetails(message);
+  if (businessDetails && businessDetails !== brief.businessDetails) {
+    brief.businessDetails = businessDetails;
+    learned.push(`İşletmenin farkı: ${businessDetails}`);
+  } else if (brief.lastQuestion === "businessDetails" && !brief.businessDetails) {
+    const detail = directAnswer(message);
+    if (detail.length >= 3 && !/kendim anlatacağım/i.test(detail)) {
+      brief.businessDetails = detail;
+      learned.push(`İşletmenin farkı: ${detail}`);
+    }
+  }
+
   const goal = inferGoal(message);
   if (goal && goal !== brief.goal) {
     brief.goal = goal;
@@ -323,8 +349,8 @@ export function advanceStudioConversation(current: StudioBrief, rawMessage: stri
   } else if (/tek\s*sayfa|tek\s*sayfalı/i.test(value)) {
     brief.pageMode = "single";
     learned.push("Yapı: Tek sayfalı");
-  } else if (brief.lastQuestion === "pageMode" && /sen öner|sana bırak/i.test(message)) {
-    brief.pageMode = brief.services.length > 4 ? "multi" : "single";
+  } else if (brief.lastQuestion === "pageMode" && /sen öner|sana bırak|sitemix karar/i.test(message)) {
+    brief.pageMode = brief.services.length >= 4 ? "multi" : "single";
     learned.push(`Yapı: ${brief.pageMode === "multi" ? "Çok sayfalı" : "Tek sayfalı"} (SiteMix önerisi)`);
   }
 
@@ -350,10 +376,12 @@ export function advanceStudioConversation(current: StudioBrief, rawMessage: stri
   const next = questionFor(nextField, brief);
   const ambiguous = current.lastQuestion === nextField && learned.length === 0;
   const acknowledgement = learned.length
-    ? `Anladım — ${learned.join(" · ")}.\n\n`
+    ? `${learned.length === 1 ? "Tamam, bunu not aldım" : "Güzel, bilgileri netleştirdik"}: ${learned.join(" · ")}.\n\n`
     : ambiguous
       ? nextField === "contact"
         ? "Tercihini anladım; şimdi kullanacağımız numarayı da yazar mısın? Örnek: 0555 555 55 55\n\n"
+        : nextField === "businessDetails" && /kendim anlatacağım/i.test(message)
+          ? "Elbette, seni dinliyorum. Müşterinin seni neden tercih etmesi gerektiğini kendi cümlelerinle anlatabilirsin.\n\n"
         : "Cevabını ilgili alana tam yerleştiremedim. Bunu mu demek istedin?\n\n"
       : "";
   return {
@@ -373,6 +401,7 @@ export function composeStudioPrompt(brief: StudioBrief) {
     `Sektör: ${brief.sectorLabel}.`,
     `Konum: ${brief.location}.`,
     `Hizmetler: ${brief.services.join(", ")}.`,
+    `İşletmenin öne çıkan yönleri: ${brief.businessDetails}.`,
     `Sitenin ana hedefi: ${brief.goal}.`,
     `Telefon: ${brief.phone || "Daha sonra eklenecek"}.`,
     `WhatsApp: ${brief.whatsapp || brief.phone || "Daha sonra eklenecek"}.`,

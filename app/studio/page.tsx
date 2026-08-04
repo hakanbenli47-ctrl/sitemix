@@ -70,7 +70,7 @@ export default function StudioPage() {
   const [showDecision, setShowDecision] = useState(false);
   const [domain, setDomain] = useState("");
   const [domainBusy, setDomainBusy] = useState(false);
-  const [mediaBusy, setMediaBusy] = useState<"hero" | "logo" | "gallery" | null>(null);
+  const [mediaBusy, setMediaBusy] = useState<"hero" | "logo" | "about" | "service" | "gallery" | null>(null);
   const [domainResult, setDomainResult] = useState<{ status: string; message: string; records?: Array<{ type: string; name: string; value: string }> } | null>(null);
   const createdPromptRef = useRef("");
 
@@ -148,7 +148,7 @@ export default function StudioPage() {
       setNotice(error instanceof Error ? error.message : "Taslak yerel olarak hazırlandı.");
     } finally {
       window.setTimeout(() => {
-        setMessages((current) => [...current, { id: `a-${Date.now()}`, role: "assistant", content: "İlk ön izlemen hazır. Şimdi sitede gezebilir; her bölümün başlığını, metnini, butonunu, sırasını ve görünümünü yazarak değiştirebilirsin. Gerçek görünmesi için sıradaki adımda işletme fotoğraflarını eklemeni önereceğim." }]);
+        setMessages((current) => [...current, { id: `a-${Date.now()}`, role: "assistant", content: `İlk ön izlemen hazır. ${localProject.current_version.pageMode === "multi" ? "Ana sayfa, hakkımızda, hizmetler, çalışmalar ve iletişim sayfalarını ayrı ayrı hazırladım." : "Bölümleri tek ve akıcı bir sayfada topladım."} Şimdi metinleri, bölüm sırasını ve görünümü konuşarak değiştirebilir; ana ekran, hakkımızda, hizmet ve galeri görsellerini ayrı alanlara ekleyebilirsin.` }]);
         setBusy(false);
       }, 650);
     }
@@ -365,7 +365,7 @@ export default function StudioPage() {
     }
   }
 
-  async function uploadMedia(file: File, slot: "hero" | "logo" | "gallery") {
+  async function uploadMedia(file: File, slot: "hero" | "logo" | "about" | "service" | "gallery") {
     if (!project || !site || project.id.startsWith("local-")) {
       setNotice("Görsel yüklemek için projenin hesabına kaydedilmesi gerekiyor.");
       return;
@@ -383,6 +383,8 @@ export default function StudioPage() {
         ...(site.media || {}),
         ...(slot === "gallery"
           ? { gallery: [...(site.media?.gallery || []), result.url].slice(0, 12) }
+          : slot === "service"
+            ? { services: [...(site.media?.services || []), result.url].slice(0, 12) }
           : { [slot]: result.url }),
       };
       const nextSite = { ...site, media: nextMedia };
@@ -391,7 +393,7 @@ export default function StudioPage() {
       const saveResult = await saveResponse.json().catch(() => null);
       if (!saveResponse.ok) throw new Error(saveResult?.message || "Görsel siteye kaydedilemedi.");
       setProject(saveResult.project);
-      setNotice(slot === "gallery" ? "Görsel galeriye eklendi." : slot === "hero" ? "Ana ekran görseli güncellendi." : "Logo güncellendi.");
+      setNotice(slot === "gallery" ? "Görsel galeriye eklendi." : slot === "service" ? "Hizmet görseli eklendi." : slot === "about" ? "Hakkımızda görseli güncellendi." : slot === "hero" ? "Ana ekran görseli güncellendi." : "Logo güncellendi.");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Görsel yüklenemedi.");
     } finally {
@@ -399,10 +401,11 @@ export default function StudioPage() {
     }
   }
 
-  function removeMedia(slot: "hero" | "logo" | "gallery", index?: number) {
+  function removeMedia(slot: "hero" | "logo" | "about" | "service" | "gallery", index?: number) {
     if (!project || !site) return;
     const media = { ...(site.media || {}) };
     if (slot === "gallery") media.gallery = (media.gallery || []).filter((_, itemIndex) => itemIndex !== index);
+    else if (slot === "service") media.services = (media.services || []).filter((_, itemIndex) => itemIndex !== index);
     else delete media[slot];
     setProject({ ...project, current_version: { ...site, media } });
   }
@@ -543,6 +546,7 @@ export default function StudioPage() {
                 <BriefMemory label="İşletme" value={brief.businessName} />
                 <BriefMemory label="Konum" value={brief.location} />
                 <BriefMemory label="Hizmetler" value={brief.services.length ? brief.services.join(", ") : undefined} />
+                <BriefMemory label="Neden tercih edilmeli" value={brief.businessDetails} />
                 <BriefMemory label="Ana hedef" value={brief.goal} />
                 <BriefMemory label="Telefon / WhatsApp" value={brief.whatsapp || brief.phone || (brief.contactSkipped ? "Daha sonra eklenecek" : undefined)} />
                 <BriefMemory label="Görsel tarz" value={brief.style} />
@@ -600,8 +604,13 @@ export default function StudioPage() {
                 <div className="mt-4 grid gap-2 sm:grid-cols-2">
                   <MediaUpload label={site.media?.hero ? "Ana görseli değiştir" : "Ana ekran görseli yükle"} busy={mediaBusy === "hero"} onFile={(file) => void uploadMedia(file, "hero")} />
                   <MediaUpload label={site.media?.logo ? "Logoyu değiştir" : "Logo yükle"} busy={mediaBusy === "logo"} onFile={(file) => void uploadMedia(file, "logo")} />
+                  <MediaUpload label={site.media?.about ? "Hakkımızda görselini değiştir" : "Hakkımızda görseli yükle"} busy={mediaBusy === "about"} onFile={(file) => void uploadMedia(file, "about")} />
+                  <MediaUpload label="Hizmet görseli ekle" busy={mediaBusy === "service"} onFile={(file) => void uploadMedia(file, "service")} />
                 </div>
                 {site.media?.hero ? <div className="relative mt-3 aspect-[16/7] overflow-hidden rounded-2xl border border-white/8 bg-cover bg-center" style={{ backgroundImage: `linear-gradient(to top, rgba(5,6,8,.55), transparent), url("${site.media.hero}")` }}><button type="button" onClick={() => removeMedia("hero")} className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-black/65 text-white/70" aria-label="Ana görseli kaldır"><Trash2 size={13} /></button><span className="absolute bottom-3 left-3 text-[9px] font-black uppercase tracking-[.13em] text-white/70">Ana ekran görseli</span></div> : null}
+                {site.media?.about ? <div className="relative mt-3 aspect-[16/7] overflow-hidden rounded-2xl border border-white/8 bg-cover bg-center" style={{ backgroundImage: `linear-gradient(to top, rgba(5,6,8,.55), transparent), url("${site.media.about}")` }}><button type="button" onClick={() => removeMedia("about")} className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-black/65 text-white/70" aria-label="Hakkımızda görselini kaldır"><Trash2 size={13} /></button><span className="absolute bottom-3 left-3 text-[9px] font-black uppercase tracking-[.13em] text-white/70">Hakkımızda görseli</span></div> : null}
+                <div className="mt-4 flex items-center justify-between gap-3"><div><p className="text-[10px] font-black text-white/65">Hizmet görselleri</p><p className="mt-1 text-[9px] font-medium text-white/25">Sırayla hizmet kartlarına yerleştirilir</p></div><span className="text-[9px] font-black text-white/25">{site.media?.services?.length || 0}/12</span></div>
+                {site.media?.services?.length ? <div className="mt-3 grid grid-cols-3 gap-2">{site.media.services.map((url, index) => <div key={`${url}-${index}`} className="group relative aspect-square overflow-hidden rounded-xl border border-white/8 bg-cover bg-center" style={{ backgroundImage: `url("${url}")` }}><button type="button" onClick={() => removeMedia("service", index)} className="absolute right-1.5 top-1.5 grid h-7 w-7 place-items-center rounded-full bg-black/70 text-white/70" aria-label={`Hizmet görseli ${index + 1} kaldır`}><Trash2 size={12} /></button><span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/65 px-2 py-1 text-[8px] font-black">0{index + 1}</span></div>)}</div> : <div className="mt-3 rounded-2xl border border-dashed border-white/8 px-4 py-4 text-center text-[10px] font-bold text-white/22">Hizmet kartları şimdilik renkli görsel alanlarıyla gösterilecek.</div>}
                 <div className="mt-4 flex items-center justify-between gap-3"><div><p className="text-[10px] font-black text-white/65">Çalışma galerisi</p><p className="mt-1 text-[9px] font-medium text-white/25">En fazla 12 gerçek çalışma fotoğrafı</p></div><MediaUpload label="Galeriye ekle" busy={mediaBusy === "gallery"} onFile={(file) => void uploadMedia(file, "gallery")} compact /></div>
                 {site.media?.gallery?.length ? <div className="mt-3 grid grid-cols-3 gap-2">{site.media.gallery.map((url, index) => <div key={`${url}-${index}`} className="group relative aspect-square overflow-hidden rounded-xl border border-white/8 bg-cover bg-center" style={{ backgroundImage: `url("${url}")` }}><button type="button" onClick={() => removeMedia("gallery", index)} className="absolute right-1.5 top-1.5 grid h-7 w-7 place-items-center rounded-full bg-black/70 text-white/70 opacity-100 sm:opacity-0 sm:transition sm:group-hover:opacity-100" aria-label={`Galeri görseli ${index + 1} kaldır`}><Trash2 size={12} /></button></div>)}</div> : <div className="mt-3 rounded-2xl border border-dashed border-white/8 px-4 py-5 text-center text-[10px] font-bold text-white/22">Henüz galeri görseli yüklenmedi.</div>}
               </div>
@@ -609,7 +618,7 @@ export default function StudioPage() {
               <EditorField label="Konum" value={site.location} onChange={(value) => updateSite({ location: value })} />
               <EditorField label="Telefon" value={site.phone} onChange={(value) => updateSite({ phone: value })} />
               <EditorField label="WhatsApp" value={site.whatsapp} onChange={(value) => updateSite({ whatsapp: value })} />
-              <label className="block"><span className="mb-2 block text-xs font-black text-white/45">Site yapısı</span><select value={site.pageMode} onChange={(event) => updateSite({ pageMode: event.target.value as "single" | "multi" })} className="h-12 w-full rounded-xl border border-white/8 bg-[#161722] px-3 text-sm font-bold text-white outline-none"><option value="single">Tek sayfalı</option><option value="multi">Çok sayfalı</option></select></label>
+              <label className="block"><span className="mb-2 block text-xs font-black text-white/45">Site yapısı</span><select value={site.pageMode} onChange={(event) => updateSite(event.target.value === "multi" ? applyStudioInstruction(site, "Siteyi çok sayfalı yap") : { pageMode: "single" })} className="h-12 w-full rounded-xl border border-white/8 bg-[#161722] px-3 text-sm font-bold text-white outline-none"><option value="single">Tek sayfalı</option><option value="multi">Çok sayfalı</option></select></label>
               <div><span className="mb-2 block text-xs font-black text-white/45">Ana renk</span><div className="flex gap-2">{["#7c5cff", "#0eac83", "#3478f6", "#f0528a", "#e65f3d", "#df9f45"].map((color) => <button key={color} type="button" onClick={() => updateSite({ theme: { ...site.theme, accent: color } })} className="h-9 w-9 rounded-full border-2" style={{ background: color, borderColor: site.theme.accent === color ? "white" : "transparent" }} aria-label={`${color} rengini seç`} />)}</div></div>
               <div className="border-t border-white/8 pt-4"><div className="flex items-center justify-between"><div><span className="text-xs font-black text-white/62">Tüm site bölümleri</span><p className="mt-1 text-[10px] font-medium text-white/25">Başlık, açıklama, buton ve liste içeriklerini açıp düzenle.</p></div><span className="rounded-full bg-white/[0.045] px-2.5 py-1.5 text-[9px] font-black text-white/30">{site.sections.length} bölüm</span></div><div className="mt-3 space-y-2">{site.sections.map((section, index) => <SectionContentEditor key={section.id} section={section} index={index} total={site.sections.length} onChange={(patch) => updateSection(index, patch)} onMove={(direction) => moveSection(index, direction)} />)}</div></div>
               <button type="button" onClick={saveContent} disabled={busy} className="send-button flex min-h-12 w-full items-center justify-center gap-2 rounded-full text-sm font-black text-[#0a0b13]"><Check size={16} />Değişiklikleri kaydet</button>
@@ -711,7 +720,7 @@ function MediaUpload({ label, busy, onFile, compact = false }: { label: string; 
 }
 
 function SectionContentEditor({ section, index, total, onChange, onMove }: { section: StudioSite["sections"][number]; index: number; total: number; onChange: (patch: Partial<StudioSite["sections"][number]>) => void; onMove: (direction: -1 | 1) => void }) {
-  const labels: Record<StudioSite["sections"][number]["type"], string> = { hero: "Ana ekran", services: "Hizmetler", about: "Hakkımızda", pricing: "Paketler", gallery: "Galeri", testimonials: "Yorumlar", faq: "SSS", contact: "İletişim" };
+  const labels: Record<StudioSite["sections"][number]["type"], string> = { hero: "Ana ekran", features: "Neden biz", services: "Hizmetler", process: "Çalışma süreci", about: "Hakkımızda", pricing: "Paketler", gallery: "Galeri", testimonials: "Yorumlar", faq: "SSS", contact: "İletişim" };
   const listEditor = (label: string, values: string[], key: "items" | "details" | "answers") => <label className="block"><span className="mb-2 block text-xs font-black text-white/45">{label} <small className="font-medium text-white/22">(her satıra bir tane)</small></span><textarea value={values.join("\n")} onChange={(event) => onChange({ [key]: event.target.value.split("\n").map((item) => item.trim()).filter(Boolean).slice(0, 12) })} rows={Math.min(Math.max(values.length, 3), 7)} className="w-full resize-y rounded-xl border border-white/8 bg-white/[0.045] p-3 text-xs font-semibold leading-6 text-white outline-none focus:border-white/18" /></label>;
   return <details className="group overflow-hidden rounded-2xl border border-white/8 bg-white/[0.025]"><summary className="flex cursor-pointer list-none items-center gap-3 px-3 py-3"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-[#8f7cff]/10 text-[9px] font-black text-[#ad9fff]">0{index + 1}</span><span className="flex-1 text-[11px] font-black text-white/58">{labels[section.type]}</span><span className="flex items-center gap-1"><button type="button" disabled={index === 0} onClick={(event) => { event.preventDefault(); event.stopPropagation(); onMove(-1); }} className="grid h-7 w-7 place-items-center rounded-lg text-white/25 hover:bg-white/6 hover:text-white disabled:opacity-15" aria-label="Bölümü yukarı taşı"><ChevronUp size={13} /></button><button type="button" disabled={index === total - 1} onClick={(event) => { event.preventDefault(); event.stopPropagation(); onMove(1); }} className="grid h-7 w-7 place-items-center rounded-lg text-white/25 hover:bg-white/6 hover:text-white disabled:opacity-15" aria-label="Bölümü aşağı taşı"><ChevronDown size={13} /></button><ChevronRight size={14} className="ml-1 text-white/20 transition group-open:rotate-90" /></span></summary><div className="space-y-3 border-t border-white/7 p-3"><EditorField label="Üst başlık" value={section.eyebrow || ""} onChange={(value) => onChange({ eyebrow: value })} /><EditorField label="Başlık" value={section.title} onChange={(value) => onChange({ title: value })} /><label className="block"><span className="mb-2 block text-xs font-black text-white/45">Açıklama</span><textarea value={section.text} onChange={(event) => onChange({ text: event.target.value })} rows={4} className="w-full resize-y rounded-xl border border-white/8 bg-white/[0.045] p-3 text-sm font-semibold leading-6 text-white outline-none focus:border-white/18" /></label>{section.ctaLabel !== undefined || section.type === "hero" || section.type === "contact" ? <EditorField label="Buton yazısı" value={section.ctaLabel || ""} onChange={(value) => onChange({ ctaLabel: value })} /> : null}{section.items ? listEditor(section.type === "faq" ? "Sorular" : "Liste öğeleri", section.items, "items") : null}{section.details ? listEditor("Öğe açıklamaları", section.details, "details") : null}{section.answers ? listEditor("Cevaplar", section.answers, "answers") : null}</div></details>;
 }
