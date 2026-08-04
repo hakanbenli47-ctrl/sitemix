@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { isMissingStudioTable, requireStudioUser } from "@/lib/studioServerAuth";
 import { assertCustomerCanManageStudioProject } from "@/lib/studioAccess";
 import { syncStudioRepository } from "@/lib/studioProvisioning";
-import type { StudioProject } from "@/lib/sitemixStudio";
+import type { StudioDeployment, StudioProject, StudioSite } from "@/lib/sitemixStudio";
 
 export const runtime = "nodejs";
 
@@ -43,6 +43,15 @@ async function vercelRequest(path: string, init?: RequestInit) {
   return result;
 }
 
+async function persistDeployment(project: StudioProject, deployment: StudioDeployment) {
+  const currentVersion = { ...(project.current_version as StudioSite), deployment };
+  const { error } = await supabaseAdmin
+    .from("studio_projects")
+    .update({ current_version: currentVersion, updated_at: new Date().toISOString() })
+    .eq("id", project.id);
+  if (error) throw error;
+}
+
 export async function POST(request: Request) {
   try {
     const user = await requireStudioUser(request);
@@ -64,7 +73,8 @@ export async function POST(request: Request) {
     if (projectError || !project) throw projectError || new Error("Proje bulunamadı.");
     assertCustomerCanManageStudioProject(project);
 
-    const { data: deployment } = await supabaseAdmin.from("studio_deployments").select("*").eq("project_id", projectId).maybeSingle();
+    const studioProject = project as StudioProject;
+    const deployment = (studioProject.current_version as StudioSite).deployment;
 
     const vercelProject = deployment?.vercel_project_id || deployment?.vercel_project_name;
 
@@ -73,7 +83,10 @@ export async function POST(request: Request) {
         await vercelRequest(`/v9/projects/${encodeURIComponent(vercelProject)}/domains/${encodeURIComponent(domain)}`, { method: "DELETE" });
       }
       await supabaseAdmin.from("studio_domains").delete().eq("project_id", projectId).eq("domain", domain);
-      if (deployment?.github_repo_full_name) await syncStudioRepository(project as StudioProject, deployment);
+      if (deployment?.github_repo_full_name) {
+        const nextDeployment = await syncStudioRepository(studioProject, deployment, null);
+        await persistDeployment(studioProject, nextDeployment);
+      }
       return NextResponse.json({ status: "removed", message: "Domain bağlantısı kaldırıldı." });
     }
 
@@ -122,7 +135,8 @@ export async function POST(request: Request) {
     if (domainError) throw domainError;
 
     if (deployment?.github_repo_full_name) {
-      await syncStudioRepository(project as StudioProject, deployment, domain);
+      const nextDeployment = await syncStudioRepository(studioProject, deployment, domain);
+      await persistDeployment(studioProject, nextDeployment);
     }
 
     return NextResponse.json({
