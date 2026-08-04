@@ -358,9 +358,16 @@ export function generateStudioSite(prompt: string): StudioSite {
     .slice(0, 8);
   const goal = prompt.match(/Sitenin ana hedefi:\s*([^.!?\n]{3,160})/i)?.[1]?.trim();
   const businessDetails = prompt.match(/İşletmenin öne çıkan yönleri:\s*([^.!?\n]{3,360})/i)?.[1]?.trim();
+  const aboutDetails = prompt.match(/İşletme hikayesi:\s*([^\n]{3,600}?)(?=\.\s+(?:Çalışma süreci|Sık sorulanlar|Müşteri yorumları|Fiyat yaklaşımı|Sitenin ana hedefi):|$)/i)?.[1]?.trim();
+  const processDetails = prompt.match(/Çalışma süreci:\s*([^\n]{3,500}?)(?=\.\s+(?:Sık sorulanlar|Müşteri yorumları|Fiyat yaklaşımı|Sitenin ana hedefi):|$)/i)?.[1]?.trim();
+  const faqDetails = prompt.match(/Sık sorulanlar:\s*([^\n]{3,600}?)(?=\.\s+(?:Müşteri yorumları|Fiyat yaklaşımı|Sitenin ana hedefi):|$)/i)?.[1]?.trim();
+  const testimonialDetails = prompt.match(/Müşteri yorumları:\s*([^\n]{3,800}?)(?=\.\s+(?:Fiyat yaklaşımı|Sitenin ana hedefi):|$)/i)?.[1]?.trim();
+  const pricingDetails = prompt.match(/Fiyat yaklaşımı:\s*([^\n]{3,500}?)(?=\.\s+Sitenin ana hedefi:|$)/i)?.[1]?.trim();
   const phone = prompt.match(/Telefon:\s*(\+?\d[\d\s()-]{8,}\d)/i)?.[1]?.trim() || "";
   const whatsapp = prompt.match(/WhatsApp:\s*(\+?\d[\d\s()-]{8,}\d)/i)?.[1]?.trim() || phone;
-  const wantsPricing = /fiyat|paket|ücret/.test(normalized);
+  const wantsPricing = pricingDetails
+    ? !/göstermeyelim|teklif istensin|daha sonra/i.test(pricingDetails.toLocaleLowerCase("tr-TR"))
+    : /fiyat|paket|ücret/.test(normalized);
   const wantsGallery = /galeri|fotoğraf|görsel|öncesi|sonrası/.test(normalized);
   const wantsTestimonials = /yorum|referans|müşteri deneyimi/.test(normalized);
   const wantsMulti = /çok sayfa|çok sayfalı|sayfalar/.test(normalized);
@@ -385,6 +392,15 @@ export function generateStudioSite(prompt: string): StudioSite {
   const heroAction = goal
     ? `${goal.toLocaleLowerCase("tr-TR")} için hizmetleri inceleyin ve hemen iletişime geçin.`
     : "Hızlıca bilgi alın, çalışma detaylarını görün ve bize ulaşın.";
+  const shouldUseSectorDefault = (value?: string) => !value || /sektör(?:üme|e) uygun|hazırla|sonra düzenle/i.test(value);
+  const splitContentItems = (value?: string, limit = 4) => (value || "")
+    .split(/;|\n|\s+→\s+|\s+->\s+/)
+    .map((item) => item.trim().replace(/[.!]+$/, ""))
+    .filter((item) => item.length > 2)
+    .slice(0, limit);
+  const customProcess = shouldUseSectorDefault(processDetails) ? [] : splitContentItems(processDetails);
+  const customFaq = shouldUseSectorDefault(faqDetails) ? [] : splitContentItems(faqDetails).map((item) => item.endsWith("?") ? item : `${item}?`);
+  const customTestimonials = /daha sonra|henüz|hazır bırak/i.test(testimonialDetails || "") ? [] : splitContentItems(testimonialDetails, 3);
 
   const sections: StudioSection[] = [
     {
@@ -419,16 +435,16 @@ export function generateStudioSite(prompt: string): StudioSite {
       id: "about",
       type: "about",
       title: `${businessName} hakkında`,
-      text: contentKit.about,
+      text: shouldUseSectorDefault(aboutDetails) ? contentKit.about : aboutDetails!,
       eyebrow: "Yaklaşımımız",
     },
     {
       id: "process",
       type: "process",
       title: "Nasıl çalışıyoruz?",
-      text: "İlk iletişimden hizmetin tamamlanmasına kadar ne olacağını bilmeniz için süreci dört net adımda ilerletiyoruz.",
-      items: ["İhtiyacınızı dinliyoruz", "Planı netleştiriyoruz", "Özenle uyguluyoruz", "Sonucu birlikte kontrol ediyoruz"],
-      details: ["Beklentinizi, konumunuzu ve önceliğinizi öğreniyoruz.", "Uygun hizmeti, kapsamı ve zamanlamayı açıkça paylaşıyoruz.", "Belirlenen plana uygun, kontrollü ve düzenli çalışıyoruz.", "Tamamlanan işi değerlendiriyor ve gereken desteği sürdürüyoruz."],
+      text: customProcess.length ? "Süreci baştan sona açık, planlı ve takip edilebilir adımlarla ilerletiyoruz." : "İlk iletişimden hizmetin tamamlanmasına kadar ne olacağını bilmeniz için süreci dört net adımda ilerletiyoruz.",
+      items: customProcess.length ? customProcess : ["İhtiyacınızı dinliyoruz", "Planı netleştiriyoruz", "Özenle uyguluyoruz", "Sonucu birlikte kontrol ediyoruz"],
+      details: customProcess.length ? customProcess.map((item) => `${item} aşamasında gerekli bilgileri paylaşır ve bir sonraki adımı netleştiririz.`) : ["Beklentinizi, konumunuzu ve önceliğinizi öğreniyoruz.", "Uygun hizmeti, kapsamı ve zamanlamayı açıkça paylaşıyoruz.", "Belirlenen plana uygun, kontrollü ve düzenli çalışıyoruz.", "Tamamlanan işi değerlendiriyor ve gereken desteği sürdürüyoruz."],
       eyebrow: "Dört adımda net süreç",
     },
     ...(wantsPricing
@@ -437,8 +453,8 @@ export function generateStudioSite(prompt: string): StudioSite {
             id: "pricing",
             type: "pricing" as const,
             title: "Hizmet paketleri",
-            text: "Net kapsam, anlaşılır süreç ve ihtiyacınıza göre şekillenen seçenekler.",
-            items: ["Temel hizmet", "Kapsamlı uygulama", "Kişisel çözüm"],
+            text: pricingDetails || "Net kapsam, anlaşılır süreç ve ihtiyacınıza göre şekillenen seçenekler.",
+            items: splitContentItems(pricingDetails, 3).length ? splitContentItems(pricingDetails, 3) : ["Başlangıç seçeneği", "Kapsamlı uygulama", "Kişisel çözüm"],
           },
         ]
       : []),
@@ -459,7 +475,7 @@ export function generateStudioSite(prompt: string): StudioSite {
             type: "testimonials" as const,
             title: "Müşteri deneyimleri",
             text: "Gerçek müşterilerinizden izinli yorumları yayınlamadan önce buradan düzenleyin.",
-            items: ["Müşteri yorumunuzu buraya ekleyin", "İkinci müşteri yorumunu buraya ekleyin", "Üçüncü müşteri yorumunu buraya ekleyin"],
+            items: customTestimonials.length ? customTestimonials : ["Onaylı müşteri yorumunuzu buraya ekleyin", "İkinci onaylı müşteri yorumunu buraya ekleyin", "Üçüncü onaylı müşteri yorumunu buraya ekleyin"],
           },
         ]
       : []),
@@ -468,8 +484,8 @@ export function generateStudioSite(prompt: string): StudioSite {
       type: "faq",
       title: "Merak edilenler",
       text: "Karar vermeden önce en sık sorulan konulara açık ve kısa yanıtlar.",
-      items: contentKit.faq,
-      answers: sectorFaqAnswers[catalogSector?.id || "default"] || sectorFaqAnswers.default,
+      items: customFaq.length ? customFaq : contentKit.faq,
+      answers: customFaq.length ? customFaq.map(() => "Bu sorunun yanıtı hizmetin kapsamına ve ihtiyacınıza göre netleştirilir; ayrıntılı bilgi için bizimle iletişime geçebilirsiniz.") : sectorFaqAnswers[catalogSector?.id || "default"] || sectorFaqAnswers.default,
       eyebrow: "Sık sorulan sorular",
     },
     {

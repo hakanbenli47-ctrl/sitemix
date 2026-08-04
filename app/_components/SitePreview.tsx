@@ -64,7 +64,7 @@ export default function SitePreview({ site, compact = false, slug }: { site: Stu
   const visibleSections = useMemo(() => {
     if (site.pageMode === "single") return site.sections;
     if (activePage === "home") {
-      return site.sections.filter((section) => ["hero", "features", "services", "testimonials"].includes(section.type));
+      return site.sections;
     }
     const pageTypes: Record<Exclude<MultiPageKey, "home">, StudioSection["type"][]> = {
       about: ["about", "features", "process", "testimonials"],
