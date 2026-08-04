@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { applyStudioInstruction, describeStudioChanges, upgradeStudioSite, type StudioSite } from "@/lib/sitemixStudio";
+import { applyStudioInstruction, describeStudioChanges, upgradeStudioSite, type StudioProject, type StudioSite } from "@/lib/sitemixStudio";
+import { assertCustomerCanManageStudioProject } from "@/lib/studioAccess";
+import { provisionStudioProject, syncStudioRepository } from "@/lib/studioProvisioning";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { isMissingStudioTable, requireStudioUser } from "@/lib/studioServerAuth";
 
@@ -78,6 +80,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     let note = "Proje güncellendi";
 
     if (action === "instruction") {
+      assertCustomerCanManageStudioProject(project);
       const instruction = cleanText(body?.instruction, 800);
       if (!instruction) throw new Error("Düzenleme isteği boş olamaz.");
       nextVersion = applyStudioInstruction(nextVersion, instruction);
@@ -98,6 +101,7 @@ export async function PATCH(request: Request, context: RouteContext) {
         },
       ]);
     } else if (action === "save") {
+      assertCustomerCanManageStudioProject(project);
       nextVersion = body?.site as StudioSite;
       if (!nextVersion?.businessName || !Array.isArray(nextVersion?.sections)) {
         throw new Error("Site içeriği geçersiz.");
@@ -136,10 +140,12 @@ export async function PATCH(request: Request, context: RouteContext) {
         });
       }
     } else if (action === "publish") {
+      assertCustomerCanManageStudioProject(project);
       update.status = "published";
       update.published_at = new Date().toISOString();
       note = "Site yayınlandı";
     } else if (action === "unpublish") {
+      assertCustomerCanManageStudioProject(project);
       update.status = "suspended";
       note = "Site yayından kaldırıldı";
     } else {
@@ -169,7 +175,28 @@ export async function PATCH(request: Request, context: RouteContext) {
       });
     }
 
-    return NextResponse.json({ project: data, message: note });
+    let deployment = null;
+    let deploymentMessage = "";
+    if (action === "management") {
+      try {
+        deployment = await provisionStudioProject(data as StudioProject);
+      } catch (error) {
+        deploymentMessage = error instanceof Error ? error.message : "Bağımsız site hazırlama kaydı oluşturulamadı.";
+      }
+    } else if (action === "instruction" || action === "save") {
+      const { data: existingDeployment } = await supabaseAdmin.from("studio_deployments").select("*").eq("project_id", projectId).maybeSingle();
+      if (existingDeployment?.github_repo_full_name) {
+        try {
+          await syncStudioRepository(data as StudioProject, existingDeployment);
+          deployment = { ...existingDeployment, status: "ready" };
+        } catch (error) {
+          deploymentMessage = error instanceof Error ? error.message : "Bağımsız site deposu güncellenemedi.";
+          await supabaseAdmin.from("studio_deployments").update({ status: "error", last_error: deploymentMessage }).eq("project_id", projectId);
+        }
+      }
+    }
+
+    return NextResponse.json({ project: data, deployment, message: deploymentMessage ? `${note}. ${deploymentMessage}` : note });
   } catch (error) {
     return responseError(error);
   }

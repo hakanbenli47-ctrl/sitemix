@@ -1,6 +1,6 @@
 import { sectorCatalog } from "@/lib/sitemixStudio";
 
-export type BriefField = "sector" | "businessName" | "location" | "services" | "businessDetails" | "goal" | "contact" | "style" | "photos" | "pageMode";
+export type BriefField = "sector" | "businessName" | "location" | "services" | "businessDetails" | "about" | "process" | "faq" | "testimonials" | "pricing" | "goal" | "contact" | "style" | "photos" | "pageMode";
 
 export type StudioBrief = {
   sectorId?: string;
@@ -9,6 +9,11 @@ export type StudioBrief = {
   location?: string;
   services: string[];
   businessDetails?: string;
+  about?: string;
+  process?: string;
+  faq?: string;
+  testimonials?: string;
+  pricing?: string;
   goal?: string;
   phone?: string;
   whatsapp?: string;
@@ -32,7 +37,7 @@ export type ConversationResult = {
 
 export const emptyStudioBrief: StudioBrief = { services: [], notes: [] };
 
-const requiredFields: BriefField[] = ["sector", "businessName", "location", "services", "businessDetails", "goal", "contact", "style", "photos", "pageMode"];
+const requiredFields: BriefField[] = ["sector", "businessName", "location", "services", "businessDetails", "about", "process", "faq", "testimonials", "pricing", "goal", "contact", "style", "photos", "pageMode"];
 
 const greetings = /^(merhaba|selam|selamlar|hey|iyi günler|iyi akşamlar|günaydın|mrb)[.!\s]*$/i;
 const buildRequest = /(taslağ[ıi]?|siteyi|sitemi).*(oluştur|hazırla|göster)|(oluştur|hazırla).*(taslağ[ıi]?|siteyi|sitemi)|^hazırım$|^başla$/i;
@@ -137,6 +142,26 @@ function questionFor(field: BriefField, brief: StudioBrief) {
       reply: "Siteyi sıradan bir şablondan çıkaracak en önemli bilgi bu: Müşterilerin neden seni tercih etsin? Deneyim, hız, garanti, hijyen, ücretsiz servis veya sana özel başka bir farkı doğal biçimde anlatabilirsin.",
       quickReplies: ["Hızlı ve güvenilir hizmet", "Kaliteli işçilik ve garanti", "Kişiye özel ilgi", "Fiyatlarımız şeffaf", "Kendim anlatacağım"],
     },
+    about: {
+      reply: `${brief.businessName || "İşletmen"} hakkında ziyaretçiye ne anlatalım? Kaç yıldır hizmet verdiğini, nasıl başladığını, ekibini veya çalışma anlayışını birkaç cümleyle yazabilirsin.`,
+      quickReplies: ["Sektörüme uygun güven veren metin hazırla", "Yeni kurulduk ama deneyimliyiz", "Aile işletmesiyiz", "Kendim anlatacağım"],
+    },
+    process: {
+      reply: "Bir müşteri sana ulaştıktan sonra süreç nasıl ilerliyor? İlk görüşme, planlama, uygulama ve teslim gibi adımları sırasıyla yazabilirsin.",
+      quickReplies: ["Sektörüme uygun süreç hazırla", "Talep, planlama, uygulama, teslim", "Randevu, ön görüşme, hizmet, takip", "Kendim anlatacağım"],
+    },
+    faq: {
+      reply: "Müşterilerin karar vermeden önce en çok neleri soruyor? Üç veya dört soruyu noktalı virgülle ayırarak yazabilirsin.",
+      quickReplies: ["Sektörüme uygun soruları hazırla", "Fiyat nasıl belirleniyor?; Ne kadar sürüyor?; Randevu gerekli mi?", "Soruları sonra düzenleyeceğim", "Kendim yazacağım"],
+    },
+    testimonials: {
+      reply: "Yayınlama izni olan gerçek müşteri yorumların var mı? Varsa noktalı virgülle ayırarak yaz. Yoksa bu alanı daha sonra doldurabiliriz.",
+      quickReplies: ["Yorumları daha sonra ekleyeceğim", "Henüz müşteri yorumum yok", "Yorum alanını hazır bırak", "Yorumlarımı kendim yazacağım"],
+    },
+    pricing: {
+      reply: "Sitede fiyat gösterelim mi? Net fiyatların veya paketlerin varsa yazabiliriz; değişken fiyatlı çalışıyorsan ziyaretçiyi teklif almaya yönlendirebiliriz.",
+      quickReplies: ["Fiyat göstermeyelim, teklif istensin", "Başlangıç fiyatı gösterelim", "Paketlerimi kendim yazacağım", "Fiyatları daha sonra ekleyeceğim"],
+    },
     goal: {
       reply: "Bu sitenin senin için en önemli sonucu ne olmalı?",
       quickReplies: ["WhatsApp mesajı almak", "Randevu almak", "Telefon araması almak", "İşletmemi tanıtmak"],
@@ -170,6 +195,11 @@ function summary(brief: StudioBrief) {
     `• Hizmetler: ${brief.services.join(", ")}`,
     `• Ana hedef: ${brief.goal}`,
     `• Öne çıkan yön: ${brief.businessDetails}`,
+    `• Hakkımızda: ${brief.about}`,
+    `• Çalışma süreci: ${brief.process}`,
+    `• Sık sorulanlar: ${brief.faq}`,
+    `• Müşteri yorumları: ${brief.testimonials}`,
+    `• Fiyat yaklaşımı: ${brief.pricing}`,
     `• İletişim: ${brief.whatsapp || brief.phone || "Daha sonra eklenecek"}`,
     `• Görsel tarz: ${brief.style}`,
     `• Fotoğraflar: ${brief.photoPreference === "upload" ? "Taslak açılınca yüklenecek" : brief.photoPreference === "later" ? "Daha sonra eklenecek" : "Görsel alanları hazır bırakılacak"}`,
@@ -195,6 +225,16 @@ export function advanceStudioConversation(current: StudioBrief, rawMessage: stri
         ? "services"
         : /fark|avantaj|neden.*tercih/i.test(value) && /değiştir/i.test(value)
           ? "businessDetails"
+        : /hakkımızda|işletme hikaye|geçmiş/i.test(value) && /değiştir/i.test(value)
+          ? "about"
+        : /süreç|nasıl çalış/i.test(value) && /değiştir/i.test(value)
+          ? "process"
+        : /sık sor|sss|soru/i.test(value) && /değiştir/i.test(value)
+          ? "faq"
+        : /yorum|referans/i.test(value) && /değiştir/i.test(value)
+          ? "testimonials"
+        : /fiyat|paket|ücret/i.test(value) && /değiştir/i.test(value)
+          ? "pricing"
         : /hedef/i.test(value) && /değiştir/i.test(value)
           ? "goal"
           : /tarz|renk|görünüm/i.test(value) && /değiştir/i.test(value)
@@ -300,6 +340,22 @@ export function advanceStudioConversation(current: StudioBrief, rawMessage: stri
     }
   }
 
+  const narrativeFields: Array<{ field: "about" | "process" | "faq" | "testimonials" | "pricing"; label: string }> = [
+    { field: "about", label: "Hakkımızda" },
+    { field: "process", label: "Çalışma süreci" },
+    { field: "faq", label: "Sık sorulanlar" },
+    { field: "testimonials", label: "Müşteri yorumları" },
+    { field: "pricing", label: "Fiyat yaklaşımı" },
+  ];
+  const narrative = narrativeFields.find((item) => brief.lastQuestion === item.field && !brief[item.field]);
+  if (narrative) {
+    const detail = directAnswer(message);
+    if (detail.length >= 3 && !/kendim (anlatacağım|yazacağım)/i.test(detail)) {
+      brief[narrative.field] = detail;
+      learned.push(`${narrative.label}: ${detail}`);
+    }
+  }
+
   const goal = inferGoal(message);
   if (goal && goal !== brief.goal) {
     brief.goal = goal;
@@ -380,11 +436,13 @@ export function advanceStudioConversation(current: StudioBrief, rawMessage: stri
   const ambiguous = current.lastQuestion === nextField && learned.length === 0;
   const acknowledgement = learned.length
     ? `${learned.length === 1 ? "Tamam, bunu not aldım" : "Güzel, bilgileri netleştirdik"}: ${learned.join(" · ")}.\n\n`
-    : ambiguous
+      : ambiguous
       ? nextField === "contact"
         ? "Tercihini anladım; şimdi kullanacağımız numarayı da yazar mısın? Örnek: 0555 555 55 55\n\n"
         : nextField === "businessDetails" && /kendim anlatacağım/i.test(message)
           ? "Elbette, seni dinliyorum. Müşterinin seni neden tercih etmesi gerektiğini kendi cümlelerinle anlatabilirsin.\n\n"
+        : ["about", "process", "faq", "testimonials", "pricing"].includes(nextField) && /kendim (anlatacağım|yazacağım)/i.test(message)
+          ? "Elbette, kendi cümlelerinle yazabilirsin. Hazır olduğunda ayrıntıyı gönder.\n\n"
         : "Cevabını ilgili alana tam yerleştiremedim. Bunu mu demek istedin?\n\n"
       : "";
   return {
@@ -405,6 +463,11 @@ export function composeStudioPrompt(brief: StudioBrief) {
     `Konum: ${brief.location}.`,
     `Hizmetler: ${brief.services.join(", ")}.`,
     `İşletmenin öne çıkan yönleri: ${brief.businessDetails}.`,
+    `İşletme hikayesi: ${brief.about}.`,
+    `Çalışma süreci: ${brief.process}.`,
+    `Sık sorulanlar: ${brief.faq}.`,
+    `Müşteri yorumları: ${brief.testimonials}.`,
+    `Fiyat yaklaşımı: ${brief.pricing}.`,
     `Sitenin ana hedefi: ${brief.goal}.`,
     `Telefon: ${brief.phone || "Daha sonra eklenecek"}.`,
     `WhatsApp: ${brief.whatsapp || brief.phone || "Daha sonra eklenecek"}.`,

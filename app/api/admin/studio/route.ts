@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { requireSitemixAdmin } from "@/lib/sitemixAdminAuth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { isMissingStudioTable } from "@/lib/studioServerAuth";
+import { connectStudioDomain, provisionStudioProject, syncStudioRepository } from "@/lib/studioProvisioning";
+import type { StudioProject } from "@/lib/sitemixStudio";
 
 export const runtime = "nodejs";
 
@@ -30,12 +32,13 @@ async function audit(actor: string, action: string, entityType: string, entityId
 export async function GET() {
   try {
     await requireSitemixAdmin();
-    const [projects, leads, subscriptions, payments, domains, forms, audits, sectors, settings, usersResult] = await Promise.all([
+    const [projects, leads, subscriptions, payments, domains, deployments, forms, audits, sectors, settings, usersResult] = await Promise.all([
       tableRows("studio_projects", "id, owner_id, title, slug, sector, status, management_mode, payment_status, published_at, created_at, updated_at, current_version"),
       tableRows("studio_leads"),
       tableRows("studio_subscriptions"),
       tableRows("studio_payments"),
       tableRows("studio_domains"),
+      tableRows("studio_deployments", "*", "updated_at"),
       tableRows("studio_form_submissions"),
       tableRows("studio_audit_logs", "*", "created_at", 100),
       tableRows("studio_sectors", "*", "sort_order", 100),
@@ -56,6 +59,7 @@ export async function GET() {
       subscriptions,
       payments,
       domains,
+      deployments,
       forms,
       audits,
       sectors,
@@ -103,7 +107,26 @@ export async function POST(request: Request) {
       const { count } = await supabaseAdmin.from("studio_versions").select("id", { count: "exact", head: true }).eq("project_id", id);
       await supabaseAdmin.from("studio_versions").insert({ project_id: id, owner_id: before.owner_id, version_number: Number(count || 0) + 1, snapshot: site, change_note: "Admin içerik düzenlemesi" });
       await audit(session.sub, action, "project", id, before, after);
+      const { data: deployment } = await supabaseAdmin.from("studio_deployments").select("*").eq("project_id", id).maybeSingle();
+      if (deployment?.github_repo_full_name) await syncStudioRepository(after as StudioProject, deployment, deployment.domain || undefined);
       return NextResponse.json({ message: "Site içeriği kaydedildi.", record: after });
+    }
+
+    if (action === "provision") {
+      const { data: project, error } = await supabaseAdmin.from("studio_projects").select("*").eq("id", id).single();
+      if (error) throw error;
+      const deployment = await provisionStudioProject(project as StudioProject);
+      await audit(session.sub, action, "deployment", id, null, deployment);
+      return NextResponse.json({ message: deployment?.status === "ready" ? "GitHub deposu ve Vercel projesi hazırlandı." : deployment?.last_error || "Yayın hazırlama kaydı güncellendi.", record: deployment });
+    }
+
+    if (action === "connect_domain") {
+      const domain = cleanText(body?.domain, 253);
+      const { data: project, error } = await supabaseAdmin.from("studio_projects").select("*").eq("id", id).single();
+      if (error) throw error;
+      const record = await connectStudioDomain(project as StudioProject, domain);
+      await audit(session.sub, action, "domain", record.id, null, record);
+      return NextResponse.json({ message: "Domain kaydedildi; sitemap.xml ve robots.txt site deposunda güncellendi.", record });
     }
 
     if (action === "lead_status") {

@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { isMissingStudioTable, requireStudioUser } from "@/lib/studioServerAuth";
+import { assertCustomerCanManageStudioProject } from "@/lib/studioAccess";
+import { syncStudioRepository } from "@/lib/studioProvisioning";
+import type { StudioProject } from "@/lib/sitemixStudio";
 
 export const runtime = "nodejs";
 
@@ -54,19 +57,23 @@ export async function POST(request: Request) {
 
     const { data: project, error: projectError } = await supabaseAdmin
       .from("studio_projects")
-      .select("id, owner_id")
+      .select("*")
       .eq("id", projectId)
       .eq("owner_id", user.id)
       .single();
     if (projectError || !project) throw projectError || new Error("Proje bulunamadı.");
+    assertCustomerCanManageStudioProject(project);
 
-    const vercelProject = process.env.VERCEL_PROJECT_ID || process.env.VERCEL_PROJECT_NAME;
+    const { data: deployment } = await supabaseAdmin.from("studio_deployments").select("*").eq("project_id", projectId).maybeSingle();
+
+    const vercelProject = deployment?.vercel_project_id || deployment?.vercel_project_name;
 
     if (action === "remove") {
       if (vercelProject) {
         await vercelRequest(`/v9/projects/${encodeURIComponent(vercelProject)}/domains/${encodeURIComponent(domain)}`, { method: "DELETE" });
       }
       await supabaseAdmin.from("studio_domains").delete().eq("project_id", projectId).eq("domain", domain);
+      if (deployment?.github_repo_full_name) await syncStudioRepository(project as StudioProject, deployment);
       return NextResponse.json({ status: "removed", message: "Domain bağlantısı kaldırıldı." });
     }
 
@@ -114,11 +121,15 @@ export async function POST(request: Request) {
     );
     if (domainError) throw domainError;
 
+    if (deployment?.github_repo_full_name) {
+      await syncStudioRepository(project as StudioProject, deployment, domain);
+    }
+
     return NextResponse.json({
       status: verified ? "active" : "dns_pending",
       message: verified
         ? "Domain doğrulandı. SSL sertifikası hazırlanıyor."
-        : process.env.VERCEL_TOKEN
+        : process.env.VERCEL_TOKEN && vercelProject
           ? "Domain eklendi. Aşağıdaki DNS kayıtlarını domain firmanın paneline ekle."
           : "Domain kaydedildi. Otomatik doğrulama için Vercel bağlantısı admin tarafından tamamlanmalı.",
       records,
@@ -136,4 +147,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

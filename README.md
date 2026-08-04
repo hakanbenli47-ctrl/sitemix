@@ -15,14 +15,14 @@ SiteMix Studio, işletmelerin konuşarak mobil uyumlu web sitesi oluşturduğu; 
 ## Kurulum
 
 1. `.env.example` içindeki değişkenleri yerel `.env.local` ve Vercel proje ayarlarında tanımlayın.
-2. Supabase SQL editöründe `supabase/sitemix_studio_setup.sql` dosyasını bir kez çalıştırın.
+2. Yeni kurulumda Supabase SQL editöründe `supabase/sitemix_studio_setup.sql` dosyasını bir kez çalıştırın. Mevcut Studio kurulumu için yalnızca `supabase/studio_provisioning_upgrade.sql` yükseltmesini çalıştırın.
 3. Supabase Authentication içinde Google sağlayıcısını etkinleştirin.
 4. Supabase Site URL ve Redirect URL listesine yerel adresi, `https://www.sitemix.com.tr/studio` ve `https://www.sitemix.com.tr/admin/giris` adreslerini ekleyin.
-5. Domain otomasyonu için Vercel erişim anahtarı, proje kimliği ve gerekiyorsa takım kimliğini tanımlayın.
+5. Her müşteri sitesi için ayrı depo ve Vercel projesi oluşturmak üzere `GITHUB_STUDIO_TOKEN`, `GITHUB_STUDIO_OWNER`, `VERCEL_TOKEN` ve gerekiyorsa `VERCEL_TEAM_ID` değişkenlerini tanımlayın. GitHub anahtarının özel depo oluşturma ve içerik yazma yetkisi; Vercel hesabının da bu GitHub depolarına erişimi olmalıdır.
 
 ## Yayın düzeni
 
-GitHub deposu Vercel projesine bağlanır. Kod değişiklikleri GitHub → Vercel üzerinden yayınlanır. Müşteri içerikleri Supabase’de tutulduğu için içerik değişiklikleri yeni kod dağıtımı gerektirmez.
+Kullanıcı yayın/ödeme seçeneğine geçtiğinde siteye özel, özel bir GitHub deposu ve ona bağlı ayrı bir Vercel projesi hazırlanır. Aylık ödeme onaylanan kullanıcıların Studio değişiklikleri bu site deposuna aktarılır. Tek seferlik kurulum ve SiteMix yönetimi seçeneklerinde müşteri düzenleme paneli kilitli kalır. Admin panelinden domain bağlandığında `robots.txt`, `sitemap.xml` ve canonical adresleri site deposunda otomatik güncellenir.
 
 ## Komutlar
 
@@ -31,4 +31,3 @@ npm run dev
 npm run build
 npm run lint
 ```
-

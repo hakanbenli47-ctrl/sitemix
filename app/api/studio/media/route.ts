@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { requireStudioUser } from "@/lib/studioServerAuth";
+import { assertCustomerCanManageStudioProject } from "@/lib/studioAccess";
 
 export const runtime = "nodejs";
 
@@ -44,11 +45,12 @@ export async function POST(request: Request) {
 
     const { data: project, error: projectError } = await supabaseAdmin
       .from("studio_projects")
-      .select("id")
+      .select("id, management_mode, payment_status")
       .eq("id", projectId)
       .eq("owner_id", user.id)
       .single();
     if (projectError || !project) return NextResponse.json({ message: "Proje bulunamadı." }, { status: 404 });
+    assertCustomerCanManageStudioProject(project);
 
     await ensureBucket();
     const extension = allowedTypes[file.type];

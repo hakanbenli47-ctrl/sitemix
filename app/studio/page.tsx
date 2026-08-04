@@ -20,6 +20,7 @@ import {
   Info,
   Laptop,
   LayoutGrid,
+  LockKeyhole,
   LogOut,
   MessageCircle,
   Palette,
@@ -36,6 +37,7 @@ import SitePreview from "@/app/_components/SitePreview";
 import { applyStudioInstruction, describeStudioChanges, generateStudioSite, getStudioVisualPrompt, slugify, suggestStudioInstructions, type StudioProject, type StudioSite } from "@/lib/sitemixStudio";
 import { advanceStudioConversation, composeStudioPrompt, emptyStudioBrief, getBriefProgress, type StudioBrief } from "@/lib/studioConversation";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { canCustomerManageStudioProject, studioManagementLockMessage } from "@/lib/studioAccess";
 
 type ChatMessage = { id: string; role: "user" | "assistant"; content: string };
 type StudioTab = "chat" | "preview" | "content" | "domain";
@@ -81,6 +83,7 @@ export default function StudioPage() {
   const conversationEndRef = useRef<HTMLDivElement>(null);
 
   const site = project?.current_version || null;
+  const canManage = project ? canCustomerManageStudioProject(project) : true;
   const isTemporaryPreview = Boolean(project && !project.management_mode);
   const previewDaysLeft = project?.created_at
     ? Math.max(0, Math.ceil((new Date(project.created_at).getTime() + 7 * 24 * 60 * 60 * 1000 - Date.now()) / (24 * 60 * 60 * 1000)))
@@ -430,7 +433,7 @@ export default function StudioPage() {
     setProject({ ...project, current_version: { ...site, media } });
   }
 
-  function whatsappHref(mode: "yearly" | "managed") {
+  function whatsappHref(mode: "monthly" | "yearly" | "managed") {
     if (!project || !site) return `https://wa.me/${whatsappPhone}`;
     const preview = `${window.location.origin}/site/${project.slug}`;
     const lines = [
@@ -439,7 +442,8 @@ export default function StudioPage() {
       `İşletme: ${site.businessName}`,
       `Sektör: ${site.sector}`,
       `Site türü: ${site.pageMode === "multi" ? "Çok sayfalı" : "Tek sayfalı"}`,
-      `Yönetim tercihi: ${mode === "yearly" ? "Yıllık kurulum" : "SiteMix yönetsin"}`,
+      `Yönetim tercihi: ${mode === "monthly" ? "Aylık panel yönetimi" : mode === "yearly" ? "Yıllık kurulum" : "SiteMix yönetsin"}`,
+      `Ödeme durumu: Görüşme ve onay bekliyor`,
       `Proje kodu: ${project.id}`,
       `Hesap: ${userEmail}`,
       `Ön izleme: ${preview}`,
@@ -470,15 +474,10 @@ export default function StudioPage() {
     } else {
       setProject({ ...project, management_mode: mode, status: mode === "monthly" ? "ready" : "request_received" });
     }
-    if (mode === "monthly") {
-      setShowDecision(false);
-      setActiveTab("domain");
-      showNotice("Panelden yönetim seçildi. Şimdi domainini bağlayabilirsin.", "success");
-    } else {
-      setShowDecision(false);
-      showNotice("Talebin kaydedildi. SiteMix destek görüşmesi açılıyor.", "success");
-      window.open(whatsappHref(mode), "_blank", "noopener,noreferrer");
-    }
+    setShowDecision(false);
+    setActiveTab("preview");
+    showNotice(mode === "monthly" ? "Aylık yönetim talebin alındı. Ödeme onayı için WhatsApp açılıyor." : "Talebin kaydedildi. SiteMix destek görüşmesi açılıyor.", "success");
+    window.location.href = whatsappHref(mode);
   }
 
   async function checkDomain() {
@@ -571,6 +570,11 @@ export default function StudioPage() {
                 <BriefMemory label="Konum" value={brief.location} />
                 <BriefMemory label="Hizmetler" value={brief.services.length ? brief.services.join(", ") : undefined} />
                 <BriefMemory label="Neden tercih edilmeli" value={brief.businessDetails} />
+                <BriefMemory label="Hakkımızda" value={brief.about} />
+                <BriefMemory label="Çalışma süreci" value={brief.process} />
+                <BriefMemory label="Sık sorulanlar" value={brief.faq} />
+                <BriefMemory label="Müşteri yorumları" value={brief.testimonials} />
+                <BriefMemory label="Fiyat yaklaşımı" value={brief.pricing} />
                 <BriefMemory label="Ana hedef" value={brief.goal} />
                 <BriefMemory label="Telefon / WhatsApp" value={brief.whatsapp || brief.phone || (brief.contactSkipped ? "Daha sonra eklenecek" : undefined)} />
                 <BriefMemory label="Görsel tarz" value={brief.style} />
@@ -599,6 +603,7 @@ export default function StudioPage() {
       </header>
 
       {isTemporaryPreview ? <div className="relative z-40 flex shrink-0 items-center justify-center gap-2 border-b border-amber-300/15 bg-amber-300/[0.07] px-3 py-2 text-[9px] font-bold leading-4 text-amber-100/72 sm:gap-3 sm:text-center sm:text-[10px]"><span className="hidden h-1.5 w-1.5 rounded-full bg-amber-300 sm:block" /><span className="flex-1 sm:flex-none">Geçici ön izleme · Paket seçilmezse {previewDaysLeft} gün içinde silinir.</span><button type="button" onClick={() => setShowDecision(true)} className="shrink-0 rounded-full border border-amber-200/20 bg-amber-100/10 px-3 py-1.5 text-[9px] font-black text-amber-100">Yayınla</button></div> : null}
+      {!canManage && project ? <div className="relative z-40 flex shrink-0 items-center justify-center gap-2 border-b border-indigo-300/15 bg-indigo-300/[0.07] px-3 py-2 text-[9px] font-bold leading-4 text-indigo-100/75 sm:text-[10px]"><LockKeyhole size={13} className="shrink-0" /><span>{studioManagementLockMessage(project)}</span></div> : null}
 
       <AnimatePresence>{notice ? <StudioNoticeBanner notice={notice} onClose={() => setNotice(null)} aboveNavigation /> : null}</AnimatePresence>
 
@@ -607,11 +612,13 @@ export default function StudioPage() {
           <div className="border-b border-white/8 px-3 pb-3 pt-4">
             <div className="mb-3 flex items-center justify-between px-1"><div><p className="text-[9px] font-black uppercase tracking-[.16em] text-[#9f91ff]">Proje çalışma alanı</p><p className="mt-1 text-[11px] font-semibold text-white/28">Konuş, düzenle ve anında gör</p></div><span className="grid h-9 w-9 place-items-center rounded-xl border border-[#82ebca]/12 bg-[#82ebca]/[0.05] text-[#82ebca]"><Sparkles size={15} /></span></div>
             <div className="grid grid-cols-3 gap-1 rounded-2xl border border-white/7 bg-black/15 p-1">
-              {([{ id: "chat", label: "Sohbet", icon: MessageCircle }, { id: "content", label: "İçerik", icon: FileText }, { id: "domain", label: "Domain", icon: Globe2 }] as const).map(({ id, label, icon: Icon }) => <button key={id} onClick={() => setActiveTab(id)} className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-[10px] font-black transition ${activeTab === id ? "bg-white/9 text-white shadow-[0_8px_20px_rgba(0,0,0,.18)]" : "text-white/30 hover:text-white/55"}`}><Icon size={13} />{label}</button>)}
+              {([{ id: "chat", label: "Sohbet", icon: MessageCircle }, { id: "content", label: "İçerik", icon: FileText }, { id: "domain", label: "Domain", icon: Globe2 }] as const).map(({ id, label, icon: Icon }) => <button key={id} disabled={!canManage} onClick={() => setActiveTab(id)} className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-[10px] font-black transition disabled:cursor-not-allowed disabled:opacity-25 ${activeTab === id ? "bg-white/9 text-white shadow-[0_8px_20px_rgba(0,0,0,.18)]" : "text-white/30 hover:text-white/55"}`}><Icon size={13} />{label}</button>)}
             </div>
           </div>
 
-          {activeTab === "chat" ? (
+          {!canManage && project ? <div className="flex flex-1 items-center justify-center p-5"><div className="max-w-sm rounded-[26px] border border-white/8 bg-white/[0.03] p-6 text-center"><span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-indigo-400/10 text-indigo-200"><LockKeyhole size={20} /></span><h2 className="mt-5 text-xl font-black">Düzenleme kilitli</h2><p className="mt-3 text-xs font-medium leading-6 text-white/42">{studioManagementLockMessage(project)}</p><a href={whatsappHref(project.management_mode === "monthly" ? "monthly" : project.management_mode === "yearly" ? "yearly" : "managed")} target="_blank" className="mt-5 inline-flex min-h-11 items-center rounded-full bg-white px-5 text-xs font-black text-[#11121b]">WhatsApp’tan görüş</a></div></div> : null}
+
+          {activeTab === "chat" && canManage ? (
             <><div className="studio-conversation flex-1 space-y-5 overflow-y-auto p-4 sm:p-5">
               {messages.length === 0 ? <div className="studio-empty-state"><span className="grid h-11 w-11 place-items-center rounded-2xl bg-[#8f7cff]/12 text-[#b0a4ff]"><WandSparkles size={20} /></span><p className="mt-4 text-[10px] font-black uppercase tracking-[.15em] text-[#9f91ff]">Tasarım komut merkezi</p><h2 className="mt-2 text-xl font-black tracking-[-.04em]">Siteni yazarak yönet.</h2><p className="mt-2 text-xs font-medium leading-6 text-white/38">Renk, başlık, hareket, bölüm sırası, hizmetler veya sayfa yapısı için ne istediğini söyle.</p></div> : null}
               {!site?.media?.hero ? <button type="button" onClick={() => setActiveTab("content")} className="group flex w-full items-start gap-3 rounded-[22px] border border-[#7ce8c5]/14 bg-[#7ce8c5]/[0.045] p-4 text-left transition hover:bg-[#7ce8c5]/[0.075]"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[#7ce8c5]/10 text-[#89efd2]"><ImagePlus size={18} /></span><span className="flex-1"><span className="block text-[9px] font-black uppercase tracking-[.15em] text-[#89efd2]">Sıradaki güçlü adım</span><strong className="mt-1.5 block text-sm">Ana ekran için gerçek fotoğraf ekle</strong><span className="mt-1.5 block text-[10px] font-medium leading-5 text-white/35">{getStudioVisualPrompt(site as StudioSite)} sitenin güvenini ve kalitesini belirgin biçimde yükseltir.</span></span><ChevronRight size={16} className="mt-3 text-white/25 transition group-hover:translate-x-1 group-hover:text-white/60" /></button> : null}
@@ -622,7 +629,7 @@ export default function StudioPage() {
             <div className="shrink-0 border-t border-white/8 bg-[#090a12]/96 p-3"><div className="mb-3 flex items-center justify-between px-1"><span className="text-[9px] font-black uppercase tracking-[.15em] text-white/24">Önerilen düzenlemeler</span><span className="hidden text-[9px] font-bold text-[#82ebca]/55 sm:inline">Ön izlemeye anında uygulanır</span></div><PromptSuggestions items={editSuggestions.slice(0, 4)} onSelect={(suggestion) => void runInstruction(suggestion)} busy={busy} compact /><div className={editSuggestions.length ? "mt-3" : ""}><StudioComposer value={input} onChange={setInput} onSubmit={sendInstruction} busy={busy} label="Tasarım komutu" placeholder="Başlığı kısalt, hizmetleri yukarı al, daha premium yap..." /></div></div></>
           ) : null}
 
-          {activeTab === "content" && site ? (
+          {activeTab === "content" && site && canManage ? (
             <div className="flex-1 space-y-4 overflow-y-auto p-4">
               <div className="rounded-[22px] border border-white/8 bg-white/[0.025] p-4"><span className="grid h-10 w-10 place-items-center rounded-2xl bg-[#8f7cff]/12 text-[#b1a5ff]"><Palette size={17} /></span><h2 className="mt-4 text-lg font-black tracking-[-.035em]">İçerik ve görünüm</h2><p className="mt-1.5 text-[11px] font-medium leading-5 text-white/32">Temel bilgileri elle düzenleyebilir veya sohbetten doğal dille değiştirebilirsin.</p></div>
               <div className="rounded-[22px] border border-[#78ebc8]/12 bg-[#78ebc8]/[0.035] p-4"><div className="flex items-start gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[#78ebc8]/10 text-[#86efd0]"><ImagePlus size={18} /></span><div><h3 className="text-sm font-black">Siten için gerçek görseller</h3><p className="mt-1.5 text-[11px] font-medium leading-5 text-white/38">{getStudioVisualPrompt(site)} yükle. Net, aydınlık ve mümkünse yatay görsel seç.</p></div></div>
@@ -650,7 +657,7 @@ export default function StudioPage() {
             </div>
           ) : null}
 
-          {activeTab === "domain" ? (
+          {activeTab === "domain" && canManage ? (
             <div className="flex-1 overflow-y-auto p-4"><p className="section-kicker">Ücretsiz domain paneli</p><h2 className="mt-3 text-2xl font-black tracking-[-0.04em]">Domainini bağla.</h2><p className="mt-3 text-xs font-medium leading-6 text-white/42">Mevcut domainini yaz. Gerekli DNS kayıtlarını ve doğrulama durumunu burada görebilirsin.</p>
               <div className="mt-6"><EditorField label="Domain" value={domain} placeholder="ornekisletme.com" onChange={setDomain} /><button type="button" onClick={checkDomain} disabled={!domain.trim() || domainBusy || project.id.startsWith("local-")} className="mt-3 min-h-12 w-full rounded-full bg-white px-5 text-sm font-black text-[#11121b] disabled:opacity-35">{domainBusy ? "Kontrol ediliyor..." : "Domaini kontrol et"}</button></div>
               {domainResult ? <div className="mt-5 rounded-2xl border border-white/8 bg-white/[0.035] p-4"><p className="text-sm font-black">{domainResult.status === "active" ? "Bağlantı aktif" : "DNS ayarı gerekli"}</p><p className="mt-2 text-xs font-medium leading-6 text-white/48">{domainResult.message}</p>{domainResult.records?.map((record) => <div key={`${record.type}-${record.name}`} className="mt-3 rounded-xl bg-black/25 p-3 text-[11px] font-bold"><span className="text-[#8ef1d4]">{record.type}</span> · {record.name} → {record.value}</div>)}</div> : null}
@@ -666,13 +673,13 @@ export default function StudioPage() {
       </div>
 
       <nav className="studio-mobile-nav fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-white/10 bg-[#0d0e17]/94 px-2 pt-2 backdrop-blur-xl lg:hidden">
-        {([{ id: "chat", label: "Sohbet", icon: MessageCircle }, { id: "preview", label: "Ön izleme", icon: Laptop }, { id: "content", label: "İçerik", icon: FileText }, { id: "domain", label: "Domain", icon: Globe2 }] as const).map(({ id, label, icon: Icon }) => <button key={id} onClick={() => setActiveTab(id)} className={`flex flex-col items-center gap-1.5 rounded-xl py-2 text-[9px] font-black ${activeTab === id ? "bg-white/10 text-white" : "text-white/30"}`}><Icon size={15} />{label}</button>)}
+        {([{ id: "chat", label: "Sohbet", icon: MessageCircle }, { id: "preview", label: "Ön izleme", icon: Laptop }, { id: "content", label: "İçerik", icon: FileText }, { id: "domain", label: "Domain", icon: Globe2 }] as const).map(({ id, label, icon: Icon }) => <button key={id} disabled={!canManage && id !== "preview"} onClick={() => setActiveTab(id)} className={`flex flex-col items-center gap-1.5 rounded-xl py-2 text-[9px] font-black disabled:opacity-20 ${activeTab === id ? "bg-white/10 text-white" : "text-white/30"}`}><Icon size={15} />{label}</button>)}
       </nav>
 
       <AnimatePresence>{showDecision ? <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] overflow-y-auto bg-black/78 p-3 backdrop-blur-xl sm:p-6"><div className="mx-auto flex min-h-full max-w-5xl items-center"><motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="w-full rounded-[28px] border border-white/10 bg-[#13141e] p-5 shadow-2xl sm:rounded-[36px] sm:p-8"><div className="flex items-start justify-between gap-4"><div><p className="section-kicker">Tasarım tamamlandı</p><h2 className="mt-3 text-3xl font-black tracking-[-0.05em] sm:text-5xl">Siteni nasıl yayınlayalım?</h2><p className="mt-3 max-w-2xl text-xs font-medium leading-6 text-white/40 sm:text-sm">Ön izlemeni düzenlemeye devam edebilirsin. Yayına geçmek istediğinde sana uygun yönetim yöntemini seçmen yeterli.</p></div><button onClick={() => setShowDecision(false)} className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/7 text-white/55" aria-label="Pencereyi kapat"><X size={18} /></button></div><div className="mt-7 grid gap-3 lg:grid-cols-3">
-        <DecisionCard badge="Panelden yönetim" title="Kendim yöneteyim" text="İçerik, hizmet, görsel ve domain ayarlarını kendi Studio panelinden yönet." action="Bu yöntemle devam et" onClick={() => chooseManagement("monthly")} featured />
-        <DecisionCard badge="Kurulum desteği" title="SiteMix kursun" text="Proje özetini ekibe gönder; domain ve yayın kurulumunu birlikte tamamlayalım." action="Destek görüşmesini aç" onClick={() => chooseManagement("yearly")} />
-        <DecisionCard badge="Tam yönetim" title="SiteMix yönetsin" text="İçerik güncellemeleri ve sektöre özel geliştirmeler dahil yönetimi bize bırak." action="Ekibe yönlendir" onClick={() => chooseManagement("managed")} />
+        <DecisionCard badge="Aylık · Panelden yönetim" title="Kendim yöneteyim" text="Ödeme onayından sonra içerik, hizmet, görsel ve domain ayarlarını kendi Studio panelinden dilediğin gibi yönet." action="Aylık ödeme için WhatsApp’a git" onClick={() => chooseManagement("monthly")} featured />
+        <DecisionCard badge="Tek seferlik kurulum" title="SiteMix kursun" text="Proje özetini ekibe gönder; domain ve yayın kurulumunu birlikte tamamlayalım. Studio düzenleme paneli bu seçenekte kapalı kalır." action="Kurulum için WhatsApp’a git" onClick={() => chooseManagement("yearly")} />
+        <DecisionCard badge="SiteMix yönetimi" title="SiteMix yönetsin" text="İçerik güncellemelerini ve sektöre özel geliştirmeleri bize bırak. Değişiklik taleplerini SiteMix ekibi uygular." action="Yönetim için WhatsApp’a git" onClick={() => chooseManagement("managed")} />
       </div></motion.div></div></motion.div> : null}</AnimatePresence>
     </main>
   );
