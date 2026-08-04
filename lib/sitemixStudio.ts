@@ -2,8 +2,10 @@ export type StudioSection = {
   id: string;
   type:
     | "hero"
+    | "features"
     | "about"
     | "services"
+    | "process"
     | "pricing"
     | "gallery"
     | "testimonials"
@@ -35,6 +37,7 @@ export type StudioDesign = {
 };
 
 export type StudioSite = {
+  contentVersion?: number;
   businessName: string;
   sector: string;
   location: string;
@@ -47,6 +50,8 @@ export type StudioSite = {
   media?: {
     logo?: string;
     hero?: string;
+    about?: string;
+    services?: string[];
     gallery?: string[];
   };
   sections: StudioSection[];
@@ -352,10 +357,11 @@ export function generateStudioSite(prompt: string): StudioSite {
     .filter(Boolean)
     .slice(0, 8);
   const goal = prompt.match(/Sitenin ana hedefi:\s*([^.!?\n]{3,160})/i)?.[1]?.trim();
+  const businessDetails = prompt.match(/İşletmenin öne çıkan yönleri:\s*([^.!?\n]{3,360})/i)?.[1]?.trim();
   const phone = prompt.match(/Telefon:\s*(\+?\d[\d\s()-]{8,}\d)/i)?.[1]?.trim() || "";
   const whatsapp = prompt.match(/WhatsApp:\s*(\+?\d[\d\s()-]{8,}\d)/i)?.[1]?.trim() || phone;
   const wantsPricing = /fiyat|paket|ücret/.test(normalized);
-  const wantsGallery = /galeri|fotoğraf|öncesi|sonrası/.test(normalized);
+  const wantsGallery = /galeri|fotoğraf|görsel|öncesi|sonrası/.test(normalized);
   const wantsTestimonials = /yorum|referans|müşteri deneyimi/.test(normalized);
   const wantsMulti = /çok sayfa|çok sayfalı|sayfalar/.test(normalized);
 
@@ -390,6 +396,15 @@ export function generateStudioSite(prompt: string): StudioSite {
       ctaLabel: goal ? "Hemen başlayalım" : "Bilgi ve randevu al",
     },
     {
+      id: "features",
+      type: "features",
+      title: "Neden bizi tercih ediyorlar?",
+      text: businessDetails || "İyi bir hizmeti yalnızca sonuçla değil, başından sonuna kadar güven veren bir deneyimle sunuyoruz.",
+      items: ["İhtiyaca özel planlama", "Açık bilgilendirme", "Özenli uygulama", "Ulaşılabilir destek"],
+      details: ["Talebi dinler, doğru kapsamı birlikte belirleriz.", "Süreç, süre ve seçenekleri başlamadan önce açıklarız.", "Her aşamada kalite kontrolü ve ayrıntılı çalışma uygularız.", "İşlem öncesi ve sonrasında sorularınıza hızlıca döneriz."],
+      eyebrow: "Güven veren ayrıntılar",
+    },
+    {
       id: "services",
       type: "services",
       title: "Size nasıl yardımcı olabiliriz?",
@@ -407,6 +422,15 @@ export function generateStudioSite(prompt: string): StudioSite {
       text: contentKit.about,
       eyebrow: "Yaklaşımımız",
     },
+    {
+      id: "process",
+      type: "process",
+      title: "Nasıl çalışıyoruz?",
+      text: "İlk iletişimden hizmetin tamamlanmasına kadar ne olacağını bilmeniz için süreci dört net adımda ilerletiyoruz.",
+      items: ["İhtiyacınızı dinliyoruz", "Planı netleştiriyoruz", "Özenle uyguluyoruz", "Sonucu birlikte kontrol ediyoruz"],
+      details: ["Beklentinizi, konumunuzu ve önceliğinizi öğreniyoruz.", "Uygun hizmeti, kapsamı ve zamanlamayı açıkça paylaşıyoruz.", "Belirlenen plana uygun, kontrollü ve düzenli çalışıyoruz.", "Tamamlanan işi değerlendiriyor ve gereken desteği sürdürüyoruz."],
+      eyebrow: "Dört adımda net süreç",
+    },
     ...(wantsPricing
       ? [
           {
@@ -418,7 +442,7 @@ export function generateStudioSite(prompt: string): StudioSite {
           },
         ]
       : []),
-    ...(wantsGallery
+    ...(wantsGallery || wantsMulti
       ? [
           {
             id: "gallery",
@@ -428,7 +452,7 @@ export function generateStudioSite(prompt: string): StudioSite {
           },
         ]
       : []),
-    ...(wantsTestimonials
+    ...(wantsTestimonials || wantsMulti
       ? [
           {
             id: "testimonials",
@@ -459,6 +483,7 @@ export function generateStudioSite(prompt: string): StudioSite {
   ];
 
   return {
+    contentVersion: 2,
     businessName,
     sector: sectorLabel,
     location,
@@ -468,7 +493,7 @@ export function generateStudioSite(prompt: string): StudioSite {
     pageMode: wantsMulti ? "multi" : "single",
     theme,
     design,
-    media: { gallery: [] },
+    media: { services: [], gallery: [] },
     sections,
   };
 }
@@ -479,14 +504,25 @@ export function getStudioVisualPrompt(site: StudioSite) {
   return (sectorContentKits[sector?.id || "default"] || sectorContentKits.default).visualPrompt;
 }
 
+function ensureMultiPageSections(site: StudioSite) {
+  const insertBeforeContact = (section: StudioSection) => {
+    if (site.sections.some((item) => item.type === section.type)) return;
+    const contactIndex = site.sections.findIndex((item) => item.type === "contact");
+    site.sections.splice(contactIndex >= 0 ? contactIndex : site.sections.length, 0, section);
+  };
+  insertBeforeContact({ id: "gallery", type: "gallery", title: "Çalışmalarımız", text: "Gerçek çalışma, mekân ve ekip fotoğraflarınızı bu alanda sergileyin.", eyebrow: "İşimizden kareler" });
+  insertBeforeContact({ id: "testimonials", type: "testimonials", title: "Müşterilerimiz anlatıyor", text: "Yayınlama izni alınmış gerçek müşteri deneyimlerini ekleyin.", items: ["İlk müşteri yorumunu buraya ekleyin.", "İkinci müşteri yorumunu buraya ekleyin.", "Üçüncü müşteri yorumunu buraya ekleyin."] });
+}
+
 export function upgradeStudioSite(site: StudioSite): StudioSite {
   const next: StudioSite = JSON.parse(JSON.stringify(site));
+  const needsContentUpgrade = (next.contentVersion || 1) < 2;
   const sectorValue = next.sector.toLocaleLowerCase("tr-TR");
   const sector = sectorCatalog.find((item) => item.keywords.some((keyword) => sectorValue.includes(keyword.toLocaleLowerCase("tr-TR"))));
   const sectorId = sector?.id || "default";
   const kit = sectorContentKits[sectorId] || sectorContentKits.default;
   next.design = { ...(next.design || sectorDesigns[sectorId] || sectorDesigns.default) };
-  next.media = { gallery: [], ...(next.media || {}) };
+  next.media = { services: [], gallery: [], ...(next.media || {}) };
 
   next.sections = next.sections.map((section) => {
     const upgraded = { ...section };
@@ -515,6 +551,43 @@ export function upgradeStudioSite(site: StudioSite): StudioSite {
     }
     return upgraded;
   });
+
+  if (needsContentUpgrade) {
+    const insertAfter = (targetType: StudioSection["type"], section: StudioSection) => {
+      if (next.sections.some((item) => item.type === section.type)) return;
+      const targetIndex = next.sections.findIndex((item) => item.type === targetType);
+      next.sections.splice(targetIndex >= 0 ? targetIndex + 1 : Math.max(next.sections.length - 1, 0), 0, section);
+    };
+    const insertBeforeContact = (section: StudioSection) => {
+      if (next.sections.some((item) => item.type === section.type)) return;
+      const contactIndex = next.sections.findIndex((item) => item.type === "contact");
+      next.sections.splice(contactIndex >= 0 ? contactIndex : next.sections.length, 0, section);
+    };
+
+    insertAfter("hero", {
+      id: "features",
+      type: "features",
+      title: "Neden bizi tercih ediyorlar?",
+      text: "İyi bir hizmeti yalnızca sonuçla değil, başından sonuna kadar güven veren bir deneyimle sunuyoruz.",
+      items: ["İhtiyaca özel planlama", "Açık bilgilendirme", "Özenli uygulama", "Ulaşılabilir destek"],
+      details: ["Talebi dinler, doğru kapsamı birlikte belirleriz.", "Süreç, süre ve seçenekleri başlamadan önce açıklarız.", "Her aşamada kalite kontrolü ve ayrıntılı çalışma uygularız.", "İşlem öncesi ve sonrasında sorularınıza hızlıca döneriz."],
+      eyebrow: "Güven veren ayrıntılar",
+    });
+    insertAfter("services", {
+      id: "process",
+      type: "process",
+      title: "Nasıl çalışıyoruz?",
+      text: "İlk iletişimden hizmetin tamamlanmasına kadar ne olacağını bilmeniz için süreci dört net adımda ilerletiyoruz.",
+      items: ["İhtiyacınızı dinliyoruz", "Planı netleştiriyoruz", "Özenle uyguluyoruz", "Sonucu birlikte kontrol ediyoruz"],
+      details: ["Beklentinizi, konumunuzu ve önceliğinizi öğreniyoruz.", "Uygun hizmeti, kapsamı ve zamanlamayı açıkça paylaşıyoruz.", "Belirlenen plana uygun, kontrollü ve düzenli çalışıyoruz.", "Tamamlanan işi değerlendiriyor ve gereken desteği sürdürüyoruz."],
+      eyebrow: "Dört adımda net süreç",
+    });
+    if (next.pageMode === "multi") {
+      insertBeforeContact({ id: "gallery", type: "gallery", title: "Çalışmalarımız", text: "Gerçek çalışma, mekân ve ekip fotoğraflarınızı bu alanda sergileyin.", eyebrow: "İşimizden kareler" });
+      insertBeforeContact({ id: "testimonials", type: "testimonials", title: "Müşterilerimiz anlatıyor", text: "Yayınlama izni alınmış gerçek müşteri deneyimlerini ekleyin.", items: ["İlk müşteri yorumunu buraya ekleyin.", "İkinci müşteri yorumunu buraya ekleyin.", "Üçüncü müşteri yorumunu buraya ekleyin."] });
+    }
+    next.contentVersion = 2;
+  }
   return next;
 }
 
@@ -607,8 +680,10 @@ export function applyStudioInstruction(site: StudioSite, instruction: string): S
   const sectionTypeFromName = (value: string): StudioSection["type"] | null => {
     const name = value.toLocaleLowerCase("tr-TR");
     if (/giriş|hero|ana ekran/.test(name)) return "hero";
+    if (/neden biz|avantaj|öne çıkan|farkımız/.test(name)) return "features";
     if (/hizmet/.test(name)) return "services";
     if (/hakkımızda|biz kimiz/.test(name)) return "about";
+    if (/süreç|nasıl çalış/.test(name)) return "process";
     if (/fiyat|paket|ücret/.test(name)) return "pricing";
     if (/galeri|çalışma|fotoğraf/.test(name)) return "gallery";
     if (/yorum|referans/.test(name)) return "testimonials";
@@ -616,7 +691,7 @@ export function applyStudioInstruction(site: StudioSite, instruction: string): S
     if (/iletişim|mesaj|randevu/.test(name)) return "contact";
     return null;
   };
-  const sectionNamePattern = "(giriş|hero|ana ekran|hizmetler|hakkımızda|biz kimiz|fiyatlar|paketler|galeri|çalışmalar|yorumlar|referanslar|sss|sıkça sorulan sorular|iletişim|İletişim)";
+  const sectionNamePattern = "(giriş|hero|ana ekran|neden biz|avantajlar|öne çıkanlar|hizmetler|hakkımızda|biz kimiz|süreç|nasıl çalışıyoruz|fiyatlar|paketler|galeri|çalışmalar|yorumlar|referanslar|sss|sıkça sorulan sorular|iletişim|İletişim)";
   const titleCommand = instruction.match(new RegExp(`${sectionNamePattern}\\s+(?:bölümünün\\s+)?başlığ(?:ını|ı)\\s*[:,-]?\\s*[“\"']?([^.!?\\n”\"']{3,140}?)[”\"']?(?:\\s+olsun|\\s+yap|$)`, "i"));
   if (titleCommand) {
     const type = sectionTypeFromName(titleCommand[1]);
@@ -674,7 +749,7 @@ export function applyStudioInstruction(site: StudioSite, instruction: string): S
       faq.answers[index] = numberedFaqAnswer[2].trim();
     }
   }
-  const reorderCommand = normalized.match(/(giriş|hero|hizmetler|hakkımızda|fiyatlar|paketler|galeri|yorumlar|sss|iletişim)\s+bölümünü\s+(giriş|hero|hizmetler|hakkımızda|fiyatlar|paketler|galeri|yorumlar|sss|iletişim)(?:\s+bölümünün)?\s+(altına|üstüne)/i);
+  const reorderCommand = normalized.match(/(giriş|hero|neden biz|avantajlar|hizmetler|hakkımızda|süreç|fiyatlar|paketler|galeri|yorumlar|sss|iletişim)\s+bölümünü\s+(giriş|hero|neden biz|avantajlar|hizmetler|hakkımızda|süreç|fiyatlar|paketler|galeri|yorumlar|sss|iletişim)(?:\s+bölümünün)?\s+(altına|üstüne)/i);
   if (reorderCommand) {
     const movingType = sectionTypeFromName(reorderCommand[1]);
     const targetType = sectionTypeFromName(reorderCommand[2]);
@@ -713,7 +788,10 @@ export function applyStudioInstruction(site: StudioSite, instruction: string): S
   const backgroundHex = instruction.match(/(?:arka plan|zemin)\s*(?:rengi)?\s*[:,-]?\s*(#[0-9a-f]{6})/i)?.[1];
   if (backgroundHex) next.theme.background = backgroundHex;
 
-  if (/çok sayfa|çok sayfalı/.test(normalized)) next.pageMode = "multi";
+  if (/çok sayfa|çok sayfalı/.test(normalized)) {
+    next.pageMode = "multi";
+    ensureMultiPageSections(next);
+  }
   if (/tek sayfa|tek sayfalı/.test(normalized)) next.pageMode = "single";
 
   const moveAfterHero = (type: StudioSection["type"]) => {
@@ -759,13 +837,35 @@ export function applyStudioInstruction(site: StudioSite, instruction: string): S
       items: ["Müşteri yorumunu buraya ekleyin.", "İkinci müşteri yorumunu buraya ekleyin.", "Üçüncü müşteri yorumunu buraya ekleyin."],
     });
   }
+  if (/neden biz|avantaj|öne çıkan/.test(normalized) && !/kaldır|sil|çıkar/.test(normalized)) {
+    addSection({
+      id: "features",
+      type: "features",
+      title: "Neden bizi tercih ediyorlar?",
+      text: "İhtiyaca uygun planlama, açık iletişim ve özenli uygulama.",
+      items: ["Doğru planlama", "Açık iletişim", "Özenli uygulama", "Ulaşılabilir destek"],
+      details: ["Talebi doğru anlarız.", "Süreci net açıklarız.", "Kaliteyi her aşamada koruruz.", "Sorularınıza hızlıca döneriz."],
+    });
+  }
+  if (/süreç|nasıl çalış/.test(normalized) && !/kaldır|sil|çıkar/.test(normalized)) {
+    addSection({
+      id: "process",
+      type: "process",
+      title: "Nasıl çalışıyoruz?",
+      text: "Talebinizden teslimata kadar süreci net adımlarla yönetiyoruz.",
+      items: ["İhtiyacı dinliyoruz", "Planlıyoruz", "Uyguluyoruz", "Kontrol ediyoruz"],
+      details: ["Beklentinizi öğreniyoruz.", "Kapsam ve zamanı netleştiriyoruz.", "Planı özenle uyguluyoruz.", "Sonucu birlikte değerlendiriyoruz."],
+    });
+  }
 
   const removableSections: Array<[RegExp, StudioSection["type"]]> = [
+    [/neden biz|avantaj|öne çıkan/, "features"],
     [/fiyat|ücret|paket/, "pricing"],
     [/galeri|fotoğraf/, "gallery"],
     [/yorum|referans/, "testimonials"],
     [/sss|sıkça|soru/, "faq"],
     [/hakkımızda/, "about"],
+    [/süreç|nasıl çalış/, "process"],
   ];
   if (/kaldır|sil|çıkar/.test(normalized)) {
     removableSections.forEach(([pattern, type]) => {

@@ -52,7 +52,7 @@ export async function POST(request: Request) {
 
     await ensureBucket();
     const extension = allowedTypes[file.type];
-    const safeSlot = slot === "hero" || slot === "logo" ? slot : "gallery";
+    const safeSlot = ["hero", "logo", "about", "service", "gallery"].includes(slot) ? slot : "gallery";
     const path = `${user.id}/${projectId}/${safeSlot}-${randomUUID()}.${extension}`;
     const bytes = new Uint8Array(await file.arrayBuffer());
     const { error: uploadError } = await supabaseAdmin.storage.from(bucketName).upload(path, bytes, {

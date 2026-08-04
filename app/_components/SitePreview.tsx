@@ -6,13 +6,32 @@ import ContactCapture from "@/app/_components/ContactCapture";
 
 const sectionLabels: Record<StudioSection["type"], string> = {
   hero: "Ana sayfa",
+  features: "Neden biz",
   about: "Hakkımızda",
   services: "Hizmetler",
+  process: "Süreç",
   pricing: "Paketler",
   gallery: "Galeri",
   testimonials: "Yorumlar",
   faq: "SSS",
   contact: "İletişim",
+};
+
+type MultiPageKey = "home" | "about" | "services" | "gallery" | "contact";
+
+const multiPageLabels: Record<MultiPageKey, string> = {
+  home: "Ana sayfa",
+  about: "Hakkımızda",
+  services: "Hizmetler",
+  gallery: "Çalışmalar",
+  contact: "İletişim",
+};
+
+const multiPageDescriptions: Record<Exclude<MultiPageKey, "home">, string> = {
+  about: "İşletmeyi, çalışma yaklaşımını ve müşteriye sunduğu güveni daha yakından tanıyın.",
+  services: "Hizmet kapsamlarını, çalışma adımlarını ve karar vermeden önce merak edilenleri inceleyin.",
+  gallery: "Tamamlanan işlerden, işletme ortamından ve ekipten seçili görselleri keşfedin.",
+  contact: "İhtiyacınızı anlatın; uygun hizmet, süreç ve müsaitlik bilgisiyle hızlıca dönüş alabilirsiniz.",
 };
 
 export default function SitePreview({ site, compact = false, slug }: { site: StudioSite; compact?: boolean; slug?: string }) {
@@ -31,14 +50,30 @@ export default function SitePreview({ site, compact = false, slug }: { site: Stu
     [site.sections],
   );
 
+  const multiPageNavigation = useMemo(() => {
+    const has = (types: StudioSection["type"][]) => site.sections.some((section) => types.includes(section.type));
+    return ([
+      { id: "home" as const, label: multiPageLabels.home, visible: true },
+      { id: "about" as const, label: multiPageLabels.about, visible: has(["about", "features"]) },
+      { id: "services" as const, label: multiPageLabels.services, visible: has(["services", "pricing", "process"]) },
+      { id: "gallery" as const, label: multiPageLabels.gallery, visible: has(["gallery", "testimonials"]) },
+      { id: "contact" as const, label: multiPageLabels.contact, visible: has(["contact", "faq"]) },
+    ]).filter((item) => item.visible);
+  }, [site.sections]);
+
   const visibleSections = useMemo(() => {
     if (site.pageMode === "single") return site.sections;
     if (activePage === "home") {
-      const hero = site.sections.find((section) => section.type === "hero");
-      const highlights = site.sections.filter((section) => ["services", "testimonials"].includes(section.type));
-      return [hero, ...highlights].filter(Boolean) as StudioSection[];
+      return site.sections.filter((section) => ["hero", "features", "services", "testimonials"].includes(section.type));
     }
-    return site.sections.filter((section) => section.id === activePage || section.type === activePage);
+    const pageTypes: Record<Exclude<MultiPageKey, "home">, StudioSection["type"][]> = {
+      about: ["about", "features", "process", "testimonials"],
+      services: ["services", "pricing", "process", "faq"],
+      gallery: ["gallery", "testimonials"],
+      contact: ["contact", "faq"],
+    };
+    const orderedTypes = pageTypes[activePage as Exclude<MultiPageKey, "home">] || [];
+    return orderedTypes.flatMap((type) => site.sections.filter((section) => section.type === type));
   }, [activePage, site.pageMode, site.sections]);
 
   function navigate(target: string) {
@@ -81,8 +116,8 @@ export default function SitePreview({ site, compact = false, slug }: { site: Stu
 
           <nav className="hidden items-center gap-1 md:flex">
             <button type="button" onClick={() => navigate("home")} className="rounded-full px-3 py-2 text-[10px] font-black uppercase tracking-[.08em] opacity-55 transition hover:opacity-100">Ana sayfa</button>
-            {navigableSections.slice(0, 5).map((section) => (
-              <button key={section.id} type="button" onClick={() => navigate(site.pageMode === "multi" ? section.id : section.type)} className={`rounded-full px-3 py-2 text-[10px] font-black uppercase tracking-[.08em] transition ${activePage === section.id ? "opacity-100" : "opacity-55 hover:opacity-100"}`}>{sectionLabels[section.type]}</button>
+            {(site.pageMode === "multi" ? multiPageNavigation.slice(1) : navigableSections.slice(0, 5).map((section) => ({ id: section.id, label: sectionLabels[section.type], type: section.type }))).map((item) => (
+              <button key={item.id} type="button" onClick={() => navigate(site.pageMode === "multi" ? item.id : ("type" in item ? item.type : item.id))} className={`rounded-full px-3 py-2 text-[10px] font-black uppercase tracking-[.08em] transition ${activePage === item.id ? "opacity-100" : "opacity-55 hover:opacity-100"}`}>{item.label}</button>
             ))}
           </nav>
 
@@ -92,16 +127,17 @@ export default function SitePreview({ site, compact = false, slug }: { site: Stu
           </div>
         </div>
 
-        {mobileMenu ? <nav className="grid gap-1 border-t px-4 py-3 md:hidden" style={{ borderColor: `${theme.foreground}12`, background: theme.background }}><button type="button" onClick={() => navigate("home")} className="rounded-xl px-3 py-3 text-left text-xs font-black">Ana sayfa</button>{navigableSections.map((section) => <button key={section.id} type="button" onClick={() => navigate(site.pageMode === "multi" ? section.id : section.type)} className="rounded-xl px-3 py-3 text-left text-xs font-black" style={{ background: `${theme.accent}0B` }}>{sectionLabels[section.type]}</button>)}</nav> : null}
+        {mobileMenu ? <nav className="grid gap-1 border-t px-4 py-3 md:hidden" style={{ borderColor: `${theme.foreground}12`, background: theme.background }}>{(site.pageMode === "multi" ? multiPageNavigation : [{ id: "home", label: "Ana sayfa", type: "home" }, ...navigableSections.map((section) => ({ id: section.id, label: sectionLabels[section.type], type: section.type }))]).map((item) => <button key={item.id} type="button" onClick={() => navigate("type" in item ? item.type : item.id)} className="rounded-xl px-3 py-3 text-left text-xs font-black" style={{ background: `${theme.accent}0B` }}>{item.label}</button>)}</nav> : null}
       </header>
 
       {site.pageMode === "multi" && activePage !== "home" ? (
         <div className="border-b px-5 py-3 text-[9px] font-black uppercase tracking-[.14em] opacity-45 sm:px-9" style={{ borderColor: `${theme.foreground}12` }}>
-          <button type="button" onClick={() => navigate("home")}>Ana sayfa</button><span className="mx-2">/</span><span>{sectionLabels[visibleSections[0]?.type] || "Sayfa"}</span>
+          <button type="button" onClick={() => navigate("home")}>Ana sayfa</button><span className="mx-2">/</span><span>{multiPageLabels[activePage as MultiPageKey] || "Sayfa"}</span>
         </div>
       ) : null}
 
       <main key={activePage} className="animate-[site-page-in_.38s_ease-out]">
+        {site.pageMode === "multi" && activePage !== "home" ? <section className="relative overflow-hidden border-b px-5 py-12 sm:px-9 sm:py-16" style={{ borderColor: `${theme.foreground}12`, background: `${theme.accent}08` }}><div className="absolute -right-20 -top-32 h-72 w-72 rounded-full opacity-15 blur-[90px]" style={{ background: theme.accent }} /><div className="relative mx-auto max-w-6xl"><p className="text-[9px] font-black uppercase tracking-[.18em]" style={{ color: theme.accent }}>{site.location} · {site.businessName}</p><h1 className="mt-4 text-4xl font-black tracking-[-.06em] sm:text-6xl">{multiPageLabels[activePage as MultiPageKey]}</h1><p className="mt-4 max-w-2xl text-sm font-medium leading-7 opacity-55">{multiPageDescriptions[activePage as Exclude<MultiPageKey, "home">]}</p></div></section> : null}
         {visibleSections.map((section) => {
           if (section.type === "hero") {
             return (
@@ -135,20 +171,28 @@ export default function SitePreview({ site, compact = false, slug }: { site: Stu
             );
           }
 
+          if (section.type === "features") {
+            return <section id="site-section-features" key={section.id} className={`border-t px-5 sm:px-9 ${sectionSpacing}`} style={{ borderColor: `${theme.foreground}12`, background: `${theme.accent}05` }}><SectionHeading eyebrow={section.eyebrow || "Neden biz"} title={section.title} text={section.text} accent={theme.accent} /><div className="mx-auto mt-9 grid max-w-6xl gap-3 sm:grid-cols-2 lg:grid-cols-4">{(section.items || []).map((item, index) => <article key={`${item}-${index}`} className={`border p-5 ${cardRadius}`} style={{ borderColor: `${theme.foreground}10`, background: theme.background }}><span className="text-[9px] font-black" style={{ color: theme.accent }}>0{index + 1}</span><h3 className="mt-8 text-lg font-black tracking-[-.035em]">{item}</h3><p className="mt-3 text-[10px] font-medium leading-5 opacity-48">{section.details?.[index] || "İşletmeye özel güçlü bir hizmet avantajı."}</p></article>)}</div></section>;
+          }
+
           if (section.type === "services") {
             return (
               <section id="site-section-services" key={section.id} className={`border-t px-5 sm:px-9 ${sectionSpacing}`} style={{ borderColor: `${theme.foreground}12` }}>
                 <SectionHeading eyebrow={section.eyebrow || "Hizmetler"} title={section.title} text={section.text} accent={theme.accent} />
                 <div className="mx-auto mt-9 grid max-w-6xl gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  {(section.items || []).map((item, index) => <button key={`${item}-${index}`} type="button" onClick={() => setSelectedService(index)} className={`group min-h-52 border p-5 text-left transition hover:-translate-y-1 ${cardRadius}`} style={{ borderColor: selectedService === index ? `${theme.accent}70` : `${theme.foreground}12`, background: selectedService === index ? `${theme.accent}12` : `${theme.foreground}04` }}><span className="flex items-center justify-between"><span className="text-[9px] font-black" style={{ color: theme.accent }}>0{index + 1}</span><span className="grid h-7 w-7 place-items-center rounded-full border opacity-35 transition group-hover:opacity-100" style={{ borderColor: `${theme.foreground}25` }}>↗</span></span><h3 className="mt-10 text-lg font-black tracking-[-.035em]">{item}</h3><p className="mt-3 text-[10px] font-medium leading-5 opacity-48">{section.details?.[index] || "Kapsamı ve size uygun seçenekleri birlikte netleştirelim."}</p></button>)}
+                  {(section.items || []).map((item, index) => { const serviceImage = site.media?.services?.[index]; return <button key={`${item}-${index}`} type="button" onClick={() => setSelectedService(index)} className={`group relative min-h-60 overflow-hidden border bg-cover bg-center p-5 text-left transition hover:-translate-y-1 ${cardRadius}`} style={{ borderColor: selectedService === index ? `${theme.accent}70` : `${theme.foreground}12`, backgroundColor: selectedService === index ? `${theme.accent}12` : `${theme.foreground}04`, backgroundImage: serviceImage ? `linear-gradient(to top, rgba(4,5,8,.90), rgba(4,5,8,.08) 75%), url("${serviceImage}")` : undefined, color: serviceImage ? "white" : theme.foreground }}><span className="relative flex items-center justify-between"><span className="text-[9px] font-black" style={{ color: serviceImage ? "white" : theme.accent }}>0{index + 1}</span><span className="grid h-7 w-7 place-items-center rounded-full border opacity-35 transition group-hover:opacity-100" style={{ borderColor: serviceImage ? "#ffffff55" : `${theme.foreground}25` }}>↗</span></span><div className="relative mt-20"><h3 className="text-lg font-black tracking-[-.035em]">{item}</h3><p className="mt-3 text-[10px] font-medium leading-5 opacity-62">{section.details?.[index] || "Kapsamı ve size uygun seçenekleri birlikte netleştirelim."}</p></div></button>; })}
                 </div>
                 {(section.items || [])[selectedService] ? <div className="mx-auto mt-3 flex max-w-6xl flex-col gap-4 rounded-[22px] border p-5 sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: `${theme.accent}30`, background: `${theme.accent}0A` }}><div><p className="text-[9px] font-black uppercase tracking-[.14em]" style={{ color: theme.accent }}>Seçtiğiniz hizmet</p><h3 className="mt-1 text-lg font-black">{section.items?.[selectedService]}</h3></div><button type="button" onClick={contactAction} className="rounded-full px-5 py-3 text-[10px] font-black" style={{ background: theme.accent, color: theme.background }}>Bu hizmet için bilgi al</button></div> : null}
               </section>
             );
           }
 
+          if (section.type === "process") {
+            return <section id="site-section-process" key={section.id} className={`border-t px-5 sm:px-9 ${sectionSpacing}`} style={{ borderColor: `${theme.foreground}12` }}><SectionHeading eyebrow={section.eyebrow || "Çalışma süreci"} title={section.title} text={section.text} accent={theme.accent} /><div className="mx-auto mt-10 grid max-w-6xl gap-0 md:grid-cols-4">{(section.items || []).map((item, index) => <article key={`${item}-${index}`} className="relative border-l px-5 py-5 first:border-l-0 md:min-h-52" style={{ borderColor: `${theme.foreground}12` }}><span className="grid h-10 w-10 place-items-center rounded-full text-[10px] font-black" style={{ background: `${theme.accent}14`, color: theme.accent }}>0{index + 1}</span><h3 className="mt-8 text-lg font-black tracking-[-.035em]">{item}</h3><p className="mt-3 text-[10px] font-medium leading-5 opacity-48">{section.details?.[index] || "Bu adımın ayrıntıları işletmenize göre netleştirilir."}</p></article>)}</div></section>;
+          }
+
           if (section.type === "about") {
-            return <section id="site-section-about" key={section.id} className={`border-t px-5 sm:px-9 ${sectionSpacing}`} style={{ borderColor: `${theme.foreground}12` }}><div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[.88fr_1.12fr] lg:items-center"><div className={`${cardRadius} overflow-hidden border`} style={{ borderColor: `${theme.foreground}12`, background: `${theme.accent}08` }}><div className="border-b p-6" style={{ borderColor: `${theme.foreground}10` }}><p className="text-[9px] font-black uppercase tracking-[.16em]" style={{ color: theme.accent }}>{section.eyebrow || "Çalışma yaklaşımımız"}</p><h3 className="mt-3 text-2xl font-black tracking-[-.045em]">Güven, ayrıntılarda kurulur.</h3></div><div className="divide-y" style={{ borderColor: `${theme.foreground}10` }}>{["İhtiyacı doğru dinleriz", "Süreci açıkça paylaşırız", "Her aşamada ulaşılabiliriz", "İşi özenle tamamlarız"].map((item, index) => <div key={item} className="flex items-center gap-4 px-6 py-4"><span className="text-[9px] font-black" style={{ color: theme.accent }}>0{index + 1}</span><strong className="text-xs">{item}</strong></div>)}</div></div><div><p className="text-[9px] font-black uppercase tracking-[.18em]" style={{ color: theme.accent }}>{section.eyebrow || "Hakkımızda"}</p><h2 className="mt-4 text-4xl font-black leading-[1] tracking-[-.06em] sm:text-5xl">{section.title}</h2><p className="mt-5 text-sm font-medium leading-8 opacity-58">{section.text}</p><div className="mt-7 flex flex-wrap gap-2">{["Açık iletişim", "Özenli çalışma", "Zamanında teslim", "Sürekli destek"].map((item) => <span key={item} className="rounded-full border px-4 py-2.5 text-[10px] font-black" style={{ borderColor: `${theme.foreground}12` }}>{item}</span>)}</div></div></div></section>;
+            return <section id="site-section-about" key={section.id} className={`border-t px-5 sm:px-9 ${sectionSpacing}`} style={{ borderColor: `${theme.foreground}12` }}><div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[.88fr_1.12fr] lg:items-center"><div className={`${cardRadius} min-h-[420px] overflow-hidden border bg-cover bg-center`} style={{ borderColor: `${theme.foreground}12`, backgroundImage: site.media?.about ? `linear-gradient(to top, rgba(4,5,8,.78), rgba(4,5,8,.08) 70%), url("${site.media.about}")` : `linear-gradient(145deg, ${theme.foreground}, ${theme.accent})`, color: theme.background }}><div className="flex min-h-[420px] flex-col justify-end p-6"><p className="text-[9px] font-black uppercase tracking-[.16em] opacity-60">{site.businessName} · İşletme ve ekip</p><h3 className="mt-3 text-2xl font-black tracking-[-.045em]">Güven, ayrıntılarda kurulur.</h3><div className="mt-6 grid gap-2">{["İhtiyacı doğru dinleriz", "Süreci açıkça paylaşırız", "Her aşamada ulaşılabiliriz", "İşi özenle tamamlarız"].map((item, index) => <div key={item} className="flex items-center gap-3 border-t pt-3" style={{ borderColor: `${theme.background}20` }}><span className="text-[9px] font-black">0{index + 1}</span><strong className="text-xs">{item}</strong></div>)}</div></div></div><div><p className="text-[9px] font-black uppercase tracking-[.18em]" style={{ color: theme.accent }}>{section.eyebrow || "Hakkımızda"}</p><h2 className="mt-4 text-4xl font-black leading-[1] tracking-[-.06em] sm:text-5xl">{section.title}</h2><p className="mt-5 text-sm font-medium leading-8 opacity-58">{section.text}</p><div className="mt-7 flex flex-wrap gap-2">{["Açık iletişim", "Özenli çalışma", "Zamanında teslim", "Sürekli destek"].map((item) => <span key={item} className="rounded-full border px-4 py-2.5 text-[10px] font-black" style={{ borderColor: `${theme.foreground}12` }}>{item}</span>)}</div></div></div></section>;
           }
 
           if (section.type === "pricing") {
@@ -159,7 +203,7 @@ export default function SitePreview({ site, compact = false, slug }: { site: Stu
             const serviceItems = site.sections.find((item) => item.type === "services")?.items || [];
             const galleryMedia = site.media?.gallery || [];
             const galleryCount = Math.max(galleryMedia.length, 6);
-            return <section id="site-section-gallery" key={section.id} className={`border-t px-5 sm:px-9 ${sectionSpacing}`} style={{ borderColor: `${theme.foreground}12` }}><SectionHeading eyebrow={section.eyebrow || "Çalışmalar"} title={section.title} text={section.text} accent={theme.accent} /><div className="mx-auto mt-9 grid max-w-6xl grid-cols-2 gap-3 sm:grid-cols-3">{Array.from({ length: galleryCount }, (_, item) => <button type="button" onClick={() => setSelectedGallery(item)} key={item} className={`group relative overflow-hidden border bg-cover bg-center text-left ${cardRadius} ${item === 0 || item === 4 ? "col-span-2 aspect-[1.8] sm:col-span-1 sm:aspect-[.82]" : "aspect-[.82]"}`} style={{ borderColor: `${theme.foreground}12`, backgroundImage: galleryMedia[item] ? `linear-gradient(to top, rgba(4,5,7,.82), rgba(4,5,7,.04) 65%), url("${galleryMedia[item]}")` : `linear-gradient(${135 + item * 18}deg, ${theme.foreground} 0%, ${theme.foreground}E8 54%, ${theme.accent} 140%)`, color: theme.background }}><span className="absolute inset-x-0 top-0 h-px opacity-70" style={{ background: theme.accent }} /><span className="absolute left-4 top-4 text-[8px] font-black uppercase tracking-[.15em] opacity-55">{galleryMedia[item] ? `Çalışma 0${item + 1}` : "Görsel bekleniyor"}</span><span className="absolute bottom-4 left-4 right-12 text-sm font-black tracking-[-.03em]">{serviceItems[item % Math.max(serviceItems.length, 1)] || "Proje görseli ekleyin"}</span><span className="absolute bottom-3 right-3 grid h-8 w-8 place-items-center rounded-full border text-xs font-black opacity-55 transition group-hover:opacity-100" style={{ borderColor: `${theme.background}35` }}>↗</span></button>)}</div></section>;
+            return <section id="site-section-gallery" key={section.id} className={`border-t px-5 sm:px-9 ${sectionSpacing}`} style={{ borderColor: `${theme.foreground}12` }}><SectionHeading eyebrow={section.eyebrow || "Çalışmalar"} title={section.title} text={section.text} accent={theme.accent} /><div className="mx-auto mt-9 grid max-w-6xl grid-cols-2 gap-3 sm:grid-cols-3">{Array.from({ length: galleryCount }, (_, item) => <button type="button" onClick={() => setSelectedGallery(item)} key={item} className={`group relative overflow-hidden border bg-cover bg-center text-left ${cardRadius} ${item === 0 || item === 4 ? "col-span-2 aspect-[1.8] sm:col-span-1 sm:aspect-[.82]" : "aspect-[.82]"}`} style={{ borderColor: `${theme.foreground}12`, backgroundImage: galleryMedia[item] ? `linear-gradient(to top, rgba(4,5,7,.82), rgba(4,5,7,.04) 65%), url("${galleryMedia[item]}")` : `linear-gradient(${135 + item * 18}deg, ${theme.foreground} 0%, ${theme.foreground}E8 54%, ${theme.accent} 140%)`, color: theme.background }}><span className="absolute inset-x-0 top-0 h-px opacity-70" style={{ background: theme.accent }} /><span className="absolute left-4 top-4 text-[8px] font-black uppercase tracking-[.15em] opacity-55">Çalışma 0{item + 1}</span><span className="absolute bottom-4 left-4 right-12 text-sm font-black tracking-[-.03em]">{serviceItems[item % Math.max(serviceItems.length, 1)] || site.businessName}</span><span className="absolute bottom-3 right-3 grid h-8 w-8 place-items-center rounded-full border text-xs font-black opacity-55 transition group-hover:opacity-100" style={{ borderColor: `${theme.background}35` }}>↗</span></button>)}</div></section>;
           }
 
           if (section.type === "testimonials") {
@@ -178,7 +222,7 @@ export default function SitePreview({ site, compact = false, slug }: { site: Stu
         })}
       </main>
 
-      <footer className="border-t px-5 py-8 sm:px-9" style={{ borderColor: `${theme.foreground}12` }}><div className="mx-auto flex max-w-6xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><strong className="text-sm font-black">{site.businessName}</strong><p className="mt-1 text-[9px] font-bold opacity-32">© {new Date().getFullYear()} · SiteMix ile hazırlandı</p></div><div className="flex flex-wrap gap-4 text-[9px] font-black uppercase tracking-[.1em] opacity-38">{navigableSections.slice(0, 4).map((section) => <button key={section.id} type="button" onClick={() => navigate(site.pageMode === "multi" ? section.id : section.type)}>{sectionLabels[section.type]}</button>)}</div></div></footer>
+      <footer className="border-t px-5 py-8 sm:px-9" style={{ borderColor: `${theme.foreground}12` }}><div className="mx-auto flex max-w-6xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><strong className="text-sm font-black">{site.businessName}</strong><p className="mt-1 text-[9px] font-bold opacity-32">© {new Date().getFullYear()} · SiteMix ile hazırlandı</p></div><div className="flex flex-wrap gap-4 text-[9px] font-black uppercase tracking-[.1em] opacity-38">{(site.pageMode === "multi" ? multiPageNavigation.slice(0, 5) : navigableSections.slice(0, 4).map((section) => ({ id: section.id, label: sectionLabels[section.type], type: section.type }))).map((item) => <button key={item.id} type="button" onClick={() => navigate(site.pageMode === "multi" ? item.id : ("type" in item ? item.type : item.id))}>{item.label}</button>)}</div></div></footer>
 
       {selectedGallery !== null ? <button type="button" onClick={() => setSelectedGallery(null)} className="fixed inset-0 z-[100] grid place-items-center bg-black/82 p-6 backdrop-blur-xl" aria-label="Galeri görünümünü kapat"><span className="absolute right-5 top-5 grid h-11 w-11 place-items-center rounded-full bg-white/10 text-xl text-white">×</span><span className="flex aspect-[4/5] max-h-[78vh] w-full max-w-lg flex-col justify-end rounded-[32px] border border-white/10 bg-cover bg-center p-8 text-left text-white shadow-2xl" style={{ backgroundImage: site.media?.gallery?.[selectedGallery] ? `linear-gradient(to top, rgba(4,5,7,.86), rgba(4,5,7,.04) 70%), url("${site.media.gallery[selectedGallery]}")` : `linear-gradient(${145 + selectedGallery * 18}deg, #0b0b0f, ${theme.accent} 160%)` }}><small className="text-[9px] font-black uppercase tracking-[.16em] opacity-55">Çalışma 0{selectedGallery + 1}</small><strong className="mt-3 text-3xl font-black tracking-[-.05em]">{site.sections.find((item) => item.type === "services")?.items?.[selectedGallery % Math.max(site.sections.find((item) => item.type === "services")?.items?.length || 1, 1)] || "Proje görseli ekleyin"}</strong></span></button> : null}
     </div>
