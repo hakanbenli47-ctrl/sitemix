@@ -39,7 +39,7 @@ import { supabaseClient } from "@/lib/supabaseClient";
 
 type ChatMessage = { id: string; role: "user" | "assistant"; content: string };
 type StudioTab = "chat" | "preview" | "content" | "domain";
-type StudioNotice = { message: string; tone: "success" | "error" | "info" };
+type StudioNotice = { message: string; tone: "success" | "error" | "info"; durationMs?: number };
 
 const whatsappPhone = "905515550302";
 
@@ -86,13 +86,13 @@ export default function StudioPage() {
     ? Math.max(0, Math.ceil((new Date(project.created_at).getTime() + 7 * 24 * 60 * 60 * 1000 - Date.now()) / (24 * 60 * 60 * 1000)))
     : 7;
 
-  function showNotice(message: string, tone: StudioNotice["tone"] = "info") {
-    setNotice({ message, tone });
+  function showNotice(message: string, tone: StudioNotice["tone"] = "info", durationMs?: number) {
+    setNotice({ message, tone, durationMs });
   }
 
   useEffect(() => {
     if (!notice) return;
-    const timeout = window.setTimeout(() => setNotice(null), notice.tone === "error" ? 6500 : 4500);
+    const timeout = window.setTimeout(() => setNotice(null), notice.durationMs ?? (notice.tone === "error" ? 6500 : 4500));
     return () => window.clearTimeout(timeout);
   }, [notice]);
 
@@ -158,7 +158,7 @@ export default function StudioPage() {
       if (response.ok && result.project) {
         setProject(result.project);
         setProjects((current) => [result.project, ...current.filter((item) => item.id !== result.project.id)]);
-        showNotice("Ön izlemen hazırlandı ve hesabına kaydedildi.", "success");
+        showNotice("Geçici ön izlemen hazır.", "success", 10_000);
       } else if (result?.setupRequired) {
         showNotice("Ön izlemen hazır. Hesaba kaydetme işlemi kurulum tamamlanınca etkinleşecek.", "info");
       } else {
