@@ -7,7 +7,7 @@ type GithubRepository = { id: number; name: string; full_name: string; html_url:
 
 function githubHeaders() {
   const token = process.env.GITHUB_STUDIO_TOKEN || process.env.GITHUB_TOKEN;
-  if (!token) throw new Error("GITHUB_STUDIO_TOKEN veya GITHUB_TOKEN eksik.");
+  if (!token) throw new Error("GitHub deposu oluşturmak için GITHUB_STUDIO_TOKEN veya GITHUB_TOKEN eklenmeli.");
   return {
     Accept: "application/vnd.github+json",
     Authorization: `Bearer ${token}`,
@@ -21,26 +21,6 @@ async function githubRequest<T>(path: string, init?: RequestInit, allowed: numbe
   const result = await response.json().catch(() => null);
   if (!response.ok && !allowed.includes(response.status)) {
     throw new Error(result?.message || `GitHub işlemi tamamlanamadı (${response.status}).`);
-  }
-  return { response, result: result as T };
-}
-
-function vercelPath(path: string) {
-  const teamId = process.env.VERCEL_TEAM_ID;
-  return `https://api.vercel.com${path}${path.includes("?") ? "&" : "?"}${teamId ? `teamId=${encodeURIComponent(teamId)}` : ""}`.replace(/[?&]$/, "");
-}
-
-async function vercelRequest<T>(path: string, init?: RequestInit, allowed: number[] = []) {
-  const token = process.env.VERCEL_TOKEN;
-  if (!token) throw new Error("VERCEL_TOKEN eksik.");
-  const response = await fetch(vercelPath(path), {
-    ...init,
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...(init?.headers || {}) },
-    cache: "no-store",
-  });
-  const result = await response.json().catch(() => null);
-  if (!response.ok && !allowed.includes(response.status)) {
-    throw new Error(result?.error?.message || result?.message || `Vercel işlemi tamamlanamadı (${response.status}).`);
   }
   return { response, result: result as T };
 }
@@ -72,21 +52,6 @@ async function ensureGithubRepository(project: StudioProject) {
     throw new Error(`GitHub anahtarı ${owner} hesabında depo oluşturma yetkisine sahip değil.`);
   }
   return created.result;
-}
-
-async function ensureVercelProject(repository: GithubRepository, project: StudioProject) {
-  const name = repositoryName(project);
-  const created = await vercelRequest<{ id?: string; name?: string; link?: { productionBranch?: string }; targets?: { production?: { url?: string } } }>("/v10/projects", {
-    method: "POST",
-    body: JSON.stringify({
-      name,
-      framework: null,
-      gitRepository: { type: "github", repo: repository.full_name },
-    }),
-  }, [409]);
-  if (created.response.ok) return created.result;
-  const existing = await vercelRequest<{ id?: string; name?: string; targets?: { production?: { url?: string } } }>(`/v9/projects/${encodeURIComponent(name)}`);
-  return existing.result;
 }
 
 async function commitRepositoryFiles(repository: GithubRepository, files: ReturnType<typeof buildStudioRepositoryFiles>, message: string) {
@@ -134,32 +99,31 @@ export async function provisionStudioProject(project: StudioProject): Promise<St
   if (!githubConfigured) {
     return deploymentRecord(project.id, {
       status: "configuration_required",
-      last_error: "SiteMix AI projesindeki GITHUB_TOKEN ve GITHUB_OWNER değişkenleri bu projeye de eklenmeli.",
+      last_error: "GitHub deposu oluşturmak için Vercel'deki SiteMix projesine GITHUB_TOKEN eklenmeli. GITHUB_OWNER yazılmazsa hakanbenli47-ctrl otomatik kullanılır.",
     });
   }
 
   try {
     const repository = await ensureGithubRepository(project);
-    const vercelProject = process.env.VERCEL_TOKEN ? await ensureVercelProject(repository, project) : null;
-    const fallbackHost = `${vercelProject?.name || repository.name}.vercel.app`;
-    const commitSha = await commitRepositoryFiles(repository, buildStudioRepositoryFiles(project.current_version, undefined, fallbackHost), "Publish SiteMix website");
+    const commitSha = await commitRepositoryFiles(repository, buildStudioRepositoryFiles(project.current_version), "Publish SiteMix website");
     return deploymentRecord(project.id, {
       github_repo_id: repository.id,
       github_repo_name: repository.name,
       github_repo_full_name: repository.full_name,
       github_repo_url: repository.html_url,
       github_commit_sha: commitSha,
-      vercel_project_id: vercelProject?.id || null,
-      vercel_project_name: vercelProject?.name || repository.name,
-      vercel_url: fallbackHost ? `https://${fallbackHost}` : null,
-      status: vercelProject ? "ready" : "vercel_connection_required",
-      last_error: vercelProject ? null : "GitHub deposu hazır. Tam otomatik Vercel projesi oluşturmak için VERCEL_TOKEN eklenmeli; dilerseniz depoyu Vercel panelinden de bir kez içe aktarabilirsiniz.",
+      vercel_project_id: null,
+      vercel_project_name: null,
+      vercel_url: null,
+      status: "ready",
+      last_error: null,
       provisioned_at: new Date().toISOString(),
+      seo_synced_at: new Date().toISOString(),
     });
   } catch (error) {
     return deploymentRecord(project.id, {
       status: "error",
-      last_error: error instanceof Error ? error.message : "Site deposu hazırlanamadı.",
+      last_error: error instanceof Error ? error.message : "GitHub site deposu hazırlanamadı.",
     });
   }
 }
@@ -167,18 +131,23 @@ export async function provisionStudioProject(project: StudioProject): Promise<St
 export async function syncStudioRepository(project: StudioProject, deployment: StudioDeployment, domain?: string | null): Promise<StudioDeployment> {
   if (!deployment.github_repo_full_name) throw new Error("Bu proje için GitHub deposu henüz hazır değil.");
   const repo = await githubRequest<GithubRepository>(`/repos/${deployment.github_repo_full_name}`);
-  const fallbackHost = deployment.vercel_project_name ? `${deployment.vercel_project_name}.vercel.app` : undefined;
   const resolvedDomain = domain === undefined ? deployment.domain || undefined : domain || undefined;
-  const commitSha = await commitRepositoryFiles(repo.result, buildStudioRepositoryFiles(project.current_version as StudioSite, resolvedDomain, fallbackHost), resolvedDomain ? `Connect domain ${resolvedDomain}` : "Update website content");
-  const connectedToVercel = Boolean(deployment.vercel_project_id);
+  const commitSha = await commitRepositoryFiles(
+    repo.result,
+    buildStudioRepositoryFiles(project.current_version as StudioSite, resolvedDomain),
+    resolvedDomain ? `Update website and SEO for ${resolvedDomain}` : "Update website content",
+  );
   return {
     ...deployment,
     project_id: project.id,
     domain: resolvedDomain || null,
     github_commit_sha: commitSha,
+    vercel_project_id: null,
+    vercel_project_name: null,
+    vercel_url: null,
     seo_synced_at: new Date().toISOString(),
-    status: connectedToVercel ? "ready" : "vercel_connection_required",
-    last_error: connectedToVercel ? null : deployment.last_error || "GitHub deposu güncellendi; Vercel bağlantısı için VERCEL_TOKEN eklenmeli.",
+    status: "ready",
+    last_error: null,
     updated_at: new Date().toISOString(),
   };
 }
@@ -186,35 +155,19 @@ export async function syncStudioRepository(project: StudioProject, deployment: S
 export async function connectStudioDomain(project: StudioProject, deployment: StudioDeployment, rawDomain: string) {
   const domain = rawDomain.trim().toLocaleLowerCase("tr-TR").replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0].replace(/[^a-z0-9.-]/g, "");
   if (!domain || !domain.includes(".")) throw new Error("Geçerli bir domain yazmalısınız.");
-  const vercelProject = deployment.vercel_project_id || deployment.vercel_project_name;
-  if (!vercelProject) throw new Error("Vercel projesi henüz hazır değil.");
 
-  const added = await vercelRequest<{ verified?: boolean; verification?: Array<{ type?: string; domain?: string; value?: string; reason?: string }> }>(`/v10/projects/${encodeURIComponent(vercelProject)}/domains`, {
-    method: "POST",
-    body: JSON.stringify({ name: domain }),
-  }, [409]);
-  let verified = Boolean(added.result?.verified);
-  let verification = Array.isArray(added.result?.verification) ? added.result.verification : [];
-  if (!verified) {
-    const checked = await vercelRequest<{ verified?: boolean; verification?: Array<{ type?: string; domain?: string; value?: string; reason?: string }> }>(`/v9/projects/${encodeURIComponent(vercelProject)}/domains/${encodeURIComponent(domain)}/verify`, { method: "POST" }, [400]);
-    verified = Boolean(checked.result?.verified);
-    verification = Array.isArray(checked.result?.verification) ? checked.result.verification : verification;
-  }
-  const records = verification.length ? verification.map((item) => ({ type: item.type || "TXT", name: item.domain || "@", value: item.value || item.reason || "Vercel doğrulama kaydı" })) : [
-    { type: "A", name: "@", value: "76.76.21.21" },
-    { type: "CNAME", name: "www", value: "cname.vercel-dns-0.com" },
-  ];
   const { data: domainRecord, error } = await supabaseAdmin.from("studio_domains").upsert({
     project_id: project.id,
     owner_id: project.owner_id,
     domain,
-    status: verified ? "active" : "dns_pending",
+    status: "dns_pending",
     is_primary: true,
-    ssl_status: verified ? "provisioning" : "pending",
-    verification_records: records,
+    ssl_status: "pending",
+    verification_records: [],
     last_checked_at: new Date().toISOString(),
   }, { onConflict: "domain" }).select("*").single();
   if (error) throw error;
+
   const nextDeployment = await syncStudioRepository(project, deployment, domain);
   return { domainRecord, deployment: nextDeployment };
 }
