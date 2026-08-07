@@ -103,6 +103,24 @@ export async function POST(request: Request) {
     if (["publish", "unpublish", "archive", "payment_status"].includes(action)) {
       const { data: before, error: beforeError } = await supabaseAdmin.from("studio_projects").select("*").eq("id", id).single();
       if (beforeError) throw beforeError;
+
+      let publishDeployment: StudioDeployment | null = null;
+      if (action === "publish") {
+        const existingDeployment = deploymentFor(before as StudioProject);
+        publishDeployment = existingDeployment?.github_repo_full_name
+          ? await syncStudioRepository(before as StudioProject, existingDeployment, existingDeployment.domain || undefined)
+          : await provisionStudioProject(before as StudioProject);
+
+        if (!publishDeployment.github_repo_full_name) {
+          const failedProject = await persistDeployment(before as StudioProject, publishDeployment);
+          return NextResponse.json({
+            message: publishDeployment.last_error || "Site için bağımsız GitHub deposu hazırlanamadı.",
+            record: failedProject,
+            deployment: publishDeployment,
+          }, { status: 500 });
+        }
+      }
+
       const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
       if (action === "publish") Object.assign(update, { status: "published", published_at: new Date().toISOString() });
       if (action === "unpublish") Object.assign(update, { status: "suspended" });
@@ -110,8 +128,18 @@ export async function POST(request: Request) {
       if (action === "payment_status") Object.assign(update, { payment_status: cleanText(body?.status, 30) });
       const { data: after, error } = await supabaseAdmin.from("studio_projects").update(update).eq("id", id).select("*").single();
       if (error) throw error;
-      await audit(session.sub, action, "project", id, before, after);
-      return NextResponse.json({ message: "Site durumu güncellendi.", record: after });
+
+      let savedProject = after as StudioProject;
+      if (publishDeployment) savedProject = await persistDeployment(savedProject, publishDeployment);
+
+      await audit(session.sub, action, "project", id, before, savedProject);
+      if (action === "publish") {
+        const message = publishDeployment?.status === "ready"
+          ? "Site yayınlandı; ayrı GitHub deposu, sitemap.xml ve robots.txt hazırlandı."
+          : `Site yayınlandı; ayrı GitHub deposu, sitemap.xml ve robots.txt hazırlandı. ${publishDeployment?.last_error || "Vercel bağlantısı bekliyor."}`;
+        return NextResponse.json({ message, record: savedProject, deployment: publishDeployment });
+      }
+      return NextResponse.json({ message: "Site durumu güncellendi.", record: savedProject });
     }
 
     if (action === "save_project") {
