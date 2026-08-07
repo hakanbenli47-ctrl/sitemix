@@ -25,6 +25,10 @@ async function githubRequest<T>(path: string, init?: RequestInit, allowed: numbe
   return { response, result: result as T };
 }
 
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function repositoryName(project: Pick<StudioProject, "slug" | "id">) {
   const prefix = slugify(process.env.GITHUB_STUDIO_REPO_PREFIX || "sitemix-site");
   return `${prefix}-${slugify(project.slug)}-${project.id.slice(0, 8)}`.slice(0, 95);
@@ -54,10 +58,26 @@ async function ensureGithubRepository(project: StudioProject) {
   return created.result;
 }
 
+async function waitForBranchRef(repository: GithubRepository, branch: string) {
+  let lastStatus = 0;
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const ref = await githubRequest<{ object?: { sha?: string } }>(
+      `/repos/${repository.full_name}/git/ref/heads/${encodeURIComponent(branch)}`,
+      undefined,
+      [404, 409],
+    );
+    if (ref.response.ok && ref.result?.object?.sha) {
+      return ref.result.object.sha;
+    }
+    lastStatus = ref.response.status;
+    await wait(700);
+  }
+  throw new Error(`GitHub deposu oluşturuldu ancak ${branch} dalı henüz hazır değil (${lastStatus || "bekleniyor"}). Tekrar Yayınla'ya basın.`);
+}
+
 async function commitRepositoryFiles(repository: GithubRepository, files: ReturnType<typeof buildStudioRepositoryFiles>, message: string) {
   const branch = repository.default_branch || "main";
-  const ref = await githubRequest<{ object: { sha: string } }>(`/repos/${repository.full_name}/git/ref/heads/${encodeURIComponent(branch)}`);
-  const headSha = ref.result.object.sha;
+  const headSha = await waitForBranchRef(repository, branch);
   const commit = await githubRequest<{ tree: { sha: string } }>(`/repos/${repository.full_name}/git/commits/${headSha}`);
   const existingTree = await githubRequest<{ tree?: Array<{ path?: string; type?: string }> }>(`/repos/${repository.full_name}/git/trees/${commit.result.tree.sha}?recursive=1`);
   const blobs = await Promise.all(files.map((file) => githubRequest<{ sha: string }>(`/repos/${repository.full_name}/git/blobs`, {
