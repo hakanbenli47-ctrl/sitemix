@@ -20,7 +20,9 @@ async function githubRequest<T>(path: string, init?: RequestInit, allowed: numbe
   const response = await fetch(`https://api.github.com${path}`, { ...init, headers: { ...githubHeaders(), ...(init?.headers || {}) }, cache: "no-store" });
   const result = await response.json().catch(() => null);
   if (!response.ok && !allowed.includes(response.status)) {
-    throw new Error(result?.message || `GitHub işlemi tamamlanamadı (${response.status}).`);
+    const method = init?.method || "GET";
+    const detail = result?.message || "GitHub isteği tamamlanamadı";
+    throw new Error(`GitHub ${method} ${path} → ${response.status}: ${detail}`);
   }
   return { response, result: result as T };
 }
@@ -149,17 +151,29 @@ export async function provisionStudioProject(project: StudioProject): Promise<St
 }
 
 export async function syncStudioRepository(project: StudioProject, deployment: StudioDeployment, domain?: string | null): Promise<StudioDeployment> {
-  if (!deployment.github_repo_full_name) throw new Error("Bu proje için GitHub deposu henüz hazır değil.");
-  const repo = await githubRequest<GithubRepository>(`/repos/${deployment.github_repo_full_name}`);
+  const existingFullName = deployment.github_repo_full_name?.trim();
+  let repository: GithubRepository;
+
+  if (existingFullName) {
+    const existing = await githubRequest<GithubRepository>(`/repos/${existingFullName}`, undefined, [404]);
+    repository = existing.response.ok ? existing.result : await ensureGithubRepository(project);
+  } else {
+    repository = await ensureGithubRepository(project);
+  }
+
   const resolvedDomain = domain === undefined ? deployment.domain || undefined : domain || undefined;
   const commitSha = await commitRepositoryFiles(
-    repo.result,
+    repository,
     buildStudioRepositoryFiles(project.current_version as StudioSite, resolvedDomain),
     resolvedDomain ? `Update website and SEO for ${resolvedDomain}` : "Update website content",
   );
   return {
     ...deployment,
     project_id: project.id,
+    github_repo_id: repository.id,
+    github_repo_name: repository.name,
+    github_repo_full_name: repository.full_name,
+    github_repo_url: repository.html_url,
     domain: resolvedDomain || null,
     github_commit_sha: commitSha,
     vercel_project_id: null,
