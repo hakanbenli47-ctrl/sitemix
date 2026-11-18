@@ -186,7 +186,7 @@ export default function SitemixMarketing() {
               {pack.featured ? <span className={styles.popularBadge}>Önerilen paket</span> : null}
               <h3>{pack.name}</h3><p className={styles.packageNote}>{pack.note}</p>
               <span className={styles.packageHighlight}><Sparkles size={14} aria-hidden="true" />{pack.highlight}</span>
-              <div className={styles.price}><strong>{pack.price} TL</strong><span>&apos;den başlayan fiyatlarla</span></div>
+              <div className={styles.price}><strong>{pack.price} TL</strong><span>Başlangıç fiyatı</span></div>
               <span className={styles.includedLabel}>Paket içeriği</span>
               <ul>{pack.features.map((feature) => <li key={feature}><Check size={16} aria-hidden="true" />{feature}</li>)}</ul>
               <a href={`${whatsapp}?text=${encodeURIComponent(`Merhaba, ${pack.name} paketiniz için teklif almak istiyorum.`)}`} target="_blank" rel="noopener noreferrer" className={pack.featured ? styles.primaryButton : styles.secondaryButton}>Paket için teklif al <ArrowUpRight size={17} /></a>
