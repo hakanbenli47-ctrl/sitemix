@@ -111,13 +111,13 @@
 .popularBadge { align-self: flex-start; margin-bottom: 15px; padding: 9px 12px; border-radius: 30px; background: #a4e8ae; color: #08220f; font-size: 11px; font-weight: 900; }
 .priceCard h3 { font-size: 28px; font-weight: 900; letter-spacing: -.045em; }
 .packageNote { margin-top: 10px; min-height: 50px; color: #a7b9ab; font-size: 13px; line-height: 1.7; }
-.price { margin-top: 27px; padding-bottom: 24px; border-bottom: 1px solid #ffffff22; display: flex; flex-direction: column; gap: 6px; }
-.marketCompare { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-top: 20px; }
-.marketCompare span { color: #96a99c; font-size: 12px; text-decoration: line-through; text-decoration-color: #a7b9aa91; }
-.marketCompare strong { display: inline-flex; padding: 7px 11px; background: #a4e8901c; color: #b3ed9d; border: 1px solid #a4e89044; border-radius: 60px; font-size: 11px; font-weight: 900; }
+.packageHighlight { display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; margin-top: 20px; padding: 8px 12px; border: 1px solid #a4e89044; border-radius: 30px; background: #a4e89013; color: #b9edb1; font-size: 11px; font-weight: 850; }
+.packageHighlight svg { flex: none; }
+.price { margin-top: 21px; padding-bottom: 24px; border-bottom: 1px solid #ffffff22; display: flex; flex-direction: column; gap: 6px; }
 .price strong { font-size: clamp(2rem, 3.2vw, 3rem); font-weight: 950; letter-spacing: -.07em; }
 .price span { color: #b8c6ba; font-size: 13px; }
-.priceCard ul { list-style: none; display: flex; flex-direction: column; gap: 16px; padding: 26px 0 32px; margin: 0 0 auto; }
+.includedLabel { margin-top: 24px; color: #d8efdd; font-size: 12px; font-weight: 900; letter-spacing: .02em; }
+.priceCard ul { list-style: none; display: flex; flex-direction: column; gap: 16px; padding: 18px 0 32px; margin: 0 0 auto; }
 .priceCard li { display: flex; align-items: flex-start; gap: 11px; color: #d0dfd1; font-size: 13px; line-height: 1.5; }
 .priceCard li svg { flex: none; color: #a2e9ac; margin-top: 2px; }
 .priceCard > a { width: 100%; }
@@ -125,7 +125,6 @@
 .maintenance svg { flex: none; color: #abe7ad; }
 .maintenance strong { color: #f0fff1; }
 .priceFootnote { margin-top: 16px; color: #8fa396; font-size: 11px; line-height: 1.7; }
-.priceFootnote a { color: #b1e6b9; text-decoration: underline; text-underline-offset: 3px; }
 
 .adOfferGrid { display: grid; grid-template-columns: 1fr 1.08fr; gap: 18px; align-items: stretch; }
 .adOfferCard, .bundleCard { display: flex; flex-direction: column; padding: clamp(25px, 3.3vw, 42px); border: 1px solid #ffffff23; border-radius: 29px; background: linear-gradient(150deg, #122117, #0b1610); }
@@ -166,15 +165,13 @@
 .accountingVisual div { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 17px 0; border-top: 1px solid #ffffff19; color: #b2c8b6; font-size: 14px; }
 .accountingVisual svg { color: #93e8a2; }
 .reviewsGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 15px; }
-.reviewCard { display: flex; min-height: 225px; flex-direction: column; padding: 28px; border: 1px solid #ffffff18; border-radius: 24px; background: #122018; }
-.reviewExample { align-self: flex-start; margin-bottom: 17px; padding: 7px 10px; border: 1px solid #ffffff2a; border-radius: 8px; color: #c2d4c7; font-size: 10px; font-weight: 850; letter-spacing: .04em; }
+.reviewCard { display: flex; min-height: 225px; flex-direction: column; padding: 30px; border: 1px solid #ffffff18; border-radius: 24px; background: linear-gradient(155deg, #16271b, #101a13); }
 .reviewQuote { color: #9cdeab; font-size: 58px; line-height: .8; font-family: Georgia, serif; }
 .reviewCard > p { margin-top: 18px; color: #b0c0b5; font-size: 15px; line-height: 1.65; }
 .reviewCard > div { display: flex; align-items: center; gap: 12px; margin-top: auto; padding-top: 26px; }
 .reviewAvatar { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; background: #b9eeb31b; color: #b1eabb; }
-.reviewCard > div > span:last-child { display: flex; flex-direction: column; gap: 4px; }
 .reviewCard strong { color: #effff2; font-size: 13px; }
-.reviewCard small { color: #92ab9a; font-size: 12px; }
+.reviewNotice { margin-top: 18px; color: #8fa395; font-size: 11px; line-height: 1.7; }
 
 .aboutGrid { display: grid; grid-template-columns: minmax(270px, .78fr) minmax(0, 1fr); gap: clamp(40px, 7vw, 110px); align-items: center; }
 .photoPlaceholder { position: relative; min-height: 420px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 17px; border: 1px solid #a3dfa645; border-radius: 29px; background: radial-gradient(ellipse at 70% 20%, #94d88b36, transparent 45%), radial-gradient(ellipse at 20% 100%, #67a89a4d, transparent 40%), #15281b; }

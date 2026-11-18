@@ -49,24 +49,24 @@ const steps = [
 
 const packages = [
   {
-    name: "Başlangıç", price: "7.200", marketReference: "8.000", note: "Yerel esnaf ve tek şubeli işletmeler için",
+    name: "Başlangıç", price: "7.200", highlight: "Hızlı ve etkili başlangıç", note: "Yerel esnaf ve tek şubeli işletmeler için",
     features: ["1 sayfa, en fazla 6 içerik bölümü", "Mobil uyumlu profesyonel görünüm", "WhatsApp, arama ve yol tarifi butonları", "Temel Google SEO ve sayfa başlıkları", "1 tasarım revizyonu ve yayın desteği"],
   },
   {
-    name: "Kurumsal", price: "13.500", marketReference: "15.000", note: "Birden çok hizmetini tanıtmak isteyenlere", featured: true,
+    name: "Kurumsal", price: "13.500", highlight: "İşletmenize özel çözüm", note: "Birden çok hizmetini tanıtmak isteyenlere", featured: true,
     features: ["5 sayfaya kadar kurumsal web sitesi", "İşletmeye özel tasarım ve mobil uyum", "Hizmetler, galeri ve hakkımızda sayfaları", "Teklif formu, WhatsApp ve harita", "Temel Google SEO ve 2 revizyon"],
   },
   {
-    name: "E-Ticaret", price: "22.500", marketReference: "25.000", note: "İnternetten ürün ve sipariş yönetmek için",
+    name: "E-Ticaret", price: "22.500", highlight: "Online satışa güçlü adım", note: "İnternetten ürün ve sipariş yönetmek için",
     features: ["25 ürüne kadar başlangıç ürün girişi", "Kategori, ürün detayı ve sepet", "WhatsApp veya havale ile sipariş akışı", "Ürün ve sipariş yönetim alanı", "Mobil uyum, temel SEO ve 2 revizyon"],
   },
 ];
 
 // Örnekler gerçek müşteri beyanı değildir; doğrulanmış görüşler geldiğinde değiştirilecek.
 const sampleReviews = [
-  { name: "Ayşe K.", business: "Örnek güzellik salonu", comment: "Yeni sitemizde hizmetleri ve fotoğrafları tek yerde göstermek çok daha kolay. Randevu almak isteyenler de doğrudan WhatsApp'a ulaşabiliyor." },
-  { name: "Mehmet D.", business: "Örnek restoran", comment: "Menümüz, konumumuz ve çalışma saatlerimiz artık telefonlarda anlaşılır görünüyor. Müşterilerin bilgiye ulaşması kolaylaştı." },
-  { name: "Selin T.", business: "Örnek tırnak stüdyosu", comment: "Çalışmalarımı düzenli bir galeride sunabilmek ve müşterilerime tek bağlantı göndermek işimi kolaylaştırdı." },
+  { name: "Ayşe K.", comment: "Yeni sitemizde hizmetleri ve fotoğrafları tek yerde göstermek çok daha kolay. Randevu almak isteyenler de doğrudan WhatsApp'a ulaşabiliyor." },
+  { name: "Mehmet D.", comment: "Menümüz, konumumuz ve çalışma saatlerimiz artık telefonlarda anlaşılır görünüyor. Müşterilerin bilgiye ulaşması kolaylaştı." },
+  { name: "Selin T.", comment: "Çalışmalarımı düzenli bir galeride sunabilmek ve müşterilerime tek bağlantı göndermek işimi kolaylaştırdı." },
 ];
 
 function SectionHeading({ eyebrow, title, description }: { eyebrow: string; title: string; description?: string }) {
@@ -181,17 +181,18 @@ export default function SitemixMarketing() {
 
         <section id="fiyatlar" className={`${styles.section} ${styles.sectionMuted}`}>
           <div className={styles.container}>
-            <SectionHeading eyebrow="Avantajlı başlangıç paketleri" title="İşletmenize uygun paketi seçin." description="2026'da yayımlanan benzer hizmetlerin alt fiyat bantlarına göre yaklaşık %10 daha uygun başlangıç teklifleri. Her paketin kapsamı açık." />
+            <SectionHeading eyebrow="Net kapsam, net fiyat" title="İşletmenize uygun paketi seçin." description="İhtiyacınıza uygun web sitesini birlikte planlayalım. Her pakette nelerin dahil olduğunu en baştan bilin." />
             <div className={styles.pricingGrid}>{packages.map((pack) => <article key={pack.name} className={`${styles.priceCard} ${pack.featured ? styles.priceFeatured : ""}`}>
-              {pack.featured ? <span className={styles.popularBadge}>En çok tercih edilen</span> : null}
+              {pack.featured ? <span className={styles.popularBadge}>Önerilen paket</span> : null}
               <h3>{pack.name}</h3><p className={styles.packageNote}>{pack.note}</p>
-              <div className={styles.marketCompare}><span>2026 piyasa alt bant referansı: {pack.marketReference} TL</span><strong>Yaklaşık %10 avantaj</strong></div>
+              <span className={styles.packageHighlight}><Sparkles size={14} aria-hidden="true" />{pack.highlight}</span>
               <div className={styles.price}><strong>{pack.price} TL</strong><span>&apos;den başlayan fiyatlarla</span></div>
+              <span className={styles.includedLabel}>Paket içeriği</span>
               <ul>{pack.features.map((feature) => <li key={feature}><Check size={16} aria-hidden="true" />{feature}</li>)}</ul>
               <a href={`${whatsapp}?text=${encodeURIComponent(`Merhaba, ${pack.name} paketiniz için teklif almak istiyorum.`)}`} target="_blank" rel="noopener noreferrer" className={pack.featured ? styles.primaryButton : styles.secondaryButton}>Paket için teklif al <ArrowUpRight size={17} /></a>
             </article>)}</div>
             <p className={styles.maintenance}><ShieldCheck size={22} aria-hidden="true" /><span><strong>Aylık bakım ve destek: 990 TL/ay.</strong> İsteğe bağlı; güvenlik kontrolleri, yedekleme takibi ve ayda 1 küçük içerik güncellemesi. Alan adı, hosting, ücretli entegrasyon ve ödeme altyapısı masrafları dahil değildir.</span></p>
-            <p className={styles.priceFootnote}>Fiyatlar başlangıç kapsamı içindir; KDV durumu ve ek talepler yazılı teklifte netleştirilir. Piyasa referansları aynı kapsamın birebir teklifleri değildir: <a href="https://rubermedia.com/web-sitesi-fiyatlari/" target="_blank" rel="noopener noreferrer">web tasarım fiyat aralıkları</a> ve <a href="https://www.siteyapimi.com/web-sitesi-fiyatlari" target="_blank" rel="noopener noreferrer">2026 başlangıç fiyatları</a>.</p>
+            <p className={styles.priceFootnote}>Fiyatlar belirtilen başlangıç kapsamları içindir. KDV durumu, alan adı, hosting ve özel talepler teklif aşamasında netleştirilir.</p>
           </div>
         </section>
 
@@ -251,8 +252,9 @@ export default function SitemixMarketing() {
 
         <section id="yorumlar" className={styles.section}>
           <div className={styles.container}>
-            <SectionHeading eyebrow="Yorum alanı örnekleri" title="Müşterilerimiz ne diyor?" description="Aşağıdaki metinler tasarımı göstermek için hazırlanmış temsili örneklerdir; gerçek müşteri değerlendirmesi değildir." />
-            <div className={styles.reviewsGrid}>{sampleReviews.map((review) => <article className={styles.reviewCard} key={review.name}><span className={styles.reviewExample}>Temsili yorum · Örnek</span><span className={styles.reviewQuote}>“</span><p>{review.comment}</p><div><span className={styles.reviewAvatar}><MessageCircle size={20} /></span><span><strong>{review.name}</strong><small>{review.business}</small></span></div></article>)}</div>
+            <SectionHeading eyebrow="Görüşler" title="Müşterilerimiz ne diyor?" />
+            <div className={styles.reviewsGrid}>{sampleReviews.map((review) => <article className={styles.reviewCard} key={review.name}><span className={styles.reviewQuote}>“</span><p>{review.comment}</p><div><span className={styles.reviewAvatar}><MessageCircle size={20} /></span><strong>{review.name}</strong></div></article>)}</div>
+            <p className={styles.reviewNotice}>Bu bölümdeki yorum metinleri örnek içeriktir; doğrulanmış müşteri değerlendirmeleri değildir.</p>
           </div>
         </section>
 
