@@ -1,0 +1,15 @@
+Bu klasöre aşağıdaki adlarla fotoğraf koyduğunuzda sitede otomatik görünür.
+Fotoğraf yoksa yerine renkli bir alan görünür; site bozulmaz.
+
+- img/d1.jpg
+- img/d2.jpg
+- img/d3.jpg
+- img/d4.jpg
+- img/detay1.jpg
+- img/detay2.jpg
+- img/detay3.jpg
+- img/ekip.jpg
+- img/hero.jpg
+- img/ilan1.jpg
+- img/ofis.jpg
+- img/rapor.jpg

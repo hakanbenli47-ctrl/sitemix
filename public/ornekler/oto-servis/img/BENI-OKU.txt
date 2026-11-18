@@ -1,0 +1,6 @@
+Bu klasöre aşağıdaki adlarla fotoğraf koyduğunuzda sitede otomatik görünür.
+Fotoğraf yoksa yerine renkli bir alan görünür; site bozulmaz.
+
+- img/atolye.jpg
+- img/hero.jpg
+- img/usta.jpg

@@ -1,0 +1,11 @@
+Bu klasöre aşağıdaki adlarla fotoğraf koyduğunuzda sitede otomatik görünür.
+Fotoğraf yoksa yerine renkli bir alan görünür; site bozulmaz.
+
+- img/ekip.jpg
+- img/hekim1.jpg
+- img/hekim2.jpg
+- img/hekim3.jpg
+- img/hekim4.jpg
+- img/hero.jpg
+- img/klinik.jpg
+- img/resepsiyon.jpg

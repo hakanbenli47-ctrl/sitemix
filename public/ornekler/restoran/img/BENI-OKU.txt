@@ -1,0 +1,11 @@
+Bu klasöre aşağıdaki adlarla fotoğraf koyduğunuzda sitede otomatik görünür.
+Fotoğraf yoksa yerine renkli bir alan görünür; site bozulmaz.
+
+- img/adana.jpg
+- img/bugun.jpg
+- img/eski.jpg
+- img/hero.jpg
+- img/kunefe.jpg
+- img/lahmacun.jpg
+- img/salon.jpg
+- img/usta.jpg
