@@ -1,0 +1,22 @@
+Bu klasöre aşağıdaki adlarla fotoğraf koyduğunuzda sitede otomatik görünür.
+Fotoğraf yoksa yerine renkli bir alan görünür; site bozulmaz.
+
+- img/ayse.jpg
+- img/cilt.jpg
+- img/ekip.jpg
+- img/elif.jpg
+- img/g1.jpg
+- img/g2.jpg
+- img/g3.jpg
+- img/g4.jpg
+- img/g5.jpg
+- img/g6.jpg
+- img/g7.jpg
+- img/g8.jpg
+- img/hero.jpg
+- img/merve.jpg
+- img/randevu.jpg
+- img/sac.jpg
+- img/salon.jpg
+- img/tirnak.jpg
+- img/zeynep.jpg

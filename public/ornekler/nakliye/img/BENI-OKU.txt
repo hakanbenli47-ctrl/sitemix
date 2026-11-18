@@ -1,0 +1,12 @@
+Bu klasöre aşağıdaki adlarla fotoğraf koyduğunuzda sitede otomatik görünür.
+Fotoğraf yoksa yerine renkli bir alan görünür; site bozulmaz.
+
+- img/arac.jpg
+- img/asansor.jpg
+- img/depolama.jpg
+- img/ekip.jpg
+- img/evden-eve.jpg
+- img/ofis.jpg
+- img/paketleme.jpg
+- img/parca.jpg
+- img/sehirlerarasi.jpg

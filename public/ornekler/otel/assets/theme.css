@@ -1,0 +1,16 @@
+:root{
+ /* Butik otel: keten zemin, lavanta + zeytin, zarif serif */
+ --bg:#f7f4ee;--surface:#fffdf9;--surface-2:#efeae0;--ink:#2a2733;--muted:#6c6875;
+ --accent:#6a5a92;--accent-ink:#ffffff;--accent-soft:#e7e1f1;--line:#e4ddd0;--line-strong:#cfc5b4;--olive:#6b7343;
+ --display:"Marcellus",Georgia,serif;--body:"Jost","Segoe UI",Arial,sans-serif;
+ --display-weight:400;--display-tracking:.3px;--radius:6px;--btn-radius:2px;--mark-radius:50%;
+ --ph-bg:linear-gradient(180deg,#d9cfe8 0 40%,#b9a9d4 40% 55%,#6b7343 55%);--cta-bg:#2a2733;--cta-ink:#fff;
+ --cover-shade:linear-gradient(180deg,rgba(42,39,51,.1),rgba(42,39,51,.75));color-scheme:light}
+.btn{letter-spacing:1px;text-transform:uppercase;font-size:14px;font-weight:600}
+.booking{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) auto;gap:12px;background:var(--surface);color:var(--ink);padding:18px;border-radius:6px;margin-top:30px;max-width:980px;align-items:end;box-shadow:0 30px 60px -30px rgba(0,0,0,.6)}
+.booking .field label{font-size:12px;letter-spacing:1px;text-transform:uppercase}
+.booking .btn{height:50px}
+@media (max-width:860px){.booking{grid-template-columns:repeat(2,minmax(0,1fr))}.booking .btn{grid-column:1/-1}}
+.room .facts{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:14px}
+.room .from{font-family:var(--display);font-size:26px;color:var(--ink)}
+.direct{background:var(--olive);color:#fff;text-align:center;padding:12px;font-weight:500;letter-spacing:.5px}

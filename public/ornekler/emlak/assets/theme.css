@@ -1,0 +1,25 @@
+:root{
+ /* Emlak: derin deniz mavisi + kum rengi, klasik serif başlıklar */
+ --bg:#f7f5f1;--surface:#ffffff;--surface-2:#efebe3;--ink:#0d2233;--muted:#5d6a74;
+ --accent:#0b4a6f;--accent-ink:#ffffff;--accent-soft:#dbe8f0;--line:#e3ddd2;--line-strong:#cfc6b6;--sand:#c9a15b;
+ --display:"DM Serif Display",Georgia,serif;--body:"DM Sans","Segoe UI",Arial,sans-serif;
+ --display-weight:400;--radius:14px;--btn-radius:8px;--mark-radius:50%;
+ --ph-bg:linear-gradient(180deg,#9fc3d6 0 45%,#e8d7b5 45% 60%,#0b4a6f 60%);--cta-bg:#0b4a6f;--cta-ink:#fff;
+ --cover-shade:linear-gradient(180deg,rgba(13,34,51,.15),rgba(13,34,51,.8));color-scheme:light}
+.hero-cover h1 em{color:var(--sand)}
+.doors{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:-70px;position:relative;z-index:3}
+.door{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:26px;text-decoration:none;display:flex;flex-direction:column;gap:6px;box-shadow:0 20px 40px -28px rgba(13,34,51,.5)}
+.door h3{font-size:28px}
+.door p{color:var(--muted);font-size:15px}
+.door b{color:var(--accent);margin-top:6px}
+.door.hot{background:var(--accent);color:#fff;border-color:var(--accent)}
+.door.hot p,.door.hot b{color:#d9e8f2}
+@media (max-width:760px){.doors{grid-template-columns:1fr;margin-top:24px}}
+.listing .ph{aspect-ratio:4/3}
+.listing .price{font-family:var(--display);font-size:28px;color:var(--ink)}
+.listing .facts{display:flex;gap:14px;color:var(--muted);font-size:14px;flex-wrap:wrap}
+.filters{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:28px}
+.filters select{font:inherit;padding:11px 14px;border-radius:10px;border:1.5px solid var(--line);background:#fff;min-width:180px}
+.spec{display:grid;grid-template-columns:repeat(2,1fr);gap:0 28px}
+.spec div{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line)}
+.spec span{color:var(--muted)}

@@ -1,0 +1,11 @@
+:root{
+ /* Butik salon: sıcak gül kurusu + derin mürdüm, serif başlıklar */
+ --bg:#faf6f7;--surface:#ffffff;--surface-2:#f3eaee;--ink:#2b1b25;--muted:#735f6b;
+ --accent:#8e3b62;--accent-ink:#ffffff;--accent-soft:#f1dfe8;--line:#eadde3;--line-strong:#d8c3cd;
+ --display:"Cormorant Garamond",Georgia,serif;--body:"Manrope","Segoe UI",Arial,sans-serif;--display-weight:600;
+ --radius:22px;--hero-radius:240px 240px 24px 24px;
+ --ph-bg:radial-gradient(circle at 30% 20%,#f6dbe7 0 16%,transparent 17%),radial-gradient(circle at 78% 72%,#c98aa8 0 20%,transparent 21%),linear-gradient(155deg,#e8c4d4,#8e3b62);
+ --cta-bg:#2b1b25;--cta-ink:#fff;color-scheme:light}
+.hero h1{font-weight:600}
+.card h3,.step h3,.person h3{font-size:28px}
+@media (max-width:900px){:root{--hero-radius:24px}}

@@ -1,0 +1,17 @@
+Bu klasöre aşağıdaki adlarla fotoğraf koyduğunuzda sitede otomatik görünür.
+Fotoğraf yoksa yerine renkli bir alan görünür; site bozulmaz.
+
+- img/g1.jpg
+- img/g2.jpg
+- img/g3.jpg
+- img/g4.jpg
+- img/g5.jpg
+- img/g6.jpg
+- img/g7.jpg
+- img/hero.jpg
+- img/kafe.jpg
+- img/konak.jpg
+- img/oda-aile.jpg
+- img/oda-deluxe.jpg
+- img/oda-standart.jpg
+- img/oda-suit.jpg

@@ -1,0 +1,26 @@
+:root{
+ /* Atölye: lacivert + emniyet sarısı, dar ve güçlü başlıklar */
+ --bg:#eef1f4;--surface:#ffffff;--surface-2:#e3e8ed;--ink:#111a26;--muted:#566272;
+ --accent:#f4b400;--accent-ink:#111a26;--accent-soft:#fff3cc;--line:#d3dae2;--line-strong:#b9c3ce;
+ --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;--body:"Barlow","Segoe UI",Arial,sans-serif;
+ --display-weight:700;--display-case:uppercase;--radius:10px;--btn-radius:6px;--mark-radius:4px;
+ --ph-bg:repeating-linear-gradient(-45deg,rgba(255,255,255,.04) 0 14px,transparent 14px 28px),linear-gradient(150deg,#2b4566,#13233a);
+ --header-bg:#13233a;--header-link:#b9c6d6;--header-link-hover:#ffffff;--footer-bg:#0c1726;--footer-ink:#e7edf3;
+ --page-hero-bg:#13233a;--cta-bg:#13233a;--cta-ink:#fff;color-scheme:light}
+.site-header{border-bottom:0}
+.site-header .brand{color:#fff}
+.menu a[aria-current="page"]{background:rgba(244,180,0,.15)}
+@media (max-width:960px){.menu{background:#13233a}}
+.page-hero{color:#fff;border-bottom:4px solid var(--accent)}
+.page-hero p,.page-hero .crumbs{color:#b9c6d6}
+.hero{background:#13233a;color:#fff;background-image:repeating-linear-gradient(-45deg,rgba(255,255,255,.025) 0 14px,transparent 14px 28px)}
+.hero .lead,.hero .trust{color:#c4d0dd}
+.hero .trust b{color:#fff}
+.hero h1{font-size:clamp(42px,5.4vw,70px)}
+.hero h1 em{font-style:normal}
+.hero .btn.ghost{color:#fff;border-color:#4a5f7a}
+.step::before{-webkit-text-stroke:1px var(--ink)}
+.demo-bar{background:var(--accent);color:var(--ink)}
+.plate{display:inline-flex;align-items:center;border:2px solid #111;border-radius:6px;background:#fff;color:#111;font-weight:800;letter-spacing:2px;font-size:22px;overflow:hidden}
+.plate span:first-child{background:#1d4fbf;color:#fff;font-size:11px;padding:10px 6px;letter-spacing:0}
+.plate span:last-child{padding:4px 14px}

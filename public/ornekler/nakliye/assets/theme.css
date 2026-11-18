@@ -1,0 +1,15 @@
+:root{
+ /* Nakliye: kiremit kırmızısı + kömür, ağır ve güven veren başlıklar */
+ --bg:#fbf8f5;--surface:#ffffff;--surface-2:#f2ece6;--ink:#1d1a18;--muted:#6a615a;
+ --accent:#c2381c;--accent-ink:#ffffff;--accent-soft:#f8e1d9;--line:#e6ddd5;--line-strong:#d2c5ba;
+ --display:"Archivo","Arial Black",Arial,sans-serif;--body:"Archivo","Segoe UI",Arial,sans-serif;
+ --display-weight:800;--display-tracking:-1px;--radius:12px;--btn-radius:8px;--mark-radius:6px;
+ --ph-bg:linear-gradient(160deg,#e9b9a8,#c2381c 55%,#5d1b0e);--cta-bg:#1d1a18;--cta-ink:#fff;--em-style:normal;color-scheme:light}
+.hero h1 em{color:var(--accent)}
+.quote-box{background:var(--ink);color:#fff;border-radius:18px;padding:28px}
+.quote-box h3{font-size:28px}
+.quote-box .field label{color:#e8e1db}
+.quote-box .field input,.quote-box .field select{background:#2b2724;border-color:#3d3733;color:#fff}
+.quote-box .form-hint{color:#a99f97}
+.badges{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px}
+.badges span{border:1.5px solid var(--line-strong);border-radius:8px;padding:8px 14px;font-weight:700;font-size:14px}

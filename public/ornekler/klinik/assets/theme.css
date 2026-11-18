@@ -1,0 +1,10 @@
+:root{
+ /* Klinik: sakin deniz yeşili, bol beyaz alan, yumuşak köşeler */
+ --bg:#f6fafa;--surface:#ffffff;--surface-2:#e9f3f2;--ink:#12302e;--muted:#58716f;
+ --accent:#0f7a72;--accent-ink:#ffffff;--accent-soft:#d6eeeb;--line:#d9e7e5;--line-strong:#bcd5d2;
+ --display:"Outfit","Segoe UI",Arial,sans-serif;--body:"Nunito Sans","Segoe UI",Arial,sans-serif;
+ --display-weight:600;--display-tracking:-.5px;--radius:24px;--mark-radius:50%;--hero-radius:32px;
+ --ph-bg:radial-gradient(circle at 75% 25%,#ffffff 0 12%,transparent 13%),linear-gradient(160deg,#bfe3de,#0f7a72);
+ --cta-bg:#0f7a72;--cta-ink:#fff;--em-style:normal;color-scheme:light}
+.hero h1 em{background:linear-gradient(transparent 62%,#bfe8e2 62%);color:var(--ink)}
+.notice{background:var(--surface-2);border-left:4px solid var(--accent);padding:16px 20px;border-radius:12px;color:var(--muted);font-size:15px}
